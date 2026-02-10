@@ -1,3 +1,5 @@
+import * as JSZip from 'jszip';
+
 export interface IAzureAIFoundryService {
   analyzeContract(fileBlob: Blob, fileName: string): Promise<IContractAnalysis>;
   classifyDocument(fileBlob: Blob, fileName: string, classificationType: string): Promise<IClassificationResult>;
@@ -281,15 +283,82 @@ ${contractInfo}`;
   }
 
   /**
-   * Extract text from file (simple text extraction)
+   * Extract text from file - proper extraction for different file types
    */
-  private async extractTextFromFile(fileBlob: Blob): Promise<string> {
+  private async extractTextFromFile(fileBlob: File | Blob): Promise<string> {
     try {
+      const fileName = (fileBlob as File).name || '';
+      const fileType = fileBlob.type;
+      
+      console.log('[AzureAI] Extracting text from:', fileName, 'Type:', fileType);
+
+      // For .txt files - direct text extraction
+      if (fileType === 'text/plain' || fileName.endsWith('.txt')) {
+        const text = await fileBlob.text();
+        console.log('[AzureAI] Text extracted (length):', text.length);
+        return text;
+      }
+
+      // For .docx files - extract from XML
+      if (fileType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || 
+          fileName.endsWith('.docx')) {
+        console.log('[AzureAI] Extracting from .docx file...');
+        return await this.extractFromDocx(fileBlob);
+      }
+
+      // For .pdf files - extract text (basic)
+      if (fileType === 'application/pdf' || fileName.endsWith('.pdf')) {
+        console.log('[AzureAI] PDF extraction not implemented, using placeholder');
+        return '[PDF document - Please use Document Intelligence or convert to .txt/.docx]';
+      }
+
+      // Default - try text extraction
       const text = await fileBlob.text();
-      return text || `[File content extraction for ${fileBlob.type}]`;
+      if (text && text.length > 100 && !text.startsWith('PK')) {
+        console.log('[AzureAI] Text extracted (length):', text.length);
+        return text;
+      }
+
+      console.warn('[AzureAI] Could not extract readable text from file');
+      return `[Document: ${fileName}] - Unable to extract text. Please use .txt or .docx format.`;
+
     } catch (error) {
-      console.warn('[AzureAI] Text extraction failed, using placeholder');
-      return '[Document text - extraction not available]';
+      console.error('[AzureAI] Text extraction error:', error);
+      return '[Document text extraction failed - Please try .txt format]';
+    }
+  }
+
+  /**
+   * Extract text from .docx file (XML-based format)
+   */
+  private async extractFromDocx(fileBlob: Blob): Promise<string> {
+    try {
+      // Read as ArrayBuffer
+      const arrayBuffer = await fileBlob.arrayBuffer();
+      
+      // Use JSZip to extract the document.xml from .docx
+      const zip = await JSZip.loadAsync(arrayBuffer);
+      const documentXml = await zip.file('word/document.xml')?.async('text');
+      
+      if (!documentXml) {
+        console.error('[AzureAI] Could not find document.xml in .docx');
+        return '[Invalid .docx file format]';
+      }
+
+      // Extract text from XML (simple regex-based extraction)
+      const textContent = documentXml
+        .replace(/<w:t[^>]*>/g, '')
+        .replace(/<\/w:t>/g, ' ')
+        .replace(/<[^>]+>/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+      console.log('[AzureAI] Extracted text from .docx (length):', textContent.length);
+      return textContent || '[No text found in .docx file]';
+
+    } catch (error) {
+      console.error('[AzureAI] .docx extraction error:', error);
+      return '[.docx extraction failed - Please try saving as .txt]';
     }
   }
 
@@ -307,6 +376,9 @@ ${contractInfo}`;
    * Call AI with message history - Azure OpenAI format for AI Foundry
    */
   private async callAIWithMessages(messages: any[], maxTokens: number = 1500): Promise<string> {
+    // Azure AI Foundry uses Azure OpenAI endpoint format
+    // Your endpoint: https://legallex-resource.services.ai.azure.com/api/projects/legallex
+    // Becomes: https://legallex-resource.openai.azure.com/openai/deployments/gpt-4o/chat/completions
     
     // Extract resource name from AI Foundry endpoint
     const resourceMatch = this.projectEndpoint.match(/https:\/\/([^.]+)-resource\.services\.ai\.azure\.com/);
