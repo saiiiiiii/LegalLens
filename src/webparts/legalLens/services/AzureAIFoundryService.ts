@@ -1,0 +1,409 @@
+export interface IAzureAIFoundryService {
+  analyzeContract(fileBlob: Blob, fileName: string): Promise<IContractAnalysis>;
+  classifyDocument(fileBlob: Blob, fileName: string, classificationType: string): Promise<IClassificationResult>;
+  translate(text: string, targetLang: string, contractName: string): Promise<string>;
+  askQuestionMultilingual(question: string, questionLang: string, contract: any, conversationHistory: any[]): Promise<IMultilingualAnswer>;
+}
+
+export interface IContractAnalysis {
+  fileName: string;
+  parties: string[];
+  effectiveDate: string;
+  expiryDate: string;
+  jurisdiction: string;
+  contractType: string;
+  clauses: Array<{
+    ref: string;
+    title: string;
+    text: string;
+    riskLevel: 'low' | 'medium' | 'high';
+    riskReason?: string;
+  }>;
+  overallRiskScore: number;
+  riskFactors: Array<{
+    factor: string;
+    severity: 'low' | 'medium' | 'high' | 'critical';
+    description: string;
+    recommendation: string;
+  }>;
+  summary: string;
+  analyzedAt: string;
+}
+
+export interface IClassificationResult {
+  classificationType: string;
+  confidence: number;
+  primaryCategory: string;
+  secondaryCategories: string[];
+  detectedLanguage: string;
+  keyTerms: string[];
+  suggestedTags: string[];
+  complianceFlags: Array<{
+    regulation: string;
+    applicable: boolean;
+    reason: string;
+  }>;
+  classifiedAt: string;
+}
+
+export interface IMultilingualAnswer {
+  question: string;
+  questionLanguage: string;
+  answer: string;
+  answerLanguage: string;
+  citedClauses: string[];
+  confidence: number;
+}
+
+export class AzureAIFoundryService implements IAzureAIFoundryService {
+  private projectEndpoint: string;
+  private apiKey: string;
+  private deploymentName: string;
+
+  constructor(
+    projectEndpoint: string,
+    apiKey: string,
+    deploymentName: string = 'gpt-4o'
+  ) {
+    this.projectEndpoint = projectEndpoint;
+    this.apiKey = apiKey;
+    this.deploymentName = deploymentName;
+    
+    console.log('[AzureAI] Initialized with:');
+    console.log('  Endpoint:', projectEndpoint);
+    console.log('  Deployment:', deploymentName);
+  }
+
+  /**
+   * Analyze contract from file
+   */
+  public async analyzeContract(fileBlob: Blob, fileName: string): Promise<IContractAnalysis> {
+    console.log('[AzureAI] Analyzing contract:', fileName);
+
+    try {
+      // Extract text from file
+      const extractedText = await this.extractTextFromFile(fileBlob);
+      
+      // Analyze with AI
+      const analysisPrompt = `Analyze this legal contract and extract key information.
+
+Contract Text:
+${extractedText}
+
+Respond ONLY with valid JSON (no markdown, no code blocks):
+{
+  "parties": ["Party 1 name", "Party 2 name"],
+  "effectiveDate": "YYYY-MM-DD or Not specified",
+  "expiryDate": "YYYY-MM-DD or Not specified",
+  "jurisdiction": "jurisdiction name",
+  "contractType": "Vendor Agreement, NDA, SLA, etc",
+  "clauses": [
+    {
+      "ref": "§1.1",
+      "title": "Clause title",
+      "text": "Brief clause summary (max 150 chars)",
+      "riskLevel": "low",
+      "riskReason": "optional reason if risky"
+    }
+  ],
+  "overallRiskScore": 45,
+  "riskFactors": [
+    {
+      "factor": "Limited liability cap",
+      "severity": "medium",
+      "description": "Liability capped at $2M",
+      "recommendation": "Consider increasing cap"
+    }
+  ],
+  "summary": "Brief 2-sentence contract summary"
+}`;
+
+      const result = await this.callAI(analysisPrompt, 2000);
+      const analysis = this.parseJSON(result);
+
+      return {
+        fileName,
+        parties: analysis.parties || ['Party A', 'Party B'],
+        effectiveDate: analysis.effectiveDate || 'Not specified',
+        expiryDate: analysis.expiryDate || 'Not specified',
+        jurisdiction: analysis.jurisdiction || 'Not specified',
+        contractType: analysis.contractType || 'General Agreement',
+        clauses: analysis.clauses || [],
+        overallRiskScore: analysis.overallRiskScore || 0,
+        riskFactors: analysis.riskFactors || [],
+        summary: analysis.summary || `Analysis of ${fileName}`,
+        analyzedAt: new Date().toISOString()
+      };
+
+    } catch (error) {
+      console.error('[AzureAI] Analysis error:', error);
+      return this.getFallbackAnalysis(fileName);
+    }
+  }
+
+  /**
+   * Classify document
+   */
+  public async classifyDocument(
+    fileBlob: Blob,
+    fileName: string,
+    classificationType: string
+  ): Promise<IClassificationResult> {
+    console.log('[AzureAI] Classifying:', fileName, 'Type:', classificationType);
+
+    try {
+      const text = await this.extractTextFromFile(fileBlob);
+      
+      const prompt = `Classify this document as "${classificationType}".
+
+Text: ${text.substring(0, 2000)}
+
+Respond with JSON only:
+{
+  "primaryCategory": "main category",
+  "secondaryCategories": ["cat1", "cat2"],
+  "confidence": 0.85,
+  "detectedLanguage": "en",
+  "keyTerms": ["term1", "term2"],
+  "suggestedTags": ["tag1", "tag2"],
+  "complianceFlags": [{"regulation": "GDPR", "applicable": true, "reason": "reason"}]
+}`;
+
+      const result = await this.callAI(prompt, 1500);
+      const classification = this.parseJSON(result);
+
+      return {
+        classificationType,
+        confidence: classification.confidence || 0.85,
+        primaryCategory: classification.primaryCategory || 'Uncategorized',
+        secondaryCategories: classification.secondaryCategories || [],
+        detectedLanguage: classification.detectedLanguage || 'en',
+        keyTerms: classification.keyTerms || [],
+        suggestedTags: classification.suggestedTags || [],
+        complianceFlags: classification.complianceFlags || [],
+        classifiedAt: new Date().toISOString()
+      };
+
+    } catch (error) {
+      console.error('[AzureAI] Classification error:', error);
+      return {
+        classificationType,
+        confidence: 0.5,
+        primaryCategory: 'Uncategorized',
+        secondaryCategories: [],
+        detectedLanguage: 'en',
+        keyTerms: [],
+        suggestedTags: [],
+        complianceFlags: [],
+        classifiedAt: new Date().toISOString()
+      };
+    }
+  }
+
+  /**
+   * Translate text
+   */
+  public async translate(text: string, targetLang: string, contractName: string): Promise<string> {
+    const langNames: { [key: string]: string } = {
+      de: 'German',
+      es: 'Spanish'
+    };
+
+    const prompt = `Translate this legal contract text to ${langNames[targetLang]}.
+
+Keep clause references (§) unchanged.
+Maintain formal legal language.
+
+Text: ${text}
+
+Output ONLY the translation, no explanations.`;
+
+    return await this.callAI(prompt, 1500);
+  }
+
+  /**
+   * Multilingual Q&A
+   */
+  public async askQuestionMultilingual(
+    question: string,
+    questionLang: string,
+    contract: any,
+    conversationHistory: any[]
+  ): Promise<IMultilingualAnswer> {
+    console.log('[AzureAI] Q&A in', questionLang, ':', question);
+
+    const langNames: { [key: string]: string } = {
+      en: 'English',
+      de: 'German',
+      es: 'Spanish'
+    };
+
+    const contractInfo = `Contract: ${contract.name}
+Type: ${contract.type}
+Parties: ${contract.parties.join(', ')}
+Jurisdiction: ${contract.jurisdiction}
+
+Summary: ${contract.summary}
+
+Clauses:
+${contract.clauses.map((c: any) => `${c.ref} ${c.title}: ${c.text}`).join('\n')}`;
+
+    const systemPrompt = `You are a legal contract assistant. Answer questions about this contract in ${langNames[questionLang]}.
+
+CRITICAL: Respond in ${langNames[questionLang]} (same language as question).
+Use information from the contract only.
+Cite clause references (§) when applicable.
+
+${contractInfo}`;
+
+    const messages: any[] = [{ role: 'system', content: systemPrompt }];
+    
+    conversationHistory.forEach(msg => {
+      messages.push({
+        role: msg.role === 'user' ? 'user' : 'assistant',
+        content: msg.text
+      });
+    });
+
+    messages.push({ role: 'user', content: question });
+
+    const answer = await this.callAIWithMessages(messages, 1000);
+    const citedClauses = this.extractClauseReferences(answer);
+
+    return {
+      question,
+      questionLanguage: questionLang,
+      answer,
+      answerLanguage: questionLang,
+      citedClauses,
+      confidence: 0.9
+    };
+  }
+
+  /**
+   * Extract text from file (simple text extraction)
+   */
+  private async extractTextFromFile(fileBlob: Blob): Promise<string> {
+    try {
+      const text = await fileBlob.text();
+      return text || `[File content extraction for ${fileBlob.type}]`;
+    } catch (error) {
+      console.warn('[AzureAI] Text extraction failed, using placeholder');
+      return '[Document text - extraction not available]';
+    }
+  }
+
+  /**
+   * Call Azure AI Foundry API - CORRECT FORMAT
+   */
+  private async callAI(prompt: string, maxTokens: number = 1500): Promise<string> {
+    return await this.callAIWithMessages(
+      [{ role: 'user', content: prompt }],
+      maxTokens
+    );
+  }
+
+  /**
+   * Call AI with message history - Azure OpenAI format for AI Foundry
+   */
+  private async callAIWithMessages(messages: any[], maxTokens: number = 1500): Promise<string> {
+    
+    // Extract resource name from AI Foundry endpoint
+    const resourceMatch = this.projectEndpoint.match(/https:\/\/([^.]+)-resource\.services\.ai\.azure\.com/);
+    const resourceName = resourceMatch ? resourceMatch[1] : 'legallex';
+    
+    // Build Azure OpenAI endpoint
+    const azureOpenAIEndpoint = `https://${resourceName}-resource.openai.azure.com`;
+    const url = `${azureOpenAIEndpoint}/openai/deployments/${this.deploymentName}/chat/completions?api-version=2024-08-01-preview`;
+
+    console.log('[AzureAI] Resource:', resourceName);
+    console.log('[AzureAI] Calling:', url);
+
+    const requestBody = {
+      messages: messages,
+      max_tokens: maxTokens,
+      temperature: 0.7
+    };
+
+    console.log('[AzureAI] Request body:', JSON.stringify(requestBody, null, 2));
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'api-key': this.apiKey
+      },
+      body: JSON.stringify(requestBody)
+    });
+
+    console.log('[AzureAI] Response status:', response.status);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('[AzureAI] Error response:', errorText);
+      throw new Error(`AI API failed: ${response.status} - ${errorText}`);
+    }
+
+    const data = await response.json();
+    console.log('[AzureAI] Success! Response received');
+    
+    return data.choices[0]?.message?.content || '';
+  }
+
+  /**
+   * Parse JSON from AI response (handles markdown code blocks)
+   */
+  private parseJSON(text: string): any {
+    try {
+      // Remove markdown code blocks
+      const cleaned = text
+        .replace(/```json\s*/g, '')
+        .replace(/```\s*/g, '')
+        .trim();
+      
+      return JSON.parse(cleaned);
+    } catch (error) {
+      console.error('[AzureAI] JSON parse error:', error);
+      return {};
+    }
+  }
+
+  /**
+   * Extract clause references from text
+   */
+  private extractClauseReferences(text: string): string[] {
+    const regex = /§\s*[\d.]+/g;
+    const matches = text.match(regex) || [];
+    const unique: string[] = [];
+    matches.forEach(m => {
+      if (unique.indexOf(m) === -1) unique.push(m);
+    });
+    return unique;
+  }
+
+  /**
+   * Fallback analysis
+   */
+  private getFallbackAnalysis(fileName: string): IContractAnalysis {
+    return {
+      fileName,
+      parties: ['Party A', 'Party B'],
+      effectiveDate: 'Not specified',
+      expiryDate: 'Not specified',
+      jurisdiction: 'Not specified',
+      contractType: 'General Agreement',
+      clauses: [
+        {
+          ref: '§1',
+          title: 'General Terms',
+          text: 'Standard contract terms apply.',
+          riskLevel: 'low'
+        }
+      ],
+      overallRiskScore: 0,
+      riskFactors: [],
+      summary: `Contract: ${fileName}. AI analysis unavailable - manual review required.`,
+      analyzedAt: new Date().toISOString()
+    };
+  }
+}

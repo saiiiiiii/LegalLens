@@ -1,0 +1,513 @@
+@import '~@microsoft/sp-office-ui-fabric-core/dist/sass/SPFabricCore.scss';
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&display=swap');
+
+.legalLens {
+  min-height: 100vh;
+  background: #060d1a;
+  color: #c2cdd8;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  display: flex;
+  flex-direction: column;
+
+  * {
+    box-sizing: border-box;
+  }
+}
+
+// Animations
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+// Header
+.header {
+  background: #07101f;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  height: 56px;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-right: 32px;
+}
+
+.logoIcon {
+  width: 30px;
+  height: 30px;
+  border-radius: 7px;
+  background: linear-gradient(135deg, #10b981, #059669);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.logoText {
+  font-family: 'Cinzel', Georgia, serif;
+  font-size: 18px;
+  font-weight: 400;
+  color: #fff;
+  letter-spacing: -0.3px;
+}
+
+.nav {
+  display: flex;
+  gap: 3px;
+  flex: 1;
+}
+
+.navButton {
+  background: transparent;
+  border: none;
+  color: #5a6a7e;
+  border-radius: 8px;
+  padding: 6px 12px;
+  cursor: pointer;
+  outline: none;
+  font-size: 11.5px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.2s;
+  white-space: nowrap;
+
+  &:hover {
+    background: rgba(16, 185, 129, 0.08);
+    color: #fff;
+  }
+
+  span:first-child {
+    font-size: 12px;
+  }
+}
+
+.navButtonActive {
+  background: rgba(16, 185, 129, 0.1);
+  color: #10b981;
+}
+
+.navButtonHighlight {
+  &.navButtonActive {
+    background: rgba(99, 102, 241, 0.12);
+    color: #818cf8;
+  }
+}
+
+.badge {
+  font-size: 8.5px;
+  font-weight: 700;
+  background: #ef4444;
+  color: #fff;
+  border-radius: 100px;
+  padding: 1px 5px;
+  min-width: 18px;
+  text-align: center;
+}
+
+.badgePulse {
+  animation: pulse 2.2s ease infinite;
+}
+
+.status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  font-size: 9.5px;
+  color: #5a6a7e;
+}
+
+.statusDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #10b981;
+  animation: pulse 2s ease infinite;
+}
+
+// Main Content
+.mainContent {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+}
+
+.viewContainer {
+  max-width: 1020px;
+  margin: 0 auto;
+  animation: fadeIn 0.35s ease;
+}
+
+.viewHeader {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.viewTitle {
+  font-family: 'Cinzel', Georgia, serif;
+  font-size: 21px;
+  font-weight: 400;
+  color: #fff;
+  margin: 0 0 3px;
+  letter-spacing: -0.3px;
+}
+
+.viewSubtitle {
+  margin: 0;
+  font-size: 11px;
+  color: #5a6a7e;
+}
+
+// Stats Row
+.statsRow {
+  display: flex;
+  gap: 8px;
+}
+
+.statCard {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 8px;
+  padding: 7px 12px;
+  text-align: center;
+  min-width: 62px;
+}
+
+.statValue {
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.statLabel {
+  font-size: 8px;
+  color: #5a6a7e;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  margin-top: 1px;
+}
+
+// Contract Table
+.contractTable {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.tableHeader {
+  display: grid;
+  grid-template-columns: 1fr 130px 110px 80px 100px;
+  padding: 9px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.02);
+
+  span {
+    font-size: 8px;
+    color: #4a5568;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+}
+
+.tableRow {
+  display: grid;
+  grid-template-columns: 1fr 130px 110px 80px 100px;
+  padding: 11px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  align-items: center;
+  transition: background 0.2s;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.03);
+  }
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.contractName {
+  font-size: 12px;
+  color: #e2e8f0;
+  font-weight: 500;
+  margin-bottom: 1px;
+}
+
+.contractMeta {
+  font-size: 9px;
+  color: #4a5568;
+}
+
+.cellText {
+  font-size: 10.5px;
+  color: #8899aa;
+}
+
+.riskCell {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 8.5px;
+  font-weight: 600;
+}
+
+.riskBar {
+  width: 24px;
+  height: 3px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+
+.riskFill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.6s ease;
+}
+
+.statusCell {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 9.5px;
+  text-transform: capitalize;
+
+  .statusDot {
+    width: 5px;
+    height: 5px;
+  }
+}
+
+.flag {
+  font-size: 7.5px;
+  background: rgba(245, 158, 11, 0.12);
+  color: #f59e0b;
+  border-radius: 3px;
+  padding: 1px 4px;
+  margin-left: 3px;
+}
+
+// Tags
+.tagsRow {
+  margin-top: 14px;
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.tagsLabel {
+  font-size: 8.5px;
+  color: #4a5568;
+}
+
+.tag {
+  font-size: 8.5px;
+  font-family: monospace;
+  background: rgba(6, 182, 212, 0.08);
+  border: 1px solid rgba(6, 182, 212, 0.18);
+  border-radius: 3px;
+  padding: 2px 6px;
+  color: #67e8f9;
+}
+
+// Alerts
+.alertsList {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.alertCritical,
+.alertWarning {
+  border-radius: 12px;
+  padding: 16px;
+  animation: fadeIn 0.3s ease;
+}
+
+.alertCritical {
+  background: rgba(239, 68, 68, 0.05);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.alertWarning {
+  background: rgba(245, 158, 11, 0.04);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+}
+
+.alertHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.alertInfo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.alertIcon {
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+
+  .alertCritical & {
+    background: rgba(239, 68, 68, 0.15);
+  }
+
+  .alertWarning & {
+    background: rgba(245, 158, 11, 0.12);
+  }
+}
+
+.alertTitle {
+  font-size: 12.5px;
+  color: #fff;
+  font-weight: 600;
+}
+
+.alertSeverity {
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  border-radius: 3px;
+  padding: 1px 5px;
+
+  .alertCritical & {
+    color: #ef4444;
+    background: rgba(239, 68, 68, 0.12);
+  }
+
+  .alertWarning & {
+    color: #f59e0b;
+    background: rgba(245, 158, 11, 0.1);
+  }
+}
+
+.alertTime {
+  font-size: 8.5px;
+  color: #5a6a7e;
+}
+
+.alertDesc {
+  margin: 0 0 10px;
+  font-size: 11px;
+  color: #8899aa;
+  line-height: 1.7;
+}
+
+// Loading
+.loadingContainer {
+  min-height: 400px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: #060d1a;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid rgba(16, 185, 129, 0.2);
+  border-top-color: #10b981;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-bottom: 16px;
+}
+
+.loadingText {
+  font-size: 13px;
+  color: #8899aa;
+}
+
+// Error
+.errorContainer {
+  padding: 40px 24px;
+  background: #060d1a;
+  border-radius: 12px;
+  max-width: 600px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.errorIcon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.errorTitle {
+  font-size: 16px;
+  color: #ef4444;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.errorMessage {
+  font-size: 13px;
+  color: #8899aa;
+  margin-bottom: 20px;
+}
+
+.retryButton {
+  background: linear-gradient(135deg, #10b981, #059669);
+  border: none;
+  color: #fff;
+  border-radius: 8px;
+  padding: 10px 20px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  outline: none;
+
+  &:hover {
+    opacity: 0.9;
+  }
+}
+
+// Coming Soon placeholder
+.comingSoon {
+  padding: 60px;
+  text-align: center;
+  color: #5a6a7e;
+  font-size: 14px;
+}
