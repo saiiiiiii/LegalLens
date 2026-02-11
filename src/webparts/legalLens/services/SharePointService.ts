@@ -6,10 +6,11 @@ import "@pnp/sp/files";
 import "@pnp/sp/folders";
 import { WebPartContext } from "@microsoft/sp-webpart-base";
 import { IContract, IClause } from '../components/ILegalLensProps';
+import * as JSZip from 'jszip';
 
 export interface ISharePointService {
   getContracts(): Promise<IContract[]>;
-  getContractFile(fileUrl: string): Promise<Blob>;
+  getContractFile(fileUrl: string): Promise<File>;
   saveAnalyzedContract(fileName: string, fileBlob: Blob, analysisResult: any): Promise<void>;
 }
 
@@ -24,7 +25,7 @@ export class SharePointService implements ISharePointService {
   }
 
   /**
-   * Get contracts from SharePoint library
+   * Get contracts from SharePoint library - NOW WITH DOCUMENT CONTENT
    */
   public async getContracts(): Promise<IContract[]> {
     try {
@@ -44,7 +45,31 @@ export class SharePointService implements ISharePointService {
         .top(100)();
 
       console.log('[SharePoint] Found', items.length, 'contracts');
-      return items.map((item, index) => this.mapItemToContract(item, index));
+      
+      // Map items and extract document content
+      const contracts: IContract[] = [];
+      
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        const contract = this.mapItemToContract(item, i);
+        
+        // Extract document content if file exists
+        if (item.FileRef) {
+          try {
+            console.log(`[SharePoint] Extracting content from: ${contract.name}`);
+            const fullText = await this.extractDocumentContent(item.FileRef);
+            (contract as any).fullText = fullText; // Add fullText property
+            console.log(`[SharePoint] ✓ Extracted ${fullText.length} characters from ${contract.name}`);
+          } catch (error) {
+            console.warn(`[SharePoint] Could not extract content from ${contract.name}:`, error);
+            (contract as any).fullText = ''; // Empty if extraction fails
+          }
+        }
+        
+        contracts.push(contract);
+      }
+
+      return contracts;
 
     } catch (error) {
       console.error('[SharePoint] Error fetching contracts:', error);
@@ -53,13 +78,99 @@ export class SharePointService implements ISharePointService {
   }
 
   /**
-   * Get contract file as Blob
+   * Extract document content from file
    */
-  public async getContractFile(fileUrl: string): Promise<Blob> {
+  private async extractDocumentContent(fileUrl: string): Promise<string> {
     try {
       const file = this.sp.web.getFileByServerRelativePath(fileUrl);
       const blob = await file.getBlob();
-      return blob;
+      const fileName = fileUrl.split('/').pop() || '';
+      
+      // Determine file type
+      const fileType = blob.type;
+      
+      // Extract based on file type
+      if (fileType === 'text/plain' || fileName.endsWith('.txt')) {
+        return await blob.text();
+      }
+      
+      if (fileType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || 
+          fileName.endsWith('.docx')) {
+        return await this.extractFromDocx(blob);
+      }
+      
+      if (fileType === 'application/pdf' || fileName.endsWith('.pdf')) {
+        // PDF extraction requires additional library or Document Intelligence
+        console.warn('[SharePoint] PDF extraction not implemented for:', fileName);
+        return `[PDF Document: ${fileName}]\n\nNote: Full text extraction from PDF requires Document Intelligence service to be configured.`;
+      }
+      
+      // Try plain text extraction as fallback
+      const text = await blob.text();
+      if (text && text.length > 50 && !text.startsWith('PK')) {
+        return text;
+      }
+      
+      return `[Document: ${fileName}]\n\nUnable to extract text. Supported formats: .txt, .docx`;
+      
+    } catch (error) {
+      console.error('[SharePoint] Document content extraction error:', error);
+      return '[Document content unavailable]';
+    }
+  }
+
+  /**
+   * Extract text from .docx file (ZIP-based Word document)
+   */
+  private async extractFromDocx(blob: Blob): Promise<string> {
+    try {
+      const arrayBuffer = await blob.arrayBuffer();
+      const zip = await JSZip.loadAsync(arrayBuffer);
+      const documentXml = await zip.file('word/document.xml')?.async('text');
+      
+      if (!documentXml) {
+        throw new Error('Invalid .docx format - missing document.xml');
+      }
+
+      // Extract text from XML
+      // Word documents store text in <w:t> tags
+      const textContent = documentXml
+        .replace(/<w:t[^>]*>/g, '')  // Remove opening tags
+        .replace(/<\/w:t>/g, ' ')     // Replace closing tags with space
+        .replace(/<[^>]+>/g, '')       // Remove all other XML tags
+        .replace(/\s+/g, ' ')          // Normalize whitespace
+        .trim();
+
+      return textContent || '[No text found in document]';
+      
+    } catch (error) {
+      console.error('[SharePoint] .docx extraction error:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get contract file as Blob
+   */
+  public async getContractFile(fileUrl: string): Promise<File> {
+    try {
+      console.log('[SharePoint] Fetching file from:', fileUrl);
+      
+      const file = this.sp.web.getFileByServerRelativePath(fileUrl);
+      const blob = await file.getBlob();
+      
+      // Extract filename from URL
+      const fileName = fileUrl.split('/').pop() || 'contract.docx';
+      
+      console.log('[SharePoint] Downloaded file:', fileName, 'Size:', blob.size);
+      
+      // Convert Blob to File (File extends Blob with name and lastModified)
+      const fileObject = new File([blob], fileName, { 
+        type: blob.type,
+        lastModified: Date.now()
+      });
+      
+      return fileObject;
     } catch (error) {
       console.error('[SharePoint] Error downloading file:', error);
       throw new Error('Failed to download contract file');

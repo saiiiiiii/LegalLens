@@ -224,7 +224,7 @@ Output ONLY the translation, no explanations.`;
   }
 
   /**
-   * Multilingual Q&A
+   * Multilingual Q&A - Enhanced to use actual document content
    */
   public async askQuestionMultilingual(
     question: string,
@@ -240,7 +240,25 @@ Output ONLY the translation, no explanations.`;
       es: 'Spanish'
     };
 
-    const contractInfo = `Contract: ${contract.name}
+    // Build contract info - prefer full text if available
+    let contractInfo = '';
+    
+    if (contract.fullText && contract.fullText.length > 100) {
+      // Use actual document content
+      console.log('[AzureAI] Using full document text (length:', contract.fullText.length, ')');
+      contractInfo = `Contract: ${contract.name}
+
+FULL CONTRACT TEXT:
+${contract.fullText}
+
+Basic Info:
+Type: ${contract.type}
+Parties: ${contract.parties.join(', ')}
+Jurisdiction: ${contract.jurisdiction}`;
+    } else {
+      // Fallback to metadata summary
+      console.log('[AzureAI] Using contract metadata/summary');
+      contractInfo = `Contract: ${contract.name}
 Type: ${contract.type}
 Parties: ${contract.parties.join(', ')}
 Jurisdiction: ${contract.jurisdiction}
@@ -249,12 +267,14 @@ Summary: ${contract.summary}
 
 Clauses:
 ${contract.clauses.map((c: any) => `${c.ref} ${c.title}: ${c.text}`).join('\n')}`;
+    }
 
     const systemPrompt = `You are a legal contract assistant. Answer questions about this contract in ${langNames[questionLang]}.
 
 CRITICAL: Respond in ${langNames[questionLang]} (same language as question).
 Use information from the contract only.
 Cite clause references (§) when applicable.
+Be specific and reference actual contract terms.
 
 ${contractInfo}`;
 
@@ -269,7 +289,7 @@ ${contractInfo}`;
 
     messages.push({ role: 'user', content: question });
 
-    const answer = await this.callAIWithMessages(messages, 1000);
+    const answer = await this.callAIWithMessages(messages, 1500);
     const citedClauses = this.extractClauseReferences(answer);
 
     return {
@@ -281,6 +301,7 @@ ${contractInfo}`;
       confidence: 0.9
     };
   }
+
 
   /**
    * Extract text from file - proper extraction for different file types
