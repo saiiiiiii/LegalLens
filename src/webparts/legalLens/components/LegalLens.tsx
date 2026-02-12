@@ -10,23 +10,23 @@ const LANGS = [
 ];
 
 const CLASSIFICATION_TYPES = [
-  {
-    value: 'contract_type',
+  { 
+    value: 'contract_type', 
     label: 'Contract Type Classification',
     description: 'Identify document type (NDA, Vendor Agreement, SLA, etc.)'
   },
-  {
-    value: 'risk_assessment',
+  { 
+    value: 'risk_assessment', 
     label: 'Risk Assessment',
     description: 'Analyze risk factors, liability, and compliance issues'
   },
-  {
-    value: 'compliance_check',
+  { 
+    value: 'compliance_check', 
     label: 'Compliance Check',
     description: 'Verify GDPR, CCPA, SOC2, ISO27001 requirements'
   },
-  {
-    value: 'entity_extraction',
+  { 
+    value: 'entity_extraction', 
     label: 'Entity Extraction',
     description: 'Extract parties, dates, amounts, jurisdictions'
   }
@@ -46,7 +46,7 @@ export interface ILegalLensState {
   contracts: IContract[];
   loading: boolean;
   error: string | null;
-
+  
   // Upload & Analysis
   uploadView: 'select' | 'analyzing' | 'results';
   uploadedFile: File | null;
@@ -54,7 +54,7 @@ export interface ILegalLensState {
   analysisResult: IContractAnalysis | null;
   analyzingProgress: number;
   analyzeError: string | null;
-
+  
   // Classification
   classificationView: 'select' | 'classifying' | 'results' | 'processing';
   selectedFileForClassification: number;
@@ -62,7 +62,7 @@ export interface ILegalLensState {
   classificationResult: IClassificationResult | null;
   classifying: boolean;
   classifyError: string | null;
-
+  
   // Translation state
   selContract: number;
   selLang: string;
@@ -70,13 +70,13 @@ export interface ILegalLensState {
   translateProgress: number;
   cache: { [key: string]: { summary: string; clauses: any[] } };
   translateError: string | null;
-
+  
   // Q&A state (multilingual)
   qaLanguage: string;
   qaHistory: Array<{ role: string; text: string; language: string; citedClauses?: string[] }>;
   qaInput: string;
   qaLoading: boolean;
-
+  
   // New Dynamic Classification state
   classifyState: {
     step: number;
@@ -84,7 +84,15 @@ export interface ILegalLensState {
     result?: any;
   } | null;
   selectedClassificationType: string;
-
+  
+  // Unified analysis cache (all 4 types)
+  fullAnalysis: {
+    contractType?: any;
+    riskAssessment?: any;
+    compliance?: any;
+    entities?: any;
+  } | null;
+  
   pulseAlert: boolean;
 }
 
@@ -95,49 +103,52 @@ export default class LegalLens extends React.Component<ILegalLensProps, ILegalLe
 
   constructor(props: ILegalLensProps) {
     super(props);
-
+    
     this.state = {
       view: 'library',
       contracts: [],
       loading: true,
       error: null,
-
+      
       uploadView: 'select',
       uploadedFile: null,
       uploadedFileName: '',
       analysisResult: null,
       analyzingProgress: 0,
       analyzeError: null,
-
+      
       classificationView: 'select',
       selectedFileForClassification: 0,
       classificationType: 'contract-type',
       classificationResult: null,
       classifying: false,
       classifyError: null,
-
+      
       selContract: 0,
       selLang: 'en',
       translating: false,
       translateProgress: 0,
       cache: {},
       translateError: null,
-
+      
       qaLanguage: 'en',
       qaHistory: [],
       qaInput: '',
       qaLoading: false,
-
+      
       // New Dynamic Classification state
       classifyState: null,
       selectedClassificationType: 'contract_type',
-
+      
+      // Unified analysis cache
+      fullAnalysis: null,
+      
       pulseAlert: false
     };
-
+    
     this._isMounted = false;
     this.fileInputRef = React.createRef();
-
+    
     // Bind methods
     this.loadContracts = this.loadContracts.bind(this);
     this.runTranslation = this.runTranslation.bind(this);
@@ -168,9 +179,9 @@ export default class LegalLens extends React.Component<ILegalLensProps, ILegalLe
 
   public componentDidUpdate(prevProps: ILegalLensProps, prevState: ILegalLensState): void {
     // Auto-start classification when view changes to 'processing'
-    if (this.state.classificationView === 'processing' &&
-      prevState.classificationView !== 'processing' &&
-      !this.state.classifyState) {
+    if (this.state.classificationView === 'processing' && 
+        prevState.classificationView !== 'processing' && 
+        !this.state.classifyState) {
       console.log('[Classification] Auto-starting simulation');
       this.startClassificationSimulation();
     }
@@ -181,12 +192,12 @@ export default class LegalLens extends React.Component<ILegalLensProps, ILegalLe
       if (this._isMounted) {
         this.setState({ loading: true, error: null });
       }
-
+      
       const contracts = await this.props.sharePointService.getContracts();
-
+      
       if (this._isMounted) {
         this.setState({ contracts, loading: false });
-
+        
         // Auto-populate English cache
         const cache: any = {};
         contracts.forEach((contract, idx) => {
@@ -201,9 +212,9 @@ export default class LegalLens extends React.Component<ILegalLensProps, ILegalLe
     } catch (error) {
       console.error('Error loading contracts:', error);
       if (this._isMounted) {
-        this.setState({
-          loading: false,
-          error: 'Failed to load contracts. Please check configuration and try again.'
+        this.setState({ 
+          loading: false, 
+          error: 'Failed to load contracts. Please check configuration and try again.' 
         });
       }
     }
@@ -212,7 +223,7 @@ export default class LegalLens extends React.Component<ILegalLensProps, ILegalLe
   private async runTranslation(): Promise<void> {
     const { selContract, selLang, cache, contracts } = this.state;
     const cacheKey = `${selContract}-${selLang}`;
-
+    
     if (cache[cacheKey]) return;
 
     if (selLang === 'en') {
@@ -234,7 +245,7 @@ export default class LegalLens extends React.Component<ILegalLensProps, ILegalLe
     if (this._isMounted) {
       this.setState({ translating: true, translateProgress: 0, translateError: null });
     }
-
+    
     const contract = contracts[selContract];
 
     try {
@@ -243,7 +254,7 @@ export default class LegalLens extends React.Component<ILegalLensProps, ILegalLe
         selLang,
         contract.name
       );
-
+      
       if (this._isMounted) {
         this.setState({ translateProgress: 1 });
       }
@@ -257,7 +268,7 @@ export default class LegalLens extends React.Component<ILegalLensProps, ILegalLe
           contract.name
         );
         transClauses.push({ ref: c.ref, translated });
-
+        
         if (this._isMounted) {
           this.setState({ translateProgress: 2 + (i / contract.clauses.length) });
         }
@@ -283,17 +294,17 @@ export default class LegalLens extends React.Component<ILegalLensProps, ILegalLe
 
   private async handleMultilingualQuestion(): Promise<void> {
     const { qaInput, qaLanguage, contracts, selContract, qaHistory } = this.state;
-
+    
     if (!qaInput.trim() || this.state.qaLoading) return;
 
     const question = qaInput.trim();
-
+    
     if (this._isMounted) {
       this.setState({ qaInput: '', qaLoading: true });
     }
 
     const newHistory = [...qaHistory, { role: 'user', text: question, language: qaLanguage }];
-
+    
     if (this._isMounted) {
       this.setState({ qaHistory: newHistory });
     }
@@ -305,7 +316,7 @@ export default class LegalLens extends React.Component<ILegalLensProps, ILegalLe
         contracts[selContract],
         qaHistory
       );
-
+      
       if (this._isMounted) {
         this.setState(prev => ({
           qaHistory: [...prev.qaHistory, {
@@ -320,13 +331,13 @@ export default class LegalLens extends React.Component<ILegalLensProps, ILegalLe
     } catch (error) {
       console.error('Q&A error:', error);
       const errorMsg = qaLanguage === 'de' ? 'Ein Fehler ist aufgetreten.' :
-        qaLanguage === 'es' ? 'Ocurrió un error.' :
-          'An error occurred.';
-
+                       qaLanguage === 'es' ? 'Ocurrió un error.' :
+                       'An error occurred.';
+      
       if (this._isMounted) {
         this.setState(prev => ({
-          qaHistory: [...prev.qaHistory, {
-            role: 'assistant',
+          qaHistory: [...prev.qaHistory, { 
+            role: 'assistant', 
             text: errorMsg,
             language: qaLanguage
           }],
@@ -338,35 +349,80 @@ export default class LegalLens extends React.Component<ILegalLensProps, ILegalLe
 
   private async handleFileUpload(file: File | null): Promise<void> {
     if (!file) return;
-
+    
     if (this._isMounted) {
-      this.setState({
+      this.setState({ 
         uploadedFile: file,
         uploadedFileName: file.name,
         uploadView: 'analyzing',
         analyzingProgress: 0,
-        analyzeError: null
+        analyzeError: null,
+        fullAnalysis: null  // Clear previous analysis
       });
     }
 
     try {
-      // Simulate progress updates
-      const progressInterval = setInterval(() => {
-        if (this._isMounted) {
-          this.setState(prev => ({
-            analyzingProgress: Math.min(prev.analyzingProgress + 10, 90)
-          }));
-        }
-      }, 500);
+      console.log('[Upload] Starting comprehensive analysis...');
+      
+      // Extract document text once
+      const documentText = await this.props.aiFoundryService.extractTextFromFile(file);
+      console.log('[Upload] Document text extracted, length:', documentText.length);
+      
+      if (this._isMounted) {
+        this.setState({ analyzingProgress: 10 });
+      }
 
-      const result = await this.props.aiFoundryService.analyzeContract(file, file.name);
+      // Run all 4 classification types in parallel for consistent results
+      console.log('[Upload] Running all 4 classification analyses...');
+      const [contractType, riskAssessment, compliance, entities] = await Promise.all([
+        this.classifyContractType(documentText, null),
+        this.classifyRiskAssessment(documentText, null),
+        this.classifyCompliance(documentText, null),
+        this.classifyEntities(documentText, null)
+      ]);
+      
+      console.log('[Upload] All analyses complete!');
+      console.log('[Upload] Contract Type:', contractType?.documentType);
+      console.log('[Upload] Risk Score:', riskAssessment?.overallRiskScore);
+      console.log('[Upload] Compliance:', compliance?.overallCompliance);
+      
+      if (this._isMounted) {
+        this.setState({ analyzingProgress: 80 });
+      }
 
-      clearInterval(progressInterval);
-
+      // Cache all results for consistent display
+      const fullAnalysis = {
+        contractType,
+        riskAssessment,
+        compliance,
+        entities
+      };
+      
+      // Map to old format for backward compatibility
+      const result = {
+        fileName: file.name,
+        parties: contractType?.parties || ['Party A', 'Party B'],
+        effectiveDate: contractType?.effectiveDate || 'Not specified',
+        expiryDate: contractType?.expiryDate || 'Not specified',
+        jurisdiction: contractType?.jurisdiction || 'Not specified',
+        contractType: contractType?.documentType || 'General Agreement',
+        clauses: entities?.keyObligations?.map((obligation: string, i: number) => ({
+          ref: `§${i + 1}`,
+          title: obligation.substring(0, 50),
+          text: obligation,
+          riskLevel: 'low' as const
+        })) || [],
+        overallRiskScore: riskAssessment?.overallRiskScore || 0,
+        riskFactors: riskAssessment?.riskFactors || [],
+        summary: `${contractType?.documentType || 'Agreement'} between ${contractType?.parties?.join(' and ') || 'parties'}. Risk Score: ${riskAssessment?.overallRiskScore || 0}/100.`,
+        analyzedAt: new Date().toISOString()
+      };
+      
       if (this._isMounted) {
         this.setState({
           analysisResult: result,
-          analyzingProgress: 95,
+          fullAnalysis: fullAnalysis,  // Cache complete analysis
+          analyzingProgress: 90,
           uploadView: 'results'
         });
       }
@@ -374,10 +430,12 @@ export default class LegalLens extends React.Component<ILegalLensProps, ILegalLe
       // Save to SharePoint library
       try {
         await this.props.sharePointService.saveAnalyzedContract(file.name, file, result);
-
+        
         if (this._isMounted) {
           this.setState({ analyzingProgress: 100 });
         }
+
+        console.log('[Upload] Saved to SharePoint successfully');
 
         // Refresh contracts list to show newly uploaded document
         setTimeout(() => {
@@ -385,15 +443,15 @@ export default class LegalLens extends React.Component<ILegalLensProps, ILegalLe
         }, 2000);
 
       } catch (saveError) {
-        console.warn('Analysis complete but failed to save to SharePoint:', saveError);
+        console.warn('[Upload] Analysis complete but failed to save to SharePoint:', saveError);
         // Still show results even if save failed
         if (this._isMounted) {
           this.setState({ analyzingProgress: 100 });
         }
       }
-
+      
     } catch (error) {
-      console.error('Analysis error:', error);
+      console.error('[Upload] Analysis error:', error);
       if (this._isMounted) {
         this.setState({
           analyzeError: 'Analysis failed. Please try again.',
@@ -406,18 +464,18 @@ export default class LegalLens extends React.Component<ILegalLensProps, ILegalLe
   private async handleClassification(): Promise<void> {
     const { selectedFileForClassification, classificationType, contracts } = this.state;
     const contract = contracts[selectedFileForClassification];
-
+    
     if (!contract || !contract.fileUrl) {
       if (this._isMounted) {
         this.setState({ classifyError: 'Contract file not available' });
       }
       return;
     }
-
+    
     if (this._isMounted) {
       this.setState({ classifying: true, classificationView: 'classifying', classifyError: null });
     }
-
+    
     try {
       const fileBlob = await this.props.sharePointService.getContractFile(contract.fileUrl);
       const result = await this.props.aiFoundryService.classifyDocument(
@@ -425,9 +483,9 @@ export default class LegalLens extends React.Component<ILegalLensProps, ILegalLe
         contract.name,
         classificationType
       );
-
+      
       if (this._isMounted) {
-        this.setState({
+        this.setState({ 
           classificationResult: result,
           classifying: false,
           classificationView: 'results'
@@ -436,7 +494,7 @@ export default class LegalLens extends React.Component<ILegalLensProps, ILegalLe
     } catch (error) {
       console.error('Classification error:', error);
       if (this._isMounted) {
-        this.setState({
+        this.setState({ 
           classifying: false,
           classificationView: 'select',
           classifyError: 'Classification failed. Please try again.'
@@ -556,7 +614,7 @@ export default class LegalLens extends React.Component<ILegalLensProps, ILegalLe
               { key: 'translate', label: 'TranslatePro', icon: '🌐' },
               { key: 'alerts', label: 'Alerts', icon: '⚠' }
             ].map(n => (
-              <button
+              <button 
                 key={n.key}
                 className="nav-btn"
                 onClick={() => this.setState({ view: n.key as any })}
@@ -655,12 +713,12 @@ export default class LegalLens extends React.Component<ILegalLensProps, ILegalLe
             ))}
           </div>
           {contracts.map((c, i) => (
-            <div key={c.id} className="card-row" style={{
-              display: 'grid',
-              gridTemplateColumns: '1fr 130px 110px 80px 100px',
-              padding: '11px 16px',
-              borderBottom: i < contracts.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none',
-              alignItems: 'center',
+            <div key={c.id} className="card-row" style={{ 
+              display: 'grid', 
+              gridTemplateColumns: '1fr 130px 110px 80px 100px', 
+              padding: '11px 16px', 
+              borderBottom: i < contracts.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none', 
+              alignItems: 'center', 
               transition: 'background 0.2s',
               animation: `fadeIn 0.3s ease ${i * 0.07}s both`
             }}>
@@ -707,7 +765,7 @@ export default class LegalLens extends React.Component<ILegalLensProps, ILegalLe
     // Generate alerts dynamically from contract data
     const alerts: any[] = [];
     const contracts = this.state.contracts;
-
+    
     // Check for expiring contracts
     contracts.forEach(contract => {
       if (contract.flag === 'Expiring soon') {
@@ -777,12 +835,12 @@ export default class LegalLens extends React.Component<ILegalLensProps, ILegalLe
           </p>
         </div>
         {alerts.length === 0 ? (
-          <div style={{
-            textAlign: 'center',
-            padding: '40px 20px',
-            background: 'rgba(16,185,129,0.05)',
-            border: '1px solid rgba(16,185,129,0.2)',
-            borderRadius: '12px'
+          <div style={{ 
+            textAlign: 'center', 
+            padding: '40px 20px', 
+            background: 'rgba(16,185,129,0.05)', 
+            border: '1px solid rgba(16,185,129,0.2)', 
+            borderRadius: '12px' 
           }}>
             <div style={{ fontSize: '32px', marginBottom: '10px' }}>✅</div>
             <div style={{ fontSize: '13px', color: '#10b981', fontWeight: 600 }}>All Clear</div>
@@ -793,38 +851,38 @@ export default class LegalLens extends React.Component<ILegalLensProps, ILegalLe
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '9px' }}>
             {alerts.map((a, i) => (
-              <div key={a.id} style={{
-                background: a.severity === 'critical' ? 'rgba(239,68,68,0.05)' : 'rgba(245,158,11,0.04)',
-                border: `1px solid ${a.severity === 'critical' ? 'rgba(239,68,68,0.2)' : 'rgba(245,158,11,0.2)'}`,
-                borderRadius: '12px',
+              <div key={a.id} style={{ 
+                background: a.severity === 'critical' ? 'rgba(239,68,68,0.05)' : 'rgba(245,158,11,0.04)', 
+                border: `1px solid ${a.severity === 'critical' ? 'rgba(239,68,68,0.2)' : 'rgba(245,158,11,0.2)'}`, 
+                borderRadius: '12px', 
                 padding: '16px',
                 animation: `fadeIn 0.3s ease ${i * 0.1}s both`
               }}>
                 <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '8px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <div style={{
-                      width: '26px',
-                      height: '26px',
-                      borderRadius: '7px',
-                      background: a.severity === 'critical' ? 'rgba(239,68,68,0.15)' : 'rgba(245,158,11,0.12)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: '13px'
+                    <div style={{ 
+                      width: '26px', 
+                      height: '26px', 
+                      borderRadius: '7px', 
+                      background: a.severity === 'critical' ? 'rgba(239,68,68,0.15)' : 'rgba(245,158,11,0.12)', 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'center', 
+                      fontSize: '13px' 
                     }}>
                       {a.type === 'duplicate' ? '📋' : a.type === 'conflict' ? '⚡' : '⏰'}
                     </div>
                     <div>
                       <div style={{ fontSize: '12.5px', color: '#fff', fontWeight: 600 }}>{a.title}</div>
-                      <span style={{
-                        fontSize: '8px',
-                        fontWeight: 700,
-                        letterSpacing: '0.8px',
-                        textTransform: 'uppercase',
-                        color: a.severity === 'critical' ? '#ef4444' : '#f59e0b',
-                        background: a.severity === 'critical' ? 'rgba(239,68,68,0.12)' : 'rgba(245,158,11,0.1)',
-                        borderRadius: '3px',
-                        padding: '1px 5px'
+                      <span style={{ 
+                        fontSize: '8px', 
+                        fontWeight: 700, 
+                        letterSpacing: '0.8px', 
+                        textTransform: 'uppercase', 
+                        color: a.severity === 'critical' ? '#ef4444' : '#f59e0b', 
+                        background: a.severity === 'critical' ? 'rgba(239,68,68,0.12)' : 'rgba(245,158,11,0.1)', 
+                        borderRadius: '3px', 
+                        padding: '1px 5px' 
                       }}>
                         {a.severity}
                       </span>
@@ -868,14 +926,14 @@ export default class LegalLens extends React.Component<ILegalLensProps, ILegalLe
 
         {uploadView === 'select' && (
           <div>
-            <div
+            <div 
               onDrop={e => {
                 e.preventDefault();
                 const file = e.dataTransfer.files[0];
                 if (file) this.handleFileUpload(file);
               }}
               onDragOver={e => e.preventDefault()}
-              style={{
+              style={{ 
                 border: '2px dashed rgba(99,102,241,0.4)',
                 borderRadius: '12px',
                 padding: '60px 40px',
@@ -896,9 +954,9 @@ export default class LegalLens extends React.Component<ILegalLensProps, ILegalLe
               <div style={{ fontSize: '10px', color: '#4a5568' }}>
                 Supported: PDF, DOCX · Max size: 10MB
               </div>
-              <input
+              <input 
                 ref={this.fileInputRef}
-                type="file"
+                type="file" 
                 accept=".pdf,.docx"
                 onChange={e => this.handleFileUpload(e.target.files?.[0] || null)}
                 style={{ display: 'none' }}
@@ -913,7 +971,7 @@ export default class LegalLens extends React.Component<ILegalLensProps, ILegalLe
               <label style={{ display: 'block', fontSize: '10px', color: '#5a6a7e', marginBottom: '8px', fontWeight: 600, letterSpacing: '0.5px', textTransform: 'uppercase' }}>
                 Select from Library
               </label>
-              <select
+              <select 
                 onChange={async e => {
                   const idx = Number(e.target.value);
                   if (idx >= 0) {
@@ -942,14 +1000,14 @@ export default class LegalLens extends React.Component<ILegalLensProps, ILegalLe
               <div style={{ fontSize: '13px', color: '#c2cdd8', fontWeight: 600, marginBottom: '16px' }}>
                 Analyzing: {uploadedFileName}
               </div>
-
+              
               <div style={{ marginBottom: '20px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
                   <span style={{ fontSize: '11px', color: '#5a6a7e' }}>Processing...</span>
                   <span style={{ fontSize: '11px', color: '#818cf8', fontWeight: 600 }}>{analyzingProgress}%</span>
                 </div>
                 <div style={{ width: '100%', height: '8px', background: 'rgba(255,255,255,0.05)', borderRadius: '4px', overflow: 'hidden' }}>
-                  <div style={{
+                  <div style={{ 
                     width: `${analyzingProgress}%`,
                     height: '100%',
                     background: 'linear-gradient(90deg, #6366f1, #8b5cf6)',
@@ -967,10 +1025,10 @@ export default class LegalLens extends React.Component<ILegalLensProps, ILegalLe
                   { step: 'Calculating risk score', done: analyzingProgress > 80 }
                 ].map((item, i) => (
                   <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <div style={{
-                      width: '16px',
-                      height: '16px',
-                      borderRadius: '50%',
+                    <div style={{ 
+                      width: '16px', 
+                      height: '16px', 
+                      borderRadius: '50%', 
                       border: '2px solid ' + (item.done ? '#10b981' : 'rgba(255,255,255,0.2)'),
                       background: item.done ? '#10b981' : 'transparent',
                       display: 'flex',
@@ -994,11 +1052,11 @@ export default class LegalLens extends React.Component<ILegalLensProps, ILegalLe
         {uploadView === 'results' && analysisResult && (
           <div>
             {/* Success message */}
-            <div style={{
-              padding: '12px 16px',
-              background: 'rgba(16,185,129,0.1)',
-              border: '1px solid rgba(16,185,129,0.3)',
-              borderRadius: '8px',
+            <div style={{ 
+              padding: '12px 16px', 
+              background: 'rgba(16,185,129,0.1)', 
+              border: '1px solid rgba(16,185,129,0.3)', 
+              borderRadius: '8px', 
               marginBottom: '16px',
               display: 'flex',
               alignItems: 'center',
@@ -1015,7 +1073,7 @@ export default class LegalLens extends React.Component<ILegalLensProps, ILegalLe
               </div>
             </div>
 
-            <div style={{
+            <div style={{ 
               padding: '24px',
               background: this.getRiskScoreColor(analysisResult.overallRiskScore),
               border: '1px solid rgba(255,255,255,0.1)',
@@ -1041,7 +1099,7 @@ export default class LegalLens extends React.Component<ILegalLensProps, ILegalLe
                   📊 Risk Factors ({analysisResult.riskFactors.length})
                 </h3>
                 {analysisResult.riskFactors.map((factor, i) => (
-                  <div key={i} style={{
+                  <div key={i} style={{ 
                     padding: '16px',
                     background: 'rgba(255,255,255,0.02)',
                     border: '1px solid rgba(255,255,255,0.06)',
@@ -1075,7 +1133,7 @@ export default class LegalLens extends React.Component<ILegalLensProps, ILegalLe
                 📝 Clauses ({analysisResult.clauses.length})
               </h3>
               {analysisResult.clauses.map((clause, i) => (
-                <div key={i} style={{
+                <div key={i} style={{ 
                   padding: '12px 16px',
                   background: 'rgba(255,255,255,0.02)',
                   border: '1px solid rgba(255,255,255,0.06)',
@@ -1095,7 +1153,7 @@ export default class LegalLens extends React.Component<ILegalLensProps, ILegalLe
                       </div>
                     )}
                   </div>
-                  <div style={{
+                  <div style={{ 
                     padding: '4px 12px',
                     borderRadius: '4px',
                     background: this.getClauseRiskColor(clause.riskLevel),
@@ -1111,9 +1169,9 @@ export default class LegalLens extends React.Component<ILegalLensProps, ILegalLe
             </div>
 
             <div style={{ marginTop: '24px', display: 'flex', gap: '10px' }}>
-              <button
+              <button 
                 onClick={() => this.setState({ uploadView: 'select', analysisResult: null })}
-                style={{
+                style={{ 
                   flex: 1,
                   background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
                   border: 'none',
@@ -1138,7 +1196,7 @@ export default class LegalLens extends React.Component<ILegalLensProps, ILegalLe
 
   private renderTranslate(): React.ReactElement {
     const { contracts, selContract, selLang, translating, translateProgress, cache, translateError, qaLanguage, qaHistory, qaInput, qaLoading } = this.state;
-
+    
     if (contracts.length === 0) {
       return <div style={{ padding: '40px', textAlign: 'center', color: '#5a6a7e' }}>No contracts available</div>;
     }
@@ -1169,8 +1227,8 @@ export default class LegalLens extends React.Component<ILegalLensProps, ILegalLe
               <label style={{ fontSize: '9px', color: '#5a6a7e', letterSpacing: '1px', textTransform: 'uppercase', fontWeight: 600, display: 'block', marginBottom: '6px' }}>
                 Select Contract
               </label>
-              <select
-                value={selContract}
+              <select 
+                value={selContract} 
                 onChange={e => this.setState({ selContract: Number(e.target.value), qaHistory: [] })}
                 style={{ width: '100%', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', padding: '9px 34px 9px 12px', color: '#e2e8f0', fontSize: '12px', outline: 'none', cursor: 'pointer' }}
               >
@@ -1186,7 +1244,7 @@ export default class LegalLens extends React.Component<ILegalLensProps, ILegalLe
               </label>
               <div style={{ display: 'flex', gap: '6px' }}>
                 {LANGS.map(l => (
-                  <button
+                  <button 
                     key={l.code}
                     onClick={() => this.setState({ selLang: l.code })}
                     style={{
@@ -1208,7 +1266,7 @@ export default class LegalLens extends React.Component<ILegalLensProps, ILegalLe
               </div>
             </div>
 
-            <button
+            <button 
               onClick={() => this.runTranslation()}
               disabled={translating || !!cached}
               style={{
@@ -1230,7 +1288,7 @@ export default class LegalLens extends React.Component<ILegalLensProps, ILegalLe
               {translating ? <>⏳ Translating...</> : cached ? <>✓ Cached</> : <>🌐 Translate</>}
             </button>
           </div>
-
+          
           {translateError && (
             <div style={{ marginTop: '10px', fontSize: '11px', color: '#ef4444', background: 'rgba(239,68,68,0.08)', borderRadius: '6px', padding: '8px 12px' }}>
               ⚠ {translateError}
@@ -1375,7 +1433,7 @@ export default class LegalLens extends React.Component<ILegalLensProps, ILegalLe
           </label>
           <div style={{ display: 'flex', gap: '6px' }}>
             {LANGS.map(l => (
-              <button
+              <button 
                 key={l.code}
                 onClick={() => this.setState({ qaLanguage: l.code, qaHistory: [] })}
                 style={{
@@ -1412,17 +1470,17 @@ export default class LegalLens extends React.Component<ILegalLensProps, ILegalLe
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               {qaHistory.map((msg, i) => (
                 <div key={i} style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
-                  <div style={{
-                    width: '28px',
-                    height: '28px',
-                    minWidth: '28px',
-                    borderRadius: '50%',
-                    background: msg.role === 'user' ? 'rgba(6,182,212,0.15)' : 'rgba(99,102,241,0.15)',
-                    border: `1px solid ${msg.role === 'user' ? 'rgba(6,182,212,0.3)' : 'rgba(99,102,241,0.3)'}`,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '12px'
+                  <div style={{ 
+                    width: '28px', 
+                    height: '28px', 
+                    minWidth: '28px', 
+                    borderRadius: '50%', 
+                    background: msg.role === 'user' ? 'rgba(6,182,212,0.15)' : 'rgba(99,102,241,0.15)', 
+                    border: `1px solid ${msg.role === 'user' ? 'rgba(6,182,212,0.3)' : 'rgba(99,102,241,0.3)'}`, 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center', 
+                    fontSize: '12px' 
                   }}>
                     {msg.role === 'user' ? '👤' : '🤖'}
                   </div>
@@ -1433,11 +1491,11 @@ export default class LegalLens extends React.Component<ILegalLensProps, ILegalLe
                         {msg.role === 'user' ? 'You' : 'Agent'}
                       </span>
                     </div>
-                    <div style={{
-                      background: msg.role === 'user' ? 'rgba(6,182,212,0.06)' : 'rgba(255,255,255,0.02)',
-                      border: `1px solid ${msg.role === 'user' ? 'rgba(6,182,212,0.15)' : 'rgba(255,255,255,0.06)'}`,
-                      borderRadius: '10px',
-                      padding: '10px 14px'
+                    <div style={{ 
+                      background: msg.role === 'user' ? 'rgba(6,182,212,0.06)' : 'rgba(255,255,255,0.02)', 
+                      border: `1px solid ${msg.role === 'user' ? 'rgba(6,182,212,0.15)' : 'rgba(255,255,255,0.06)'}`, 
+                      borderRadius: '10px', 
+                      padding: '10px 14px' 
                     }}>
                       <div style={{ fontSize: '11px', color: msg.role === 'user' ? '#67e8f9' : '#c2cdd8', lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>
                         {msg.text}
@@ -1479,18 +1537,18 @@ export default class LegalLens extends React.Component<ILegalLensProps, ILegalLe
                 onKeyPress={e => e.key === 'Enter' && this.handleMultilingualQuestion()}
                 placeholder={
                   qaLanguage === 'de' ? 'Stellen Sie Ihre Frage...' :
-                    qaLanguage === 'es' ? 'Haz tu pregunta...' :
-                      'Type your question...'
+                  qaLanguage === 'es' ? 'Haz tu pregunta...' :
+                  'Type your question...'
                 }
                 disabled={qaLoading}
-                style={{
-                  width: '100%',
-                  background: 'rgba(255,255,255,0.04)',
-                  border: '1px solid rgba(255,255,255,0.1)',
-                  borderRadius: '8px',
-                  padding: '10px 14px',
-                  color: '#e2e8f0',
-                  fontSize: '11.5px',
+                style={{ 
+                  width: '100%', 
+                  background: 'rgba(255,255,255,0.04)', 
+                  border: '1px solid rgba(255,255,255,0.1)', 
+                  borderRadius: '8px', 
+                  padding: '10px 14px', 
+                  color: '#e2e8f0', 
+                  fontSize: '11.5px', 
                   outline: 'none'
                 }}
               />
@@ -1526,98 +1584,86 @@ export default class LegalLens extends React.Component<ILegalLensProps, ILegalLe
   // CLASSIFICATION METHODS (DYNAMIC TYPES)
   // ============================================================================
 
-  /**
-   * STEP 1: Start classification simulation
-   */
-  private startClassificationSimulation = (): void => {
-    console.log('[Classification] Starting simulation...');
+/**
+ * STEP 1: Start classification simulation
+ */
+private startClassificationSimulation = (): void => {
+  console.log('[Classification] Starting simulation...');
+  
+  let currentStep = 0;
+  this.setState({ classifyState: { step: 0, done: false } });
 
-    let currentStep = 0;
-    this.setState({ classifyState: { step: 0, done: false } });
+  const runNextStep = () => {
+    currentStep++;
+    
+    // Check if we've completed all animation steps
+    if (currentStep >= CLASSIFY_STEPS.length) {
+      // All animation steps done - now run actual AI classification
+      console.log('[Classification] Animation complete, starting AI analysis...');
+      this.performActualClassification();
+      return;
+    }
+    
+    console.log(`[Classification] Step ${currentStep}: ${CLASSIFY_STEPS[currentStep].phase}`);
+    
+    this.setState({ 
+      classifyState: { 
+        step: currentStep, 
+        done: false
+      } 
+    });
 
-    const runNextStep = () => {
-      currentStep++;
-
-      // Check if we've completed all animation steps
-      if (currentStep >= CLASSIFY_STEPS.length) {
-        // All animation steps done - now run actual AI classification
-        console.log('[Classification] Animation complete, starting AI analysis...');
-        this.performActualClassification();
-        return;
-      }
-
-      console.log(`[Classification] Step ${currentStep}: ${CLASSIFY_STEPS[currentStep].phase}`);
-
-      this.setState({
-        classifyState: {
-          step: currentStep,
-          done: false
-        }
-      });
-
-      // Continue to next step
-      setTimeout(runNextStep, CLASSIFY_STEPS[currentStep].duration);
-    };
-
-    // Start first step
-    setTimeout(runNextStep, CLASSIFY_STEPS[0].duration);
+    // Continue to next step
+    setTimeout(runNextStep, CLASSIFY_STEPS[currentStep].duration);
   };
 
-  /**
-   * STEP 2: Perform actual AI classification based on selected type
-   */
-  private performActualClassification = async (): Promise<void> => {
-    try {
-      const {
-        selectedFileForClassification,
-        selectedClassificationType,
-        contracts,
-        uploadedFile
-      } = this.state;
+  // Start first step
+  setTimeout(runNextStep, CLASSIFY_STEPS[0].duration);
+};
 
-      // Get the contract to classify
-      const contract = contracts[selectedFileForClassification];
-
-      console.log('[Classification] Type:', selectedClassificationType);
-      console.log('[Classification] Contract:', contract?.name);
-
-      // Fetch file and extract text
-      let documentText = '';
-
-      if (uploadedFile) {
-        documentText = await this.props.aiFoundryService.extractTextFromFile(uploadedFile);
-      } else if (contract?.fileUrl) {
-        const fileBlob = await this.props.sharePointService.getContractFile(contract.fileUrl);
-        documentText = await this.props.aiFoundryService.extractTextFromFile(fileBlob);
-      } else if (contract?.fullText) {
-        documentText = contract.fullText;
-      }
-
-      console.log('[Classification] Document text extracted, length:', documentText.length);
-
-      // Call different AI methods based on classification type
+/**
+ * STEP 2: Perform actual AI classification based on selected type
+ */
+private performActualClassification = async (): Promise<void> => {
+  try {
+    const { 
+      selectedFileForClassification, 
+      selectedClassificationType, 
+      contracts, 
+      uploadedFile,
+      fullAnalysis 
+    } = this.state;
+    
+    // Get the contract to classify
+    const contract = contracts[selectedFileForClassification];
+    
+    console.log('[Classification] Type:', selectedClassificationType);
+    console.log('[Classification] Contract:', contract?.name);
+    
+    // Check if we have cached analysis for this document
+    if (fullAnalysis && uploadedFile) {
+      console.log('[Classification] ✓ Using cached analysis (consistent with Upload!)');
+      
       let result;
-
       switch (selectedClassificationType) {
         case 'contract_type':
-          result = await this.classifyContractType(documentText, contract);
+          result = fullAnalysis.contractType;
           break;
         case 'risk_assessment':
-          result = await this.classifyRiskAssessment(documentText, contract);
+          result = fullAnalysis.riskAssessment;
           break;
         case 'compliance_check':
-          result = await this.classifyCompliance(documentText, contract);
+          result = fullAnalysis.compliance;
           break;
         case 'entity_extraction':
-          result = await this.classifyEntities(documentText, contract);
+          result = fullAnalysis.entities;
           break;
         default:
-          result = await this.classifyContractType(documentText, contract);
+          result = fullAnalysis.contractType;
       }
-
-      console.log('[Classification] Complete:', result);
-
-      // Update state with results
+      
+      console.log('[Classification] Cached result:', result);
+      
       this.setState({
         classifyState: {
           step: CLASSIFY_STEPS.length - 1,
@@ -1625,24 +1671,74 @@ export default class LegalLens extends React.Component<ILegalLensProps, ILegalLe
           result
         }
       });
-
-    } catch (error) {
-      console.error('[Classification] Error:', error);
-      this.setState({
-        classifyState: {
-          step: CLASSIFY_STEPS.length - 1,
-          done: true,
-          result: this.getFallbackResult(this.state.selectedClassificationType)
-        }
-      });
+      return;
     }
-  };
+    
+    // No cached data - run fresh analysis
+    console.log('[Classification] No cached data, running fresh analysis...');
+    
+    // Fetch file and extract text
+    let documentText = '';
+    
+    if (uploadedFile) {
+      documentText = await this.props.aiFoundryService.extractTextFromFile(uploadedFile);
+    } else if (contract?.fileUrl) {
+      const fileBlob = await this.props.sharePointService.getContractFile(contract.fileUrl);
+      documentText = await this.props.aiFoundryService.extractTextFromFile(fileBlob);
+    } else if (contract?.fullText) {
+      documentText = contract.fullText;
+    }
 
-  /**
-   * CLASSIFICATION TYPE 1: Contract Type
-   */
-  private classifyContractType = async (documentText: string, contract: any): Promise<any> => {
-    const prompt = `Analyze this legal contract and classify its type.
+    console.log('[Classification] Document text extracted, length:', documentText.length);
+
+    // Call different AI methods based on classification type
+    let result;
+    
+    switch (selectedClassificationType) {
+      case 'contract_type':
+        result = await this.classifyContractType(documentText, contract);
+        break;
+      case 'risk_assessment':
+        result = await this.classifyRiskAssessment(documentText, contract);
+        break;
+      case 'compliance_check':
+        result = await this.classifyCompliance(documentText, contract);
+        break;
+      case 'entity_extraction':
+        result = await this.classifyEntities(documentText, contract);
+        break;
+      default:
+        result = await this.classifyContractType(documentText, contract);
+    }
+
+    console.log('[Classification] Complete:', result);
+
+    // Update state with results
+    this.setState({
+      classifyState: {
+        step: CLASSIFY_STEPS.length - 1,
+        done: true,
+        result
+      }
+    });
+
+  } catch (error) {
+    console.error('[Classification] Error:', error);
+    this.setState({
+      classifyState: {
+        step: CLASSIFY_STEPS.length - 1,
+        done: true,
+        result: this.getFallbackResult(this.state.selectedClassificationType)
+      }
+    });
+  }
+};
+
+/**
+ * CLASSIFICATION TYPE 1: Contract Type
+ */
+private classifyContractType = async (documentText: string, contract: any): Promise<any> => {
+  const prompt = `Analyze this legal contract and classify its type.
 
 Document Text:
 ${documentText.substring(0, 3000)}
@@ -1662,15 +1758,15 @@ Return this exact JSON structure:
   "confidence": 0.95
 }`;
 
-    const response = await this.props.aiFoundryService.callAI(prompt, 1500);
-    return this.parseJSON(response);
-  };
+  const response = await this.props.aiFoundryService.callAI(prompt, 1500);
+  return this.parseJSON(response);
+};
 
-  /**
-   * CLASSIFICATION TYPE 2: Risk Assessment
-   */
-  private classifyRiskAssessment = async (documentText: string, contract: any): Promise<any> => {
-    const prompt = `Perform a comprehensive risk assessment of this legal contract.
+/**
+ * CLASSIFICATION TYPE 2: Risk Assessment
+ */
+private classifyRiskAssessment = async (documentText: string, contract: any): Promise<any> => {
+  const prompt = `Perform a comprehensive risk assessment of this legal contract.
 
 Document Text:
 ${documentText.substring(0, 3000)}
@@ -1710,15 +1806,15 @@ Analyze risk factors and provide assessment in JSON format:
   "confidence": 0.92
 }`;
 
-    const response = await this.props.aiFoundryService.callAI(prompt, 2000);
-    return this.parseJSON(response);
-  };
+  const response = await this.props.aiFoundryService.callAI(prompt, 2000);
+  return this.parseJSON(response);
+};
 
-  /**
-   * CLASSIFICATION TYPE 3: Compliance Check
-   */
-  private classifyCompliance = async (documentText: string, contract: any): Promise<any> => {
-    const prompt = `Check this contract for compliance with major regulations.
+/**
+ * CLASSIFICATION TYPE 3: Compliance Check
+ */
+private classifyCompliance = async (documentText: string, contract: any): Promise<any> => {
+  const prompt = `Check this contract for compliance with major regulations.
 
 Document Text:
 ${documentText.substring(0, 3000)}
@@ -1768,15 +1864,15 @@ Provide compliance assessment in JSON format:
   "confidence": 0.89
 }`;
 
-    const response = await this.props.aiFoundryService.callAI(prompt, 2000);
-    return this.parseJSON(response);
-  };
+  const response = await this.props.aiFoundryService.callAI(prompt, 2000);
+  return this.parseJSON(response);
+};
 
-  /**
-   * CLASSIFICATION TYPE 4: Entity Extraction
-   */
-  private classifyEntities = async (documentText: string, contract: any): Promise<any> => {
-    const prompt = `You are a JSON-only API. Return ONLY valid JSON with no explanation.
+/**
+ * CLASSIFICATION TYPE 4: Entity Extraction
+ */
+private classifyEntities = async (documentText: string, contract: any): Promise<any> => {
+  const prompt = `You are a JSON-only API. Return ONLY valid JSON with no explanation.
 
 Extract entities from this contract and return ONLY this JSON structure (no text before or after):
 
@@ -1821,1213 +1917,1215 @@ RETURN ONLY THIS JSON:
   "confidence": 0.94
 }`;
 
-    const response = await this.props.aiFoundryService.callAI(prompt, 2000);
-    return this.parseJSON(response);
-  };
+  const response = await this.props.aiFoundryService.callAI(prompt, 2000);
+  return this.parseJSON(response);
+};
 
-  /**
-   * Parse JSON with fallback - handles various AI response formats
-   */
-  private parseJSON(response: string): any {
+/**
+ * Parse JSON with fallback - handles various AI response formats
+ */
+private parseJSON(response: string): any {
+  try {
+    // First, remove markdown code blocks if present
+    let cleaned = response.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+    
+    // Try direct parse first
     try {
-      // First, remove markdown code blocks if present
-      let cleaned = response.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-
-      // Try direct parse first
-      try {
-        return JSON.parse(cleaned);
-      } catch {
-        // Direct parse failed - try to extract JSON from text
-      }
-
-      // Look for JSON object between curly braces
-      const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        const jsonStr = jsonMatch[0];
-        console.log('[Classification] Extracted JSON from response');
-        return JSON.parse(jsonStr);
-      }
-
-      // Look for JSON array
-      const arrayMatch = cleaned.match(/\[[\s\S]*\]/);
-      if (arrayMatch) {
-        const jsonStr = arrayMatch[0];
-        console.log('[Classification] Extracted JSON array from response');
-        return JSON.parse(jsonStr);
-      }
-
-      console.error('[Classification] No valid JSON found in response');
-      return null;
-
-    } catch (error) {
-      console.error('[Classification] JSON parse error:', error);
-      console.error('[Classification] Response was:', response.substring(0, 200));
-      return null;
+      return JSON.parse(cleaned);
+    } catch {
+      // Direct parse failed - try to extract JSON from text
     }
-  };
-
-  /**
-   * Get fallback result based on type
-   */
-  private getFallbackResult(classificationType: string): any {
-    switch (classificationType) {
-      case 'contract_type':
-        return {
-          documentType: 'Vendor Agreement',
-          parties: ['NovaCorp Inc', 'LegalLens Inc'],
-          jurisdiction: 'Delaware, USA',
-          effectiveDate: '2026-02-15',
-          expiryDate: '2028-02-15',
-          keyClauses: ['Liability Cap (§4.2)', 'Termination (§9.1)', 'IP Ownership (§11.3)'],
-          autoTags: ['SOC2', 'ISO27001', 'CCPA'],
-          duplicateFlag: 'No duplicates found ✓',
-          confidence: 0.97
-        };
-
-      case 'risk_assessment':
-        return {
-          overallRiskScore: 45,
-          riskLevel: 'Medium',
-          status: 'warning',
-          riskFactors: [
-            {
-              category: 'Liability',
-              factor: 'Limited liability cap',
-              severity: 'High',
-              score: 75,
-              description: 'Liability capped at $2M',
-              recommendation: 'Consider increasing to $5M'
-            }
-          ],
-          complianceIssues: ['Missing GDPR clause'],
-          mitigationSteps: ['Add GDPR addendum'],
-          confidence: 0.92
-        };
-
-      case 'compliance_check':
-        return {
-          overallCompliance: 'Partial',
-          complianceScore: 72,
-          regulations: [
-            {
-              name: 'GDPR',
-              status: 'Compliant',
-              score: 95,
-              findings: ['✓ Data processing present'],
-              recommendations: []
-            }
-          ],
-          criticalIssues: 2,
-          warnings: 3,
-          confidence: 0.89
-        };
-
-      case 'entity_extraction':
-        return {
-          parties: [
-            { name: 'NovaCorp Inc', role: 'Vendor', jurisdiction: 'Delaware' }
-          ],
-          dates: {
-            effective: '2026-02-15',
-            expiry: '2028-02-15'
-          },
-          financialTerms: {
-            contractValue: '$500,000 annually',
-            liabilityCap: '$2,000,000'
-          },
-          governingLaw: 'Delaware, USA',
-          confidence: 0.94
-        };
-
-      default:
-        return {};
+    
+    // Look for JSON object between curly braces
+    const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      const jsonStr = jsonMatch[0];
+      console.log('[Classification] Extracted JSON from response');
+      return JSON.parse(jsonStr);
     }
-  };
-
-  /**
-   * Reset classification
-   */
-  private resetClassification = (): void => {
-    this.setState({
-      classifyState: null,
-      classificationView: 'select',
-      uploadedFile: null,
-      uploadedFileName: ''
-    });
-  };
-
-  /**
-   * Handle Classify button click
-   */
-  private handleClassifyClick = (): void => {
-    this.setState({ classificationView: 'processing' });
-  };
-
-  // ============================================================================
-  // RENDER METHODS
-  // ============================================================================
-
-  /**
-   * Main classification render
-   */
-  private renderClassify(): React.ReactElement {
-    const { classificationView } = this.state;
-
-    return (
-      <div style={{ animation: 'fadeIn 0.35s ease' }}>
-        {classificationView === 'select' && this.renderClassifySelect()}
-        {classificationView === 'processing' && this.renderClassifyProcessing()}
-      </div>
-    );
+    
+    // Look for JSON array
+    const arrayMatch = cleaned.match(/\[[\s\S]*\]/);
+    if (arrayMatch) {
+      const jsonStr = arrayMatch[0];
+      console.log('[Classification] Extracted JSON array from response');
+      return JSON.parse(jsonStr);
+    }
+    
+    console.error('[Classification] No valid JSON found in response');
+    return null;
+    
+  } catch (error) {
+    console.error('[Classification] JSON parse error:', error);
+    console.error('[Classification] Response was:', response.substring(0, 200));
+    return null;
   }
+};
 
-  /**
-   * Selection view
-   */
-  private renderClassifySelect(): React.ReactElement {
-    const { selectedFileForClassification, selectedClassificationType, contracts } = this.state;
+/**
+ * Get fallback result based on type
+ */
+private getFallbackResult(classificationType: string): any {
+  switch (classificationType) {
+    case 'contract_type':
+      return {
+        documentType: 'Vendor Agreement',
+        parties: ['NovaCorp Inc', 'LegalLens Inc'],
+        jurisdiction: 'Delaware, USA',
+        effectiveDate: '2026-02-15',
+        expiryDate: '2028-02-15',
+        keyClauses: ['Liability Cap (§4.2)', 'Termination (§9.1)', 'IP Ownership (§11.3)'],
+        autoTags: ['SOC2', 'ISO27001', 'CCPA'],
+        duplicateFlag: 'No duplicates found ✓',
+        confidence: 0.97
+      };
+    
+    case 'risk_assessment':
+      return {
+        overallRiskScore: 45,
+        riskLevel: 'Medium',
+        status: 'warning',
+        riskFactors: [
+          {
+            category: 'Liability',
+            factor: 'Limited liability cap',
+            severity: 'High',
+            score: 75,
+            description: 'Liability capped at $2M',
+            recommendation: 'Consider increasing to $5M'
+          }
+        ],
+        complianceIssues: ['Missing GDPR clause'],
+        mitigationSteps: ['Add GDPR addendum'],
+        confidence: 0.92
+      };
+    
+    case 'compliance_check':
+      return {
+        overallCompliance: 'Partial',
+        complianceScore: 72,
+        regulations: [
+          {
+            name: 'GDPR',
+            status: 'Compliant',
+            score: 95,
+            findings: ['✓ Data processing present'],
+            recommendations: []
+          }
+        ],
+        criticalIssues: 2,
+        warnings: 3,
+        confidence: 0.89
+      };
+    
+    case 'entity_extraction':
+      return {
+        parties: [
+          { name: 'NovaCorp Inc', role: 'Vendor', jurisdiction: 'Delaware' }
+        ],
+        dates: {
+          effective: '2026-02-15',
+          expiry: '2028-02-15'
+        },
+        financialTerms: {
+          contractValue: '$500,000 annually',
+          liabilityCap: '$2,000,000'
+        },
+        governingLaw: 'Delaware, USA',
+        confidence: 0.94
+      };
+    
+    default:
+      return {};
+  }
+};
 
-    return (
-      <>
+/**
+ * Reset classification
+ */
+private resetClassification = (): void => {
+  this.setState({ 
+    classifyState: null,
+    classificationView: 'select',
+    uploadedFile: null,
+    uploadedFileName: ''
+  });
+};
+
+/**
+ * Handle Classify button click
+ */
+private handleClassifyClick = (): void => {
+  this.setState({ classificationView: 'processing' });
+};
+
+// ============================================================================
+// RENDER METHODS
+// ============================================================================
+
+/**
+ * Main classification render
+ */
+private renderClassify(): React.ReactElement {
+  const { classificationView } = this.state;
+
+  return (
+    <div style={{ animation: 'fadeIn 0.35s ease' }}>
+      {classificationView === 'select' && this.renderClassifySelect()}
+      {classificationView === 'processing' && this.renderClassifyProcessing()}
+    </div>
+  );
+}
+
+/**
+ * Selection view
+ */
+private renderClassifySelect(): React.ReactElement {
+  const { selectedFileForClassification, selectedClassificationType, contracts } = this.state;
+
+  return (
+    <>
+      <div style={{ marginBottom: '20px' }}>
+        <h2 style={{ 
+          fontFamily: "'Cinzel', Georgia, serif", 
+          fontSize: '21px', 
+          fontWeight: 400, 
+          color: '#fff', 
+          margin: '0 0 3px' 
+        }}>
+          Document Classification
+        </h2>
+        <p style={{ margin: 0, fontSize: '11px', color: '#5a6a7e' }}>
+          AI-powered classification · Select document and classification type
+        </p>
+      </div>
+
+      <div style={{ maxWidth: '600px' }}>
+        {/* Step 1: Select Document */}
         <div style={{ marginBottom: '20px' }}>
-          <h2 style={{
-            fontFamily: "'Cinzel', Georgia, serif",
-            fontSize: '21px',
-            fontWeight: 400,
-            color: '#fff',
-            margin: '0 0 3px'
+          <label style={{ 
+            display: 'block', 
+            fontSize: '10px', 
+            color: '#5a6a7e', 
+            marginBottom: '8px', 
+            fontWeight: 600, 
+            letterSpacing: '0.5px', 
+            textTransform: 'uppercase' 
           }}>
-            Document Classification
-          </h2>
-          <p style={{ margin: 0, fontSize: '11px', color: '#5a6a7e' }}>
-            AI-powered classification · Select document and classification type
-          </p>
+            Step 1: Select Document
+          </label>
+          <select 
+            value={selectedFileForClassification}
+            onChange={e => this.setState({ selectedFileForClassification: Number(e.target.value) })}
+            style={{ 
+              width: '100%', 
+              background: 'rgba(255,255,255,0.04)', 
+              border: '1px solid rgba(255,255,255,0.1)', 
+              borderRadius: '8px', 
+              padding: '10px 14px', 
+              color: '#e2e8f0', 
+              fontSize: '12px', 
+              outline: 'none', 
+              cursor: 'pointer' 
+            }}
+          >
+            {contracts.map((c, i) => (
+              <option key={i} value={i}>{c.name}</option>
+            ))}
+          </select>
         </div>
 
-        <div style={{ maxWidth: '600px' }}>
-          {/* Step 1: Select Document */}
-          <div style={{ marginBottom: '20px' }}>
-            <label style={{
-              display: 'block',
-              fontSize: '10px',
-              color: '#5a6a7e',
-              marginBottom: '8px',
-              fontWeight: 600,
-              letterSpacing: '0.5px',
-              textTransform: 'uppercase'
-            }}>
-              Step 1: Select Document
-            </label>
-            <select
-              value={selectedFileForClassification}
-              onChange={e => this.setState({ selectedFileForClassification: Number(e.target.value) })}
-              style={{
-                width: '100%',
-                background: 'rgba(255,255,255,0.04)',
-                border: '1px solid rgba(255,255,255,0.1)',
+        {/* Step 2: Choose Classification Type */}
+        <div style={{ marginBottom: '24px' }}>
+          <label style={{ 
+            display: 'block', 
+            fontSize: '10px', 
+            color: '#5a6a7e', 
+            marginBottom: '8px', 
+            fontWeight: 600, 
+            letterSpacing: '0.5px', 
+            textTransform: 'uppercase' 
+          }}>
+            Step 2: Choose Classification Type
+          </label>
+          {CLASSIFICATION_TYPES.map(type => (
+            <div 
+              key={type.value}
+              onClick={() => this.setState({ selectedClassificationType: type.value })}
+              style={{ 
+                padding: '12px 16px',
+                background: selectedClassificationType === type.value ? 
+                  'rgba(99,102,241,0.1)' : 'rgba(255,255,255,0.02)',
+                border: `1px solid ${selectedClassificationType === type.value ? 
+                  'rgba(99,102,241,0.4)' : 'rgba(255,255,255,0.06)'}`,
                 borderRadius: '8px',
-                padding: '10px 14px',
-                color: '#e2e8f0',
-                fontSize: '12px',
-                outline: 'none',
-                cursor: 'pointer'
+                marginBottom: '8px',
+                cursor: 'pointer',
+                transition: 'all 0.2s'
               }}
             >
-              {contracts.map((c, i) => (
-                <option key={i} value={i}>{c.name}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Step 2: Choose Classification Type */}
-          <div style={{ marginBottom: '24px' }}>
-            <label style={{
-              display: 'block',
-              fontSize: '10px',
-              color: '#5a6a7e',
-              marginBottom: '8px',
-              fontWeight: 600,
-              letterSpacing: '0.5px',
-              textTransform: 'uppercase'
-            }}>
-              Step 2: Choose Classification Type
-            </label>
-            {CLASSIFICATION_TYPES.map(type => (
-              <div
-                key={type.value}
-                onClick={() => this.setState({ selectedClassificationType: type.value })}
-                style={{
-                  padding: '12px 16px',
-                  background: selectedClassificationType === type.value ?
-                    'rgba(99,102,241,0.1)' : 'rgba(255,255,255,0.02)',
-                  border: `1px solid ${selectedClassificationType === type.value ?
-                    'rgba(99,102,241,0.4)' : 'rgba(255,255,255,0.06)'}`,
-                  borderRadius: '8px',
-                  marginBottom: '8px',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s'
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  {/* Radio button */}
-                  <div style={{
-                    width: '16px',
-                    height: '16px',
-                    borderRadius: '50%',
-                    border: '2px solid ' + (selectedClassificationType === type.value ?
-                      '#818cf8' : 'rgba(255,255,255,0.2)'),
-                    background: selectedClassificationType === type.value ? '#818cf8' : 'transparent',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                {/* Radio button */}
+                <div style={{ 
+                  width: '16px',
+                  height: '16px',
+                  borderRadius: '50%',
+                  border: '2px solid ' + (selectedClassificationType === type.value ? 
+                    '#818cf8' : 'rgba(255,255,255,0.2)'),
+                  background: selectedClassificationType === type.value ? '#818cf8' : 'transparent',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  {selectedClassificationType === type.value && (
+                    <div style={{ 
+                      width: '6px', 
+                      height: '6px', 
+                      borderRadius: '50%', 
+                      background: '#fff' 
+                    }} />
+                  )}
+                </div>
+                
+                {/* Label */}
+                <div>
+                  <div style={{ 
+                    fontSize: '11.5px', 
+                    color: selectedClassificationType === type.value ? '#818cf8' : '#c2cdd8',
+                    fontWeight: 600,
+                    marginBottom: '2px'
                   }}>
-                    {selectedClassificationType === type.value && (
-                      <div style={{
-                        width: '6px',
-                        height: '6px',
-                        borderRadius: '50%',
-                        background: '#fff'
-                      }} />
-                    )}
+                    {type.label}
                   </div>
-
-                  {/* Label */}
-                  <div>
-                    <div style={{
-                      fontSize: '11.5px',
-                      color: selectedClassificationType === type.value ? '#818cf8' : '#c2cdd8',
-                      fontWeight: 600,
-                      marginBottom: '2px'
-                    }}>
-                      {type.label}
-                    </div>
-                    <div style={{ fontSize: '9.5px', color: '#5a6a7e' }}>
-                      {type.description}
-                    </div>
+                  <div style={{ fontSize: '9.5px', color: '#5a6a7e' }}>
+                    {type.description}
                   </div>
                 </div>
               </div>
-            ))}
-          </div>
+            </div>
+          ))}
+        </div>
 
-          {/* Classify Button */}
-          <button
-            onClick={this.handleClassifyClick}
-            style={{
-              width: '100%',
-              background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
-              border: 'none',
-              color: '#fff',
-              borderRadius: '8px',
-              padding: '12px 20px',
-              fontSize: '12px',
-              fontWeight: 600,
-              cursor: 'pointer',
-              outline: 'none',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '8px',
-              boxShadow: '0 2px 14px rgba(99,102,241,0.35)'
+        {/* Classify Button */}
+        <button
+          onClick={this.handleClassifyClick}
+          style={{ 
+            width: '100%',
+            background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+            border: 'none',
+            color: '#fff',
+            borderRadius: '8px',
+            padding: '12px 20px',
+            fontSize: '12px',
+            fontWeight: 600,
+            cursor: 'pointer',
+            outline: 'none',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '8px',
+            boxShadow: '0 2px 14px rgba(99,102,241,0.35)'
+          }}
+        >
+          <span style={{ fontSize: '14px' }}>⟳</span>
+          Classify Document
+        </button>
+      </div>
+    </>
+  );
+}
+
+/**
+ * Processing view (with animation and results)
+ */
+private renderClassifyProcessing(): React.ReactElement {
+  const { classifyState, uploadedFileName, selectedClassificationType } = this.state;
+
+  return (
+    <>
+      {/* Header */}
+      <div style={{ 
+        display: 'flex', 
+        alignItems: 'flex-end', 
+        justifyContent: 'space-between', 
+        marginBottom: '20px', 
+        flexWrap: 'wrap', 
+        gap: '12px' 
+      }}>
+        <div>
+          <h2 style={{ 
+            fontFamily: "'Cinzel', Georgia, serif", 
+            fontSize: '21px', 
+            fontWeight: 400, 
+            color: '#fff', 
+            margin: '0 0 3px' 
+          }}>
+            Live Classification
+          </h2>
+          <p style={{ margin: 0, fontSize: '11px', color: '#5a6a7e' }}>
+            Knowledge Agent classifies document in real-time
+          </p>
+        </div>
+        {classifyState?.done && (
+          <button 
+            onClick={this.resetClassification} 
+            style={{ 
+              background: 'rgba(16,185,129,0.1)', 
+              border: '1px solid rgba(16,185,129,0.3)', 
+              color: '#10b981', 
+              borderRadius: '7px', 
+              padding: '6px 14px', 
+              cursor: 'pointer', 
+              fontSize: '11px', 
+              fontWeight: 600, 
+              outline: 'none' 
             }}
           >
-            <span style={{ fontSize: '14px' }}>⟳</span>
-            Classify Document
+            ↻ Classify Another
           </button>
+        )}
+      </div>
+
+      {/* Two-column layout */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+        
+        {/* LEFT: Progress Steps */}
+        <div>
+          {this.renderProgressSteps()}
         </div>
-      </>
-    );
-  }
 
-  /**
-   * Processing view (with animation and results)
-   */
-  private renderClassifyProcessing(): React.ReactElement {
-    const { classifyState, uploadedFileName, selectedClassificationType } = this.state;
-
-    return (
-      <>
-        {/* Header */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'flex-end',
-          justifyContent: 'space-between',
-          marginBottom: '20px',
-          flexWrap: 'wrap',
-          gap: '12px'
-        }}>
-          <div>
-            <h2 style={{
-              fontFamily: "'Cinzel', Georgia, serif",
-              fontSize: '21px',
-              fontWeight: 400,
-              color: '#fff',
-              margin: '0 0 3px'
-            }}>
-              Live Classification
-            </h2>
-            <p style={{ margin: 0, fontSize: '11px', color: '#5a6a7e' }}>
-              Knowledge Agent classifies document in real-time
-            </p>
-          </div>
-          {classifyState?.done && (
-            <button
-              onClick={this.resetClassification}
-              style={{
-                background: 'rgba(16,185,129,0.1)',
-                border: '1px solid rgba(16,185,129,0.3)',
-                color: '#10b981',
-                borderRadius: '7px',
-                padding: '6px 14px',
-                cursor: 'pointer',
-                fontSize: '11px',
-                fontWeight: 600,
-                outline: 'none'
-              }}
-            >
-              ↻ Classify Another
-            </button>
+        {/* RIGHT: Results */}
+        <div>
+          {classifyState?.done && classifyState.result ? (
+            this.renderClassificationResults(classifyState.result, selectedClassificationType)
+          ) : (
+            this.renderClassificationPending()
           )}
         </div>
+      </div>
+    </>
+  );
+}
 
-        {/* Two-column layout */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-
-          {/* LEFT: Progress Steps */}
-          <div>
-            {this.renderProgressSteps()}
-          </div>
-
-          {/* RIGHT: Results */}
-          <div>
-            {classifyState?.done && classifyState.result ? (
-              this.renderClassificationResults(classifyState.result, selectedClassificationType)
-            ) : (
-              this.renderClassificationPending()
-            )}
-          </div>
-        </div>
-      </>
-    );
-  }
-
-  // Continue in next file...
+// Continue in next file...
 
 
   // ============================================================================
   // CLASSIFICATION RENDERING METHODS
   // ============================================================================
 
-  /**
-   * Render progress steps (LEFT column)
-   */
-  private renderProgressSteps(): React.ReactElement {
-    const { classifyState, uploadedFileName, contracts, selectedFileForClassification } = this.state;
-    const contract = contracts[selectedFileForClassification];
+/**
+ * Render progress steps (LEFT column)
+ */
+private renderProgressSteps(): React.ReactElement {
+  const { classifyState, uploadedFileName, contracts, selectedFileForClassification } = this.state;
+  const contract = contracts[selectedFileForClassification];
 
-    return (
-      <>
-        {/* File info card */}
-        <div style={{
-          background: 'rgba(255,255,255,0.025)',
-          border: '1px solid rgba(255,255,255,0.08)',
-          borderRadius: '12px',
-          padding: '18px',
-          marginBottom: '14px'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
-            <div style={{
-              width: '36px',
-              height: '36px',
-              borderRadius: '9px',
-              background: 'rgba(16,185,129,0.1)',
-              border: '1px solid rgba(16,185,129,0.25)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '16px'
-            }}>
-              📄
+  return (
+    <>
+      {/* File info card */}
+      <div style={{ 
+        background: 'rgba(255,255,255,0.025)', 
+        border: '1px solid rgba(255,255,255,0.08)', 
+        borderRadius: '12px', 
+        padding: '18px', 
+        marginBottom: '14px' 
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
+          <div style={{ 
+            width: '36px', 
+            height: '36px', 
+            borderRadius: '9px', 
+            background: 'rgba(16,185,129,0.1)', 
+            border: '1px solid rgba(16,185,129,0.25)', 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            fontSize: '16px' 
+          }}>
+            📄
+          </div>
+          <div>
+            <div style={{ fontSize: '12px', color: '#e2e8f0', fontWeight: 600 }}>
+              {uploadedFileName || contract?.name || 'NovaCorp — Vendor Agreement'}
             </div>
-            <div>
-              <div style={{ fontSize: '12px', color: '#e2e8f0', fontWeight: 600 }}>
-                {uploadedFileName || contract?.name || 'NovaCorp — Vendor Agreement'}
-              </div>
-              <div style={{ fontSize: '9.5px', color: '#5a6a7e' }}>
-                From SharePoint library
-              </div>
+            <div style={{ fontSize: '9.5px', color: '#5a6a7e' }}>
+              From SharePoint library
             </div>
           </div>
+        </div>
+        
+        {/* Progress bar */}
+        <div style={{ 
+          background: 'rgba(255,255,255,0.06)', 
+          borderRadius: '3px', 
+          height: '3px', 
+          overflow: 'hidden' 
+        }}>
+          <div style={{ 
+            height: '100%', 
+            borderRadius: '3px', 
+            background: classifyState?.done ? '#10b981' : 'linear-gradient(90deg,#10b981,#06b6d4)', 
+            width: classifyState ? `${((classifyState.step + 1) / CLASSIFY_STEPS.length) * 100}%` : '0%', 
+            transition: 'width 0.5s ease' 
+          }} />
+        </div>
+      </div>
 
-          {/* Progress bar */}
-          <div style={{
-            background: 'rgba(255,255,255,0.06)',
-            borderRadius: '3px',
-            height: '3px',
-            overflow: 'hidden'
+      {/* Steps list */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+        {CLASSIFY_STEPS.map((step, i) => {
+          const done = classifyState && classifyState.step > i;
+          const active = classifyState && classifyState.step === i;
+          
+          return (
+            <div 
+              key={i} 
+              style={{ 
+                display: 'flex', 
+                alignItems: 'flex-start', 
+                gap: '9px', 
+                padding: '9px 12px', 
+                background: active ? 'rgba(16,185,129,0.06)' : done ? 'rgba(16,185,129,0.03)' : 'rgba(255,255,255,0.02)', 
+                border: `1px solid ${active ? 'rgba(16,185,129,0.3)' : done ? 'rgba(16,185,129,0.12)' : 'rgba(255,255,255,0.05)'}`, 
+                borderRadius: '8px', 
+                transition: 'all 0.3s' 
+              }}
+            >
+              {/* Step indicator */}
+              <div style={{ 
+                width: '20px', 
+                height: '20px', 
+                borderRadius: '50%', 
+                minWidth: '20px', 
+                marginTop: '1px', 
+                background: done ? '#10b981' : active ? 'rgba(16,185,129,0.15)' : 'rgba(255,255,255,0.05)', 
+                border: active ? '2px solid #10b981' : 'none', 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center' 
+              }}>
+                {done && <span style={{ color: '#fff', fontSize: '10px' }}>✓</span>}
+                {active && (
+                  <div style={{ 
+                    width: '8px', 
+                    height: '8px', 
+                    borderRadius: '50%', 
+                    border: '2px solid #10b981', 
+                    animation: 'spin 0.8s linear infinite' 
+                  }} />
+                )}
+              </div>
+              
+              {/* Step text */}
+              <div>
+                <div style={{ 
+                  fontSize: '11px', 
+                  color: done ? '#10b981' : active ? '#e2e8f0' : '#4a5568', 
+                  fontWeight: 500 
+                }}>
+                  {step.phase}
+                </div>
+                <div style={{ 
+                  fontSize: '9.5px', 
+                  color: active ? '#8899aa' : '#4a5568', 
+                  marginTop: '1px' 
+                }}>
+                  {step.detail}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </>
+  );
+}
+
+/**
+ * Render pending state (RIGHT column when not done)
+ */
+private renderClassificationPending(): React.ReactElement {
+  return (
+    <div style={{ 
+      background: 'rgba(255,255,255,0.02)', 
+      border: '1px solid rgba(255,255,255,0.06)', 
+      borderRadius: '12px', 
+      padding: '36px 20px', 
+      textAlign: 'center' 
+    }}>
+      <div style={{ fontSize: '28px', marginBottom: '10px', opacity: 0.25 }}>⟳</div>
+      <div style={{ fontSize: '11.5px', color: '#5a6a7e' }}>
+        Extracted metadata will appear here…
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Render classification results based on type (RIGHT column when done)
+ */
+private renderClassificationResults(result: any, classificationType: string): React.ReactElement {
+  switch (classificationType) {
+    case 'contract_type':
+      return this.renderContractTypeResults(result);
+    case 'risk_assessment':
+      return this.renderRiskAssessmentResults(result);
+    case 'compliance_check':
+      return this.renderComplianceResults(result);
+    case 'entity_extraction':
+      return this.renderEntityExtractionResults(result);
+    default:
+      return this.renderContractTypeResults(result);
+  }
+}
+
+/**
+ * CONTRACT TYPE CLASSIFICATION RESULTS
+ */
+private renderContractTypeResults(result: any): React.ReactElement {
+  return (
+    <div style={{ animation: 'fadeIn 0.4s ease' }}>
+      {/* Results card */}
+      <div style={{ 
+        background: 'rgba(16,185,129,0.04)', 
+        border: '1px solid rgba(16,185,129,0.2)', 
+        borderRadius: '12px', 
+        padding: '18px', 
+        marginBottom: '12px' 
+      }}>
+        {/* Header */}
+        <div style={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: '5px', 
+          marginBottom: '12px' 
+        }}>
+          <div style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#10b981' }} />
+          <span style={{ 
+            fontSize: '9px', 
+            color: '#10b981', 
+            fontWeight: 600, 
+            letterSpacing: '1px', 
+            textTransform: 'uppercase' 
           }}>
-            <div style={{
-              height: '100%',
-              borderRadius: '3px',
-              background: classifyState?.done ? '#10b981' : 'linear-gradient(90deg,#10b981,#06b6d4)',
-              width: classifyState ? `${((classifyState.step + 1) / CLASSIFY_STEPS.length) * 100}%` : '0%',
-              transition: 'width 0.5s ease'
-            }} />
+            Contract Type Classification
+          </span>
+        </div>
+
+        {/* Classification fields */}
+        {[
+          ['Document Type', result.documentType],
+          ['Parties', (result.parties || []).join(' · ')],
+          ['Jurisdiction', result.jurisdiction],
+          ['Effective Date', result.effectiveDate],
+          ['Expiry Date', result.expiryDate],
+          ['Key Clauses', (result.keyClauses || []).join(', ')]
+        ].map(([label, value], i) => (
+          <div 
+            key={i} 
+            style={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              padding: '6px 0', 
+              borderBottom: i < 5 ? '1px solid rgba(255,255,255,0.04)' : 'none'
+            }}
+          >
+            <span style={{ fontSize: '9.5px', color: '#5a6a7e' }}>{label}</span>
+            <span style={{ 
+              fontSize: '10.5px', 
+              color: '#e2e8f0', 
+              fontWeight: 500, 
+              textAlign: 'right', 
+              maxWidth: '200px' 
+            }}>
+              {value || 'Not specified'}
+            </span>
+          </div>
+        ))}
+
+        {/* Auto-tags */}
+        {result.autoTags && result.autoTags.length > 0 && (
+          <div style={{ 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            padding: '6px 0', 
+            borderBottom: '1px solid rgba(255,255,255,0.04)' 
+          }}>
+            <span style={{ fontSize: '9.5px', color: '#5a6a7e' }}>Auto-Tags</span>
+            <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+              {result.autoTags.map((tag: string) => (
+                <span 
+                  key={tag} 
+                  style={{ 
+                    fontSize: '8.5px', 
+                    fontFamily: 'monospace', 
+                    background: 'rgba(6,182,212,0.1)', 
+                    border: '1px solid rgba(6,182,212,0.2)', 
+                    borderRadius: '3px', 
+                    padding: '1px 5px', 
+                    color: '#67e8f9' 
+                  }}
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Duplicate flag */}
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          padding: '6px 0' 
+        }}>
+          <span style={{ fontSize: '9.5px', color: '#5a6a7e' }}>Duplicate Flag</span>
+          <span style={{ fontSize: '10.5px', color: '#10b981', fontWeight: 500 }}>
+            {result.duplicateFlag || 'No duplicates found ✓'}
+          </span>
+        </div>
+      </div>
+
+      {/* Confidence score */}
+      <div style={{ 
+        background: 'rgba(255,255,255,0.025)', 
+        border: '1px solid rgba(255,255,255,0.06)', 
+        borderRadius: '10px', 
+        padding: '12px 16px', 
+        display: 'flex', 
+        alignItems: 'center', 
+        gap: '12px' 
+      }}>
+        <div style={{ fontSize: '24px', fontWeight: 700, color: '#10b981' }}>
+          {Math.round((result.confidence || 0.97) * 100)}%
+        </div>
+        <div>
+          <div style={{ fontSize: '10px', color: '#8899aa', fontWeight: 500 }}>
+            Classification Confidence
+          </div>
+          <div style={{ fontSize: '8.5px', color: '#5a6a7e' }}>
+            Document Intelligence + semantic analysis
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * RISK ASSESSMENT RESULTS
+ */
+private renderRiskAssessmentResults(result: any): React.ReactElement {
+  const riskColor = result.riskLevel === 'High' ? '#ef4444' : 
+                    result.riskLevel === 'Medium' ? '#f59e0b' : '#10b981';
+  
+  return (
+    <div style={{ animation: 'fadeIn 0.4s ease' }}>
+      {/* Risk Score Card */}
+      <div style={{ 
+        background: 'rgba(239,68,68,0.04)', 
+        border: '1px solid rgba(239,68,68,0.2)', 
+        borderRadius: '12px', 
+        padding: '18px', 
+        marginBottom: '12px' 
+      }}>
+        <div style={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: '5px', 
+          marginBottom: '12px' 
+        }}>
+          <div style={{ width: '5px', height: '5px', borderRadius: '50%', background: riskColor }} />
+          <span style={{ 
+            fontSize: '9px', 
+            color: riskColor, 
+            fontWeight: 600, 
+            letterSpacing: '1px', 
+            textTransform: 'uppercase' 
+          }}>
+            Risk Assessment Complete
+          </span>
+        </div>
+
+        {/* Overall Risk Score */}
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center',
+          padding: '12px 0',
+          borderBottom: '1px solid rgba(255,255,255,0.04)'
+        }}>
+          <div>
+            <div style={{ fontSize: '11px', color: '#e2e8f0', fontWeight: 600 }}>
+              Overall Risk Score
+            </div>
+            <div style={{ fontSize: '9px', color: '#5a6a7e' }}>
+              {result.riskLevel || 'Medium'} Risk Level
+            </div>
+          </div>
+          <div style={{ 
+            fontSize: '28px', 
+            fontWeight: 700, 
+            color: riskColor 
+          }}>
+            {result.overallRiskScore || 45}
           </div>
         </div>
 
-        {/* Steps list */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-          {CLASSIFY_STEPS.map((step, i) => {
-            const done = classifyState && classifyState.step > i;
-            const active = classifyState && classifyState.step === i;
+        {/* Risk Factors */}
+        <div style={{ marginTop: '12px' }}>
+          <div style={{ fontSize: '9px', color: '#5a6a7e', marginBottom: '8px', fontWeight: 600 }}>
+            IDENTIFIED RISK FACTORS
+          </div>
+          {(result.riskFactors || []).map((factor: any, i: number) => (
+            <div 
+              key={i} 
+              style={{ 
+                background: 'rgba(255,255,255,0.02)', 
+                border: '1px solid rgba(255,255,255,0.06)', 
+                borderRadius: '6px', 
+                padding: '10px', 
+                marginBottom: '6px' 
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                <span style={{ fontSize: '10px', color: '#e2e8f0', fontWeight: 600 }}>
+                  {factor.factor}
+                </span>
+                <span style={{ 
+                  fontSize: '8px', 
+                  fontWeight: 700,
+                  padding: '2px 6px',
+                  borderRadius: '3px',
+                  background: factor.severity === 'High' ? 'rgba(239,68,68,0.15)' : 
+                             factor.severity === 'Medium' ? 'rgba(245,158,11,0.15)' : 'rgba(16,185,129,0.15)',
+                  color: factor.severity === 'High' ? '#ef4444' : 
+                        factor.severity === 'Medium' ? '#f59e0b' : '#10b981'
+                }}>
+                  {factor.severity}
+                </span>
+              </div>
+              <div style={{ fontSize: '9px', color: '#8899aa', marginBottom: '4px' }}>
+                {factor.description}
+              </div>
+              <div style={{ fontSize: '9px', color: '#f59e0b' }}>
+                → {factor.recommendation}
+              </div>
+            </div>
+          ))}
+        </div>
 
+        {/* Compliance Issues */}
+        {result.complianceIssues && result.complianceIssues.length > 0 && (
+          <div style={{ marginTop: '12px', padding: '10px', background: 'rgba(239,68,68,0.06)', borderRadius: '6px' }}>
+            <div style={{ fontSize: '9px', color: '#ef4444', fontWeight: 600, marginBottom: '6px' }}>
+              ⚠ COMPLIANCE ISSUES
+            </div>
+            {result.complianceIssues.map((issue: string, i: number) => (
+              <div key={i} style={{ fontSize: '9px', color: '#f87171', marginBottom: '3px' }}>
+                • {issue}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Mitigation Steps */}
+        {result.mitigationSteps && result.mitigationSteps.length > 0 && (
+          <div style={{ marginTop: '12px' }}>
+            <div style={{ fontSize: '9px', color: '#10b981', fontWeight: 600, marginBottom: '6px' }}>
+              ✓ RECOMMENDED MITIGATION
+            </div>
+            {result.mitigationSteps.map((step: string, i: number) => (
+              <div key={i} style={{ fontSize: '9px', color: '#8899aa', marginBottom: '3px' }}>
+                {i + 1}. {step}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Confidence */}
+      <div style={{ 
+        background: 'rgba(255,255,255,0.025)', 
+        border: '1px solid rgba(255,255,255,0.06)', 
+        borderRadius: '10px', 
+        padding: '12px 16px', 
+        display: 'flex', 
+        alignItems: 'center', 
+        gap: '12px' 
+      }}>
+        <div style={{ fontSize: '24px', fontWeight: 700, color: '#818cf8' }}>
+          {Math.round((result.confidence || 0.92) * 100)}%
+        </div>
+        <div>
+          <div style={{ fontSize: '10px', color: '#8899aa', fontWeight: 500 }}>
+            Assessment Confidence
+          </div>
+          <div style={{ fontSize: '8.5px', color: '#5a6a7e' }}>
+            AI-powered risk analysis
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * COMPLIANCE CHECK RESULTS
+ */
+private renderComplianceResults(result: any): React.ReactElement {
+  const complianceColor = result.overallCompliance === 'Compliant' ? '#10b981' :
+                          result.overallCompliance === 'Partial' ? '#f59e0b' : '#ef4444';
+
+  return (
+    <div style={{ animation: 'fadeIn 0.4s ease' }}>
+      {/* Compliance Score Card */}
+      <div style={{ 
+        background: 'rgba(99,102,241,0.04)', 
+        border: '1px solid rgba(99,102,241,0.2)', 
+        borderRadius: '12px', 
+        padding: '18px', 
+        marginBottom: '12px' 
+      }}>
+        <div style={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: '5px', 
+          marginBottom: '12px' 
+        }}>
+          <div style={{ width: '5px', height: '5px', borderRadius: '50%', background: complianceColor }} />
+          <span style={{ 
+            fontSize: '9px', 
+            color: complianceColor, 
+            fontWeight: 600, 
+            letterSpacing: '1px', 
+            textTransform: 'uppercase' 
+          }}>
+            Compliance Check Complete
+          </span>
+        </div>
+
+        {/* Overall Compliance */}
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center',
+          padding: '12px 0',
+          borderBottom: '1px solid rgba(255,255,255,0.04)'
+        }}>
+          <div>
+            <div style={{ fontSize: '11px', color: '#e2e8f0', fontWeight: 600 }}>
+              Overall Compliance
+            </div>
+            <div style={{ fontSize: '9px', color: '#5a6a7e' }}>
+              {result.overallCompliance || 'Partial'}
+            </div>
+          </div>
+          <div style={{ 
+            fontSize: '28px', 
+            fontWeight: 700, 
+            color: complianceColor 
+          }}>
+            {result.complianceScore || 72}%
+          </div>
+        </div>
+
+        {/* Regulations */}
+        <div style={{ marginTop: '12px' }}>
+          {(result.regulations || []).map((reg: any, i: number) => {
+            const regColor = reg.status === 'Compliant' ? '#10b981' :
+                           reg.status === 'Partial' ? '#f59e0b' : '#ef4444';
+            
             return (
-              <div
-                key={i}
-                style={{
-                  display: 'flex',
-                  alignItems: 'flex-start',
-                  gap: '9px',
-                  padding: '9px 12px',
-                  background: active ? 'rgba(16,185,129,0.06)' : done ? 'rgba(16,185,129,0.03)' : 'rgba(255,255,255,0.02)',
-                  border: `1px solid ${active ? 'rgba(16,185,129,0.3)' : done ? 'rgba(16,185,129,0.12)' : 'rgba(255,255,255,0.05)'}`,
-                  borderRadius: '8px',
-                  transition: 'all 0.3s'
+              <div 
+                key={i} 
+                style={{ 
+                  background: 'rgba(255,255,255,0.02)', 
+                  border: '1px solid rgba(255,255,255,0.06)', 
+                  borderRadius: '8px', 
+                  padding: '12px', 
+                  marginBottom: '8px' 
                 }}
               >
-                {/* Step indicator */}
-                <div style={{
-                  width: '20px',
-                  height: '20px',
-                  borderRadius: '50%',
-                  minWidth: '20px',
-                  marginTop: '1px',
-                  background: done ? '#10b981' : active ? 'rgba(16,185,129,0.15)' : 'rgba(255,255,255,0.05)',
-                  border: active ? '2px solid #10b981' : 'none',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}>
-                  {done && <span style={{ color: '#fff', fontSize: '10px' }}>✓</span>}
-                  {active && (
-                    <div style={{
-                      width: '8px',
-                      height: '8px',
-                      borderRadius: '50%',
-                      border: '2px solid #10b981',
-                      animation: 'spin 0.8s linear infinite'
-                    }} />
-                  )}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                  <div style={{ fontSize: '11px', color: '#e2e8f0', fontWeight: 600 }}>
+                    {reg.name}
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontSize: '14px', fontWeight: 700, color: regColor }}>
+                      {reg.score}%
+                    </span>
+                    <span style={{ 
+                      fontSize: '8px', 
+                      fontWeight: 700,
+                      padding: '2px 6px',
+                      borderRadius: '3px',
+                      background: reg.status === 'Compliant' ? 'rgba(16,185,129,0.15)' : 
+                                reg.status === 'Partial' ? 'rgba(245,158,11,0.15)' : 'rgba(239,68,68,0.15)',
+                      color: regColor
+                    }}>
+                      {reg.status}
+                    </span>
+                  </div>
                 </div>
 
-                {/* Step text */}
-                <div>
-                  <div style={{
-                    fontSize: '11px',
-                    color: done ? '#10b981' : active ? '#e2e8f0' : '#4a5568',
-                    fontWeight: 500
-                  }}>
-                    {step.phase}
-                  </div>
-                  <div style={{
-                    fontSize: '9.5px',
-                    color: active ? '#8899aa' : '#4a5568',
-                    marginTop: '1px'
-                  }}>
-                    {step.detail}
-                  </div>
+                {/* Findings */}
+                <div style={{ marginBottom: '6px' }}>
+                  {(reg.findings || []).map((finding: string, j: number) => (
+                    <div key={j} style={{ 
+                      fontSize: '9px', 
+                      color: finding.startsWith('✓') ? '#10b981' : 
+                            finding.startsWith('⚠') ? '#f59e0b' : '#ef4444',
+                      marginBottom: '2px'
+                    }}>
+                      {finding}
+                    </div>
+                  ))}
                 </div>
+
+                {/* Recommendations */}
+                {reg.recommendations && reg.recommendations.length > 0 && (
+                  <div style={{ paddingTop: '6px', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+                    {reg.recommendations.map((rec: string, j: number) => (
+                      <div key={j} style={{ fontSize: '9px', color: '#f59e0b', marginBottom: '2px' }}>
+                        → {rec}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             );
           })}
         </div>
-      </>
-    );
-  }
 
-  /**
-   * Render pending state (RIGHT column when not done)
-   */
-  private renderClassificationPending(): React.ReactElement {
-    return (
-      <div style={{
-        background: 'rgba(255,255,255,0.02)',
-        border: '1px solid rgba(255,255,255,0.06)',
-        borderRadius: '12px',
-        padding: '36px 20px',
-        textAlign: 'center'
+        {/* Summary stats */}
+        <div style={{ 
+          marginTop: '12px', 
+          display: 'flex', 
+          gap: '12px',
+          padding: '10px',
+          background: 'rgba(255,255,255,0.02)',
+          borderRadius: '6px'
+        }}>
+          <div style={{ flex: 1, textAlign: 'center' }}>
+            <div style={{ fontSize: '16px', fontWeight: 700, color: '#ef4444' }}>
+              {result.criticalIssues || 0}
+            </div>
+            <div style={{ fontSize: '8px', color: '#5a6a7e' }}>Critical</div>
+          </div>
+          <div style={{ flex: 1, textAlign: 'center' }}>
+            <div style={{ fontSize: '16px', fontWeight: 700, color: '#f59e0b' }}>
+              {result.warnings || 0}
+            </div>
+            <div style={{ fontSize: '8px', color: '#5a6a7e' }}>Warnings</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Confidence */}
+      <div style={{ 
+        background: 'rgba(255,255,255,0.025)', 
+        border: '1px solid rgba(255,255,255,0.06)', 
+        borderRadius: '10px', 
+        padding: '12px 16px', 
+        display: 'flex', 
+        alignItems: 'center', 
+        gap: '12px' 
       }}>
-        <div style={{ fontSize: '28px', marginBottom: '10px', opacity: 0.25 }}>⟳</div>
-        <div style={{ fontSize: '11.5px', color: '#5a6a7e' }}>
-          Extracted metadata will appear here…
+        <div style={{ fontSize: '24px', fontWeight: 700, color: '#818cf8' }}>
+          {Math.round((result.confidence || 0.89) * 100)}%
+        </div>
+        <div>
+          <div style={{ fontSize: '10px', color: '#8899aa', fontWeight: 500 }}>
+            Analysis Confidence
+          </div>
+          <div style={{ fontSize: '8.5px', color: '#5a6a7e' }}>
+            Compliance verification
+          </div>
         </div>
       </div>
-    );
-  }
+    </div>
+  );
+}
 
-  /**
-   * Render classification results based on type (RIGHT column when done)
-   */
-  private renderClassificationResults(result: any, classificationType: string): React.ReactElement {
-    switch (classificationType) {
-      case 'contract_type':
-        return this.renderContractTypeResults(result);
-      case 'risk_assessment':
-        return this.renderRiskAssessmentResults(result);
-      case 'compliance_check':
-        return this.renderComplianceResults(result);
-      case 'entity_extraction':
-        return this.renderEntityExtractionResults(result);
-      default:
-        return this.renderContractTypeResults(result);
-    }
-  }
-
-  /**
-   * CONTRACT TYPE CLASSIFICATION RESULTS
-   */
-  private renderContractTypeResults(result: any): React.ReactElement {
-    return (
-      <div style={{ animation: 'fadeIn 0.4s ease' }}>
-        {/* Results card */}
-        <div style={{
-          background: 'rgba(16,185,129,0.04)',
-          border: '1px solid rgba(16,185,129,0.2)',
-          borderRadius: '12px',
-          padding: '18px',
-          marginBottom: '12px'
+/**
+ * ENTITY EXTRACTION RESULTS
+ */
+private renderEntityExtractionResults(result: any): React.ReactElement {
+  return (
+    <div style={{ animation: 'fadeIn 0.4s ease' }}>
+      <div style={{ 
+        background: 'rgba(6,182,212,0.04)', 
+        border: '1px solid rgba(6,182,212,0.2)', 
+        borderRadius: '12px', 
+        padding: '18px', 
+        marginBottom: '12px',
+        maxHeight: '500px',
+        overflowY: 'auto'
+      }}>
+        <div style={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: '5px', 
+          marginBottom: '12px' 
         }}>
-          {/* Header */}
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '5px',
-            marginBottom: '12px'
+          <div style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#06b6d4' }} />
+          <span style={{ 
+            fontSize: '9px', 
+            color: '#06b6d4', 
+            fontWeight: 600, 
+            letterSpacing: '1px', 
+            textTransform: 'uppercase' 
           }}>
-            <div style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#10b981' }} />
-            <span style={{
-              fontSize: '9px',
-              color: '#10b981',
-              fontWeight: 600,
-              letterSpacing: '1px',
-              textTransform: 'uppercase'
-            }}>
-              Contract Type Classification
-            </span>
-          </div>
+            Entity Extraction Complete
+          </span>
+        </div>
 
-          {/* Classification fields */}
-          {[
-            ['Document Type', result.documentType],
-            ['Parties', (result.parties || []).join(' · ')],
-            ['Jurisdiction', result.jurisdiction],
-            ['Effective Date', result.effectiveDate],
-            ['Expiry Date', result.expiryDate],
-            ['Key Clauses', (result.keyClauses || []).join(', ')]
-          ].map(([label, value], i) => (
-            <div
-              key={i}
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                padding: '6px 0',
-                borderBottom: i < 5 ? '1px solid rgba(255,255,255,0.04)' : 'none'
-              }}
-            >
-              <span style={{ fontSize: '9.5px', color: '#5a6a7e' }}>{label}</span>
-              <span style={{
-                fontSize: '10.5px',
-                color: '#e2e8f0',
-                fontWeight: 500,
-                textAlign: 'right',
-                maxWidth: '200px'
+        {/* Parties */}
+        {result.parties && result.parties.length > 0 && (
+          <div style={{ marginBottom: '14px' }}>
+            <div style={{ fontSize: '9px', color: '#5a6a7e', fontWeight: 600, marginBottom: '6px' }}>
+              PARTIES
+            </div>
+            {result.parties.map((party: any, i: number) => (
+              <div key={i} style={{ 
+                background: 'rgba(255,255,255,0.02)', 
+                padding: '8px 10px', 
+                borderRadius: '6px', 
+                marginBottom: '6px' 
               }}>
-                {value || 'Not specified'}
-              </span>
-            </div>
-          ))}
-
-          {/* Auto-tags */}
-          {result.autoTags && result.autoTags.length > 0 && (
-            <div style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              padding: '6px 0',
-              borderBottom: '1px solid rgba(255,255,255,0.04)'
-            }}>
-              <span style={{ fontSize: '9.5px', color: '#5a6a7e' }}>Auto-Tags</span>
-              <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-                {result.autoTags.map((tag: string) => (
-                  <span
-                    key={tag}
-                    style={{
-                      fontSize: '8.5px',
-                      fontFamily: 'monospace',
-                      background: 'rgba(6,182,212,0.1)',
-                      border: '1px solid rgba(6,182,212,0.2)',
-                      borderRadius: '3px',
-                      padding: '1px 5px',
-                      color: '#67e8f9'
-                    }}
-                  >
-                    {tag}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Duplicate flag */}
-          <div style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            padding: '6px 0'
-          }}>
-            <span style={{ fontSize: '9.5px', color: '#5a6a7e' }}>Duplicate Flag</span>
-            <span style={{ fontSize: '10.5px', color: '#10b981', fontWeight: 500 }}>
-              {result.duplicateFlag || 'No duplicates found ✓'}
-            </span>
-          </div>
-        </div>
-
-        {/* Confidence score */}
-        <div style={{
-          background: 'rgba(255,255,255,0.025)',
-          border: '1px solid rgba(255,255,255,0.06)',
-          borderRadius: '10px',
-          padding: '12px 16px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '12px'
-        }}>
-          <div style={{ fontSize: '24px', fontWeight: 700, color: '#10b981' }}>
-            {Math.round((result.confidence || 0.97) * 100)}%
-          </div>
-          <div>
-            <div style={{ fontSize: '10px', color: '#8899aa', fontWeight: 500 }}>
-              Classification Confidence
-            </div>
-            <div style={{ fontSize: '8.5px', color: '#5a6a7e' }}>
-              Document Intelligence + semantic analysis
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  /**
-   * RISK ASSESSMENT RESULTS
-   */
-  private renderRiskAssessmentResults(result: any): React.ReactElement {
-    const riskColor = result.riskLevel === 'High' ? '#ef4444' :
-      result.riskLevel === 'Medium' ? '#f59e0b' : '#10b981';
-
-    return (
-      <div style={{ animation: 'fadeIn 0.4s ease' }}>
-        {/* Risk Score Card */}
-        <div style={{
-          background: 'rgba(239,68,68,0.04)',
-          border: '1px solid rgba(239,68,68,0.2)',
-          borderRadius: '12px',
-          padding: '18px',
-          marginBottom: '12px'
-        }}>
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '5px',
-            marginBottom: '12px'
-          }}>
-            <div style={{ width: '5px', height: '5px', borderRadius: '50%', background: riskColor }} />
-            <span style={{
-              fontSize: '9px',
-              color: riskColor,
-              fontWeight: 600,
-              letterSpacing: '1px',
-              textTransform: 'uppercase'
-            }}>
-              Risk Assessment Complete
-            </span>
-          </div>
-
-          {/* Overall Risk Score */}
-          <div style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            padding: '12px 0',
-            borderBottom: '1px solid rgba(255,255,255,0.04)'
-          }}>
-            <div>
-              <div style={{ fontSize: '11px', color: '#e2e8f0', fontWeight: 600 }}>
-                Overall Risk Score
-              </div>
-              <div style={{ fontSize: '9px', color: '#5a6a7e' }}>
-                {result.riskLevel || 'Medium'} Risk Level
-              </div>
-            </div>
-            <div style={{
-              fontSize: '28px',
-              fontWeight: 700,
-              color: riskColor
-            }}>
-              {result.overallRiskScore || 45}
-            </div>
-          </div>
-
-          {/* Risk Factors */}
-          <div style={{ marginTop: '12px' }}>
-            <div style={{ fontSize: '9px', color: '#5a6a7e', marginBottom: '8px', fontWeight: 600 }}>
-              IDENTIFIED RISK FACTORS
-            </div>
-            {(result.riskFactors || []).map((factor: any, i: number) => (
-              <div
-                key={i}
-                style={{
-                  background: 'rgba(255,255,255,0.02)',
-                  border: '1px solid rgba(255,255,255,0.06)',
-                  borderRadius: '6px',
-                  padding: '10px',
-                  marginBottom: '6px'
-                }}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                  <span style={{ fontSize: '10px', color: '#e2e8f0', fontWeight: 600 }}>
-                    {factor.factor}
-                  </span>
-                  <span style={{
-                    fontSize: '8px',
-                    fontWeight: 700,
-                    padding: '2px 6px',
-                    borderRadius: '3px',
-                    background: factor.severity === 'High' ? 'rgba(239,68,68,0.15)' :
-                      factor.severity === 'Medium' ? 'rgba(245,158,11,0.15)' : 'rgba(16,185,129,0.15)',
-                    color: factor.severity === 'High' ? '#ef4444' :
-                      factor.severity === 'Medium' ? '#f59e0b' : '#10b981'
-                  }}>
-                    {factor.severity}
-                  </span>
+                <div style={{ fontSize: '10.5px', color: '#e2e8f0', fontWeight: 600 }}>
+                  {party.name}
                 </div>
-                <div style={{ fontSize: '9px', color: '#8899aa', marginBottom: '4px' }}>
-                  {factor.description}
+                <div style={{ fontSize: '9px', color: '#5a6a7e', marginTop: '2px' }}>
+                  {party.role} • {party.jurisdiction}
                 </div>
-                <div style={{ fontSize: '9px', color: '#f59e0b' }}>
-                  → {factor.recommendation}
-                </div>
+                {party.contact && (
+                  <div style={{ fontSize: '8.5px', color: '#67e8f9', marginTop: '2px' }}>
+                    {party.contact}
+                  </div>
+                )}
               </div>
             ))}
           </div>
+        )}
 
-          {/* Compliance Issues */}
-          {result.complianceIssues && result.complianceIssues.length > 0 && (
-            <div style={{ marginTop: '12px', padding: '10px', background: 'rgba(239,68,68,0.06)', borderRadius: '6px' }}>
-              <div style={{ fontSize: '9px', color: '#ef4444', fontWeight: 600, marginBottom: '6px' }}>
-                ⚠ COMPLIANCE ISSUES
-              </div>
-              {result.complianceIssues.map((issue: string, i: number) => (
-                <div key={i} style={{ fontSize: '9px', color: '#f87171', marginBottom: '3px' }}>
-                  • {issue}
-                </div>
-              ))}
+        {/* Dates */}
+        {result.dates && (
+          <div style={{ marginBottom: '14px' }}>
+            <div style={{ fontSize: '9px', color: '#5a6a7e', fontWeight: 600, marginBottom: '6px' }}>
+              KEY DATES
             </div>
-          )}
-
-          {/* Mitigation Steps */}
-          {result.mitigationSteps && result.mitigationSteps.length > 0 && (
-            <div style={{ marginTop: '12px' }}>
-              <div style={{ fontSize: '9px', color: '#10b981', fontWeight: 600, marginBottom: '6px' }}>
-                ✓ RECOMMENDED MITIGATION
-              </div>
-              {result.mitigationSteps.map((step: string, i: number) => (
-                <div key={i} style={{ fontSize: '9px', color: '#8899aa', marginBottom: '3px' }}>
-                  {i + 1}. {step}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Confidence */}
-        <div style={{
-          background: 'rgba(255,255,255,0.025)',
-          border: '1px solid rgba(255,255,255,0.06)',
-          borderRadius: '10px',
-          padding: '12px 16px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '12px'
-        }}>
-          <div style={{ fontSize: '24px', fontWeight: 700, color: '#818cf8' }}>
-            {Math.round((result.confidence || 0.92) * 100)}%
-          </div>
-          <div>
-            <div style={{ fontSize: '10px', color: '#8899aa', fontWeight: 500 }}>
-              Assessment Confidence
-            </div>
-            <div style={{ fontSize: '8.5px', color: '#5a6a7e' }}>
-              AI-powered risk analysis
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  /**
-   * COMPLIANCE CHECK RESULTS
-   */
-  private renderComplianceResults(result: any): React.ReactElement {
-    const complianceColor = result.overallCompliance === 'Compliant' ? '#10b981' :
-      result.overallCompliance === 'Partial' ? '#f59e0b' : '#ef4444';
-
-    return (
-      <div style={{ animation: 'fadeIn 0.4s ease' }}>
-        {/* Compliance Score Card */}
-        <div style={{
-          background: 'rgba(99,102,241,0.04)',
-          border: '1px solid rgba(99,102,241,0.2)',
-          borderRadius: '12px',
-          padding: '18px',
-          marginBottom: '12px'
-        }}>
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '5px',
-            marginBottom: '12px'
-          }}>
-            <div style={{ width: '5px', height: '5px', borderRadius: '50%', background: complianceColor }} />
-            <span style={{
-              fontSize: '9px',
-              color: complianceColor,
-              fontWeight: 600,
-              letterSpacing: '1px',
-              textTransform: 'uppercase'
-            }}>
-              Compliance Check Complete
-            </span>
-          </div>
-
-          {/* Overall Compliance */}
-          <div style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            padding: '12px 0',
-            borderBottom: '1px solid rgba(255,255,255,0.04)'
-          }}>
-            <div>
-              <div style={{ fontSize: '11px', color: '#e2e8f0', fontWeight: 600 }}>
-                Overall Compliance
-              </div>
-              <div style={{ fontSize: '9px', color: '#5a6a7e' }}>
-                {result.overallCompliance || 'Partial'}
-              </div>
-            </div>
-            <div style={{
-              fontSize: '28px',
-              fontWeight: 700,
-              color: complianceColor
-            }}>
-              {result.complianceScore || 72}%
-            </div>
-          </div>
-
-          {/* Regulations */}
-          <div style={{ marginTop: '12px' }}>
-            {(result.regulations || []).map((reg: any, i: number) => {
-              const regColor = reg.status === 'Compliant' ? '#10b981' :
-                reg.status === 'Partial' ? '#f59e0b' : '#ef4444';
-
-              return (
-                <div
-                  key={i}
-                  style={{
-                    background: 'rgba(255,255,255,0.02)',
-                    border: '1px solid rgba(255,255,255,0.06)',
-                    borderRadius: '8px',
-                    padding: '12px',
-                    marginBottom: '8px'
-                  }}
-                >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                    <div style={{ fontSize: '11px', color: '#e2e8f0', fontWeight: 600 }}>
-                      {reg.name}
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{ fontSize: '14px', fontWeight: 700, color: regColor }}>
-                        {reg.score}%
-                      </span>
-                      <span style={{
-                        fontSize: '8px',
-                        fontWeight: 700,
-                        padding: '2px 6px',
-                        borderRadius: '3px',
-                        background: reg.status === 'Compliant' ? 'rgba(16,185,129,0.15)' :
-                          reg.status === 'Partial' ? 'rgba(245,158,11,0.15)' : 'rgba(239,68,68,0.15)',
-                        color: regColor
-                      }}>
-                        {reg.status}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Findings */}
-                  <div style={{ marginBottom: '6px' }}>
-                    {(reg.findings || []).map((finding: string, j: number) => (
-                      <div key={j} style={{
-                        fontSize: '9px',
-                        color: finding.startsWith('✓') ? '#10b981' :
-                          finding.startsWith('⚠') ? '#f59e0b' : '#ef4444',
-                        marginBottom: '2px'
-                      }}>
-                        {finding}
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Recommendations */}
-                  {reg.recommendations && reg.recommendations.length > 0 && (
-                    <div style={{ paddingTop: '6px', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
-                      {reg.recommendations.map((rec: string, j: number) => (
-                        <div key={j} style={{ fontSize: '9px', color: '#f59e0b', marginBottom: '2px' }}>
-                          → {rec}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Summary stats */}
-          <div style={{
-            marginTop: '12px',
-            display: 'flex',
-            gap: '12px',
-            padding: '10px',
-            background: 'rgba(255,255,255,0.02)',
-            borderRadius: '6px'
-          }}>
-            <div style={{ flex: 1, textAlign: 'center' }}>
-              <div style={{ fontSize: '16px', fontWeight: 700, color: '#ef4444' }}>
-                {result.criticalIssues || 0}
-              </div>
-              <div style={{ fontSize: '8px', color: '#5a6a7e' }}>Critical</div>
-            </div>
-            <div style={{ flex: 1, textAlign: 'center' }}>
-              <div style={{ fontSize: '16px', fontWeight: 700, color: '#f59e0b' }}>
-                {result.warnings || 0}
-              </div>
-              <div style={{ fontSize: '8px', color: '#5a6a7e' }}>Warnings</div>
-            </div>
-          </div>
-        </div>
-
-        {/* Confidence */}
-        <div style={{
-          background: 'rgba(255,255,255,0.025)',
-          border: '1px solid rgba(255,255,255,0.06)',
-          borderRadius: '10px',
-          padding: '12px 16px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '12px'
-        }}>
-          <div style={{ fontSize: '24px', fontWeight: 700, color: '#818cf8' }}>
-            {Math.round((result.confidence || 0.89) * 100)}%
-          </div>
-          <div>
-            <div style={{ fontSize: '10px', color: '#8899aa', fontWeight: 500 }}>
-              Analysis Confidence
-            </div>
-            <div style={{ fontSize: '8.5px', color: '#5a6a7e' }}>
-              Compliance verification
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  /**
-   * ENTITY EXTRACTION RESULTS
-   */
-  private renderEntityExtractionResults(result: any): React.ReactElement {
-    return (
-      <div style={{ animation: 'fadeIn 0.4s ease' }}>
-        <div style={{
-          background: 'rgba(6,182,212,0.04)',
-          border: '1px solid rgba(6,182,212,0.2)',
-          borderRadius: '12px',
-          padding: '18px',
-          marginBottom: '12px',
-          maxHeight: '500px',
-          overflowY: 'auto'
-        }}>
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '5px',
-            marginBottom: '12px'
-          }}>
-            <div style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#06b6d4' }} />
-            <span style={{
-              fontSize: '9px',
-              color: '#06b6d4',
-              fontWeight: 600,
-              letterSpacing: '1px',
-              textTransform: 'uppercase'
-            }}>
-              Entity Extraction Complete
-            </span>
-          </div>
-
-          {/* Parties */}
-          {result.parties && result.parties.length > 0 && (
-            <div style={{ marginBottom: '14px' }}>
-              <div style={{ fontSize: '9px', color: '#5a6a7e', fontWeight: 600, marginBottom: '6px' }}>
-                PARTIES
-              </div>
-              {result.parties.map((party: any, i: number) => (
-                <div key={i} style={{
-                  background: 'rgba(255,255,255,0.02)',
-                  padding: '8px 10px',
-                  borderRadius: '6px',
-                  marginBottom: '6px'
+            <div style={{ background: 'rgba(255,255,255,0.02)', padding: '8px 10px', borderRadius: '6px' }}>
+              {Object.entries(result.dates).map(([key, value], i) => (
+                <div key={i} style={{ 
+                  display: 'flex', 
+                  justifyContent: 'space-between', 
+                  padding: '4px 0',
+                  borderBottom: i < Object.keys(result.dates).length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none'
                 }}>
-                  <div style={{ fontSize: '10.5px', color: '#e2e8f0', fontWeight: 600 }}>
-                    {party.name}
-                  </div>
-                  <div style={{ fontSize: '9px', color: '#5a6a7e', marginTop: '2px' }}>
-                    {party.role} • {party.jurisdiction}
-                  </div>
-                  {party.contact && (
-                    <div style={{ fontSize: '8.5px', color: '#67e8f9', marginTop: '2px' }}>
-                      {party.contact}
-                    </div>
-                  )}
+                  <span style={{ fontSize: '9px', color: '#8899aa', textTransform: 'capitalize' }}>
+                    {key.replace(/([A-Z])/g, ' $1').trim()}
+                  </span>
+                  <span style={{ fontSize: '9px', color: '#e2e8f0', fontWeight: 500 }}>
+                    {value as string}
+                  </span>
                 </div>
               ))}
             </div>
-          )}
+          </div>
+        )}
 
-          {/* Dates */}
-          {result.dates && (
-            <div style={{ marginBottom: '14px' }}>
-              <div style={{ fontSize: '9px', color: '#5a6a7e', fontWeight: 600, marginBottom: '6px' }}>
-                KEY DATES
-              </div>
-              <div style={{ background: 'rgba(255,255,255,0.02)', padding: '8px 10px', borderRadius: '6px' }}>
-                {Object.entries(result.dates).map(([key, value], i) => (
-                  <div key={i} style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    padding: '4px 0',
-                    borderBottom: i < Object.keys(result.dates).length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none'
-                  }}>
-                    <span style={{ fontSize: '9px', color: '#8899aa', textTransform: 'capitalize' }}>
-                      {key.replace(/([A-Z])/g, ' $1').trim()}
-                    </span>
-                    <span style={{ fontSize: '9px', color: '#e2e8f0', fontWeight: 500 }}>
-                      {value as string}
-                    </span>
-                  </div>
-                ))}
-              </div>
+        {/* Financial Terms */}
+        {result.financialTerms && (
+          <div style={{ marginBottom: '14px' }}>
+            <div style={{ fontSize: '9px', color: '#5a6a7e', fontWeight: 600, marginBottom: '6px' }}>
+              FINANCIAL TERMS
             </div>
-          )}
-
-          {/* Financial Terms */}
-          {result.financialTerms && (
-            <div style={{ marginBottom: '14px' }}>
-              <div style={{ fontSize: '9px', color: '#5a6a7e', fontWeight: 600, marginBottom: '6px' }}>
-                FINANCIAL TERMS
-              </div>
-              <div style={{ background: 'rgba(255,255,255,0.02)', padding: '8px 10px', borderRadius: '6px' }}>
-                {Object.entries(result.financialTerms).map(([key, value], i) => (
-                  <div key={i} style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    padding: '4px 0',
-                    borderBottom: i < Object.keys(result.financialTerms).length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none'
-                  }}>
-                    <span style={{ fontSize: '9px', color: '#8899aa', textTransform: 'capitalize' }}>
-                      {key.replace(/([A-Z])/g, ' $1').trim()}
-                    </span>
-                    <span style={{ fontSize: '9px', color: '#10b981', fontWeight: 600 }}>
-                      {value as string}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Key Obligations */}
-          {result.keyObligations && result.keyObligations.length > 0 && (
-            <div style={{ marginBottom: '14px' }}>
-              <div style={{ fontSize: '9px', color: '#5a6a7e', fontWeight: 600, marginBottom: '6px' }}>
-                KEY OBLIGATIONS
-              </div>
-              {result.keyObligations.map((obligation: string, i: number) => (
-                <div key={i} style={{
-                  fontSize: '9px',
-                  color: '#c2cdd8',
-                  padding: '6px 8px',
-                  background: 'rgba(255,255,255,0.02)',
-                  borderRadius: '4px',
-                  marginBottom: '4px'
+            <div style={{ background: 'rgba(255,255,255,0.02)', padding: '8px 10px', borderRadius: '6px' }}>
+              {Object.entries(result.financialTerms).map(([key, value], i) => (
+                <div key={i} style={{ 
+                  display: 'flex', 
+                  justifyContent: 'space-between', 
+                  padding: '4px 0',
+                  borderBottom: i < Object.keys(result.financialTerms).length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none'
                 }}>
-                  • {obligation}
+                  <span style={{ fontSize: '9px', color: '#8899aa', textTransform: 'capitalize' }}>
+                    {key.replace(/([A-Z])/g, ' $1').trim()}
+                  </span>
+                  <span style={{ fontSize: '9px', color: '#10b981', fontWeight: 600 }}>
+                    {value as string}
+                  </span>
                 </div>
               ))}
             </div>
-          )}
+          </div>
+        )}
 
-          {/* Governing Law & Dispute Resolution */}
-          <div style={{
-            padding: '10px',
-            background: 'rgba(255,255,255,0.02)',
-            borderRadius: '6px'
-          }}>
-            <div style={{ fontSize: '9px', color: '#5a6a7e', marginBottom: '6px' }}>
-              <strong>Governing Law:</strong> {result.governingLaw}
+        {/* Key Obligations */}
+        {result.keyObligations && result.keyObligations.length > 0 && (
+          <div style={{ marginBottom: '14px' }}>
+            <div style={{ fontSize: '9px', color: '#5a6a7e', fontWeight: 600, marginBottom: '6px' }}>
+              KEY OBLIGATIONS
             </div>
-            {result.disputeResolution && (
-              <div style={{ fontSize: '9px', color: '#5a6a7e' }}>
-                <strong>Dispute Resolution:</strong> {result.disputeResolution}
+            {result.keyObligations.map((obligation: string, i: number) => (
+              <div key={i} style={{ 
+                fontSize: '9px', 
+                color: '#c2cdd8', 
+                padding: '6px 8px',
+                background: 'rgba(255,255,255,0.02)',
+                borderRadius: '4px',
+                marginBottom: '4px'
+              }}>
+                • {obligation}
               </div>
-            )}
+            ))}
           </div>
-        </div>
+        )}
 
-        {/* Confidence */}
-        <div style={{
-          background: 'rgba(255,255,255,0.025)',
-          border: '1px solid rgba(255,255,255,0.06)',
-          borderRadius: '10px',
-          padding: '12px 16px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '12px'
+        {/* Governing Law & Dispute Resolution */}
+        <div style={{ 
+          padding: '10px', 
+          background: 'rgba(255,255,255,0.02)', 
+          borderRadius: '6px' 
         }}>
-          <div style={{ fontSize: '24px', fontWeight: 700, color: '#06b6d4' }}>
-            {Math.round((result.confidence || 0.94) * 100)}%
+          <div style={{ fontSize: '9px', color: '#5a6a7e', marginBottom: '6px' }}>
+            <strong>Governing Law:</strong> {result.governingLaw}
           </div>
-          <div>
-            <div style={{ fontSize: '10px', color: '#8899aa', fontWeight: 500 }}>
-              Extraction Confidence
+          {result.disputeResolution && (
+            <div style={{ fontSize: '9px', color: '#5a6a7e' }}>
+              <strong>Dispute Resolution:</strong> {result.disputeResolution}
             </div>
-            <div style={{ fontSize: '8.5px', color: '#5a6a7e' }}>
-              Entity recognition
-            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Confidence */}
+      <div style={{ 
+        background: 'rgba(255,255,255,0.025)', 
+        border: '1px solid rgba(255,255,255,0.06)', 
+        borderRadius: '10px', 
+        padding: '12px 16px', 
+        display: 'flex', 
+        alignItems: 'center', 
+        gap: '12px' 
+      }}>
+        <div style={{ fontSize: '24px', fontWeight: 700, color: '#06b6d4' }}>
+          {Math.round((result.confidence || 0.94) * 100)}%
+        </div>
+        <div>
+          <div style={{ fontSize: '10px', color: '#8899aa', fontWeight: 500 }}>
+            Extraction Confidence
+          </div>
+          <div style={{ fontSize: '8.5px', color: '#5a6a7e' }}>
+            Entity recognition
           </div>
         </div>
       </div>
-    );
-  }
+    </div>
+  );
+}
+
+
 }

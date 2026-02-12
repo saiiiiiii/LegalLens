@@ -351,7 +351,9 @@ ${contractInfo}`;
     }
   }
 
-  /** * Extract text from .docx file (XML-based format)   */
+  /**
+   * Extract text from .docx file (XML-based format)
+   */
   private async extractFromDocx(fileBlob: Blob): Promise<string> {
     try {
       // Read as ArrayBuffer
@@ -383,7 +385,9 @@ ${contractInfo}`;
     }
   }
 
-  /*** Call Azure AI Foundry API - CORRECT FORMAT  */
+  /**
+   * Call Azure AI Foundry API - CORRECT FORMAT
+   */
   public async callAI(prompt: string, maxTokens: number = 1500): Promise<string> {
     return await this.callAIWithMessages(
       [{ role: 'user', content: prompt }],
@@ -391,7 +395,9 @@ ${contractInfo}`;
     );
   }
 
-  /*** Call AI with message history - Azure OpenAI format for AI Foundry */
+  /**
+   * Call AI with message history - Azure OpenAI format for AI Foundry
+   */
   private async callAIWithMessages(messages: any[], maxTokens: number = 1500): Promise<string> {
     // Azure AI Foundry uses Azure OpenAI endpoint format
     // Your endpoint: https://legallex-resource.services.ai.azure.com/api/projects/legallex
@@ -440,7 +446,9 @@ ${contractInfo}`;
     return data.choices[0]?.message?.content || '';
   }
 
-  /*** Parse JSON from AI response (handles markdown code blocks)  */
+  /**
+   * Parse JSON from AI response (handles markdown code blocks)
+   */
   private parseJSON(text: string): any {
     try {
       // Remove markdown code blocks
@@ -456,7 +464,9 @@ ${contractInfo}`;
     }
   }
 
-  /*** Extract clause references from text   */
+  /**
+   * Extract clause references from text
+   */
   private extractClauseReferences(text: string): string[] {
     const regex = /§\s*[\d.]+/g;
     const matches = text.match(regex) || [];
@@ -467,7 +477,9 @@ ${contractInfo}`;
     return unique;
   }
 
-  /*** Fallback analysis   */
+  /**
+   * Fallback analysis
+   */
   private getFallbackAnalysis(fileName: string): IContractAnalysis {
     return {
       fileName,
