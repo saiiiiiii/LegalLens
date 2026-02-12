@@ -5,6 +5,8 @@ export interface IAzureAIFoundryService {
   classifyDocument(fileBlob: Blob, fileName: string, classificationType: string): Promise<IClassificationResult>;
   translate(text: string, targetLang: string, contractName: string): Promise<string>;
   askQuestionMultilingual(question: string, questionLang: string, contract: any, conversationHistory: any[]): Promise<IMultilingualAnswer>;
+  extractTextFromFile(file: File | Blob): Promise<string>;
+  callAI(prompt: string, maxTokens: number): Promise<string>;
 }
 
 export interface IContractAnalysis {
@@ -306,7 +308,7 @@ ${contractInfo}`;
   /**
    * Extract text from file - proper extraction for different file types
    */
-  private async extractTextFromFile(fileBlob: File | Blob): Promise<string> {
+  public async extractTextFromFile(fileBlob: File | Blob): Promise<string> {
     try {
       const fileName = (fileBlob as File).name || '';
       const fileType = fileBlob.type;
@@ -349,9 +351,7 @@ ${contractInfo}`;
     }
   }
 
-  /**
-   * Extract text from .docx file (XML-based format)
-   */
+  /** * Extract text from .docx file (XML-based format)   */
   private async extractFromDocx(fileBlob: Blob): Promise<string> {
     try {
       // Read as ArrayBuffer
@@ -383,19 +383,15 @@ ${contractInfo}`;
     }
   }
 
-  /**
-   * Call Azure AI Foundry API - CORRECT FORMAT
-   */
-  private async callAI(prompt: string, maxTokens: number = 1500): Promise<string> {
+  /*** Call Azure AI Foundry API - CORRECT FORMAT  */
+  public async callAI(prompt: string, maxTokens: number = 1500): Promise<string> {
     return await this.callAIWithMessages(
       [{ role: 'user', content: prompt }],
       maxTokens
     );
   }
 
-  /**
-   * Call AI with message history - Azure OpenAI format for AI Foundry
-   */
+  /*** Call AI with message history - Azure OpenAI format for AI Foundry */
   private async callAIWithMessages(messages: any[], maxTokens: number = 1500): Promise<string> {
     // Azure AI Foundry uses Azure OpenAI endpoint format
     // Your endpoint: https://legallex-resource.services.ai.azure.com/api/projects/legallex
@@ -415,7 +411,8 @@ ${contractInfo}`;
     const requestBody = {
       messages: messages,
       max_tokens: maxTokens,
-      temperature: 0.7
+      temperature: 0.7,
+      response_format: { type: "json_object" }  // Force JSON mode
     };
 
     console.log('[AzureAI] Request body:', JSON.stringify(requestBody, null, 2));
@@ -443,9 +440,7 @@ ${contractInfo}`;
     return data.choices[0]?.message?.content || '';
   }
 
-  /**
-   * Parse JSON from AI response (handles markdown code blocks)
-   */
+  /*** Parse JSON from AI response (handles markdown code blocks)  */
   private parseJSON(text: string): any {
     try {
       // Remove markdown code blocks
@@ -461,9 +456,7 @@ ${contractInfo}`;
     }
   }
 
-  /**
-   * Extract clause references from text
-   */
+  /*** Extract clause references from text   */
   private extractClauseReferences(text: string): string[] {
     const regex = /§\s*[\d.]+/g;
     const matches = text.match(regex) || [];
@@ -474,9 +467,7 @@ ${contractInfo}`;
     return unique;
   }
 
-  /**
-   * Fallback analysis
-   */
+  /*** Fallback analysis   */
   private getFallbackAnalysis(fileName: string): IContractAnalysis {
     return {
       fileName,
