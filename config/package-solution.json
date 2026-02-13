@@ -19,7 +19,7 @@
         "default": "LegalLens - AI-powered contract management with Knowledge Agent"
       },
       "longDescription": {
-        "default": "Complete contract governance solution with auto-classification, translation, and Q&A agent powered by Claude API"
+        "default": "Complete contract governance solution with auto-classification, translation, and Q&A agent powered by Azure AI"
       },
       "screenshotPaths": [],
       "videoUrl": "",
