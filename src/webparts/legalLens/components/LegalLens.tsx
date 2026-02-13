@@ -1,5 +1,26 @@
 import * as React from 'react';
 import type { ILegalLensProps, IContract } from './ILegalLensProps';
+import { 
+  Library24Regular,
+  ArrowUpload24Regular,
+  DocumentSearch24Regular,
+  LocalLanguage24Regular,
+  Alert24Regular,
+  DocumentRegular,
+  CheckmarkCircleFilled,
+  WarningFilled,
+  ErrorCircleFilled,
+  ChartMultipleFilled,
+  CircleFilled,
+  InfoRegular,
+  LightbulbRegular,
+  ClockRegular,
+  CalendarRegular,
+  PeopleFilled,
+  DocumentBulletListRegular,
+  ShieldCheckmarkFilled,
+  ScalesRegular
+} from '@fluentui/react-icons';
 import { IContractAnalysis, IClassificationResult } from '../services/AzureAIFoundryService';
 
 // LANGS configuration for multilingual support
@@ -517,13 +538,14 @@ export default class LegalLens extends React.Component<ILegalLensProps, ILegalLe
     return 'rgba(16,185,129,0.2)';
   }
 
-  private getSeverityIcon(severity: string): string {
-    switch (severity) {
-      case 'critical': return '🔴';
-      case 'high': return '🟠';
-      case 'medium': return '🟡';
-      case 'low': return '🟢';
-      default: return '⚪';
+  private getSeverityIcon(severity: string): React.ReactElement {
+    const iconProps = { style: { fontSize: '20px' } };
+    switch (severity.toLowerCase()) {
+      case 'critical': return <ErrorCircleFilled {...iconProps} style={{ ...iconProps.style, color: '#ef4444' }} />;
+      case 'high': return <WarningFilled {...iconProps} style={{ ...iconProps.style, color: '#f59e0b' }} />;
+      case 'medium': return <InfoRegular {...iconProps} style={{ ...iconProps.style, color: '#fbbf24' }} />;
+      case 'low': return <CheckmarkCircleFilled {...iconProps} style={{ ...iconProps.style, color: '#10b981' }} />;
+      default: return <CircleFilled {...iconProps} style={{ ...iconProps.style, color: '#6b7280' }} />;
     }
   }
 
@@ -587,46 +609,73 @@ export default class LegalLens extends React.Component<ILegalLensProps, ILegalLe
     }
 
     return (
-      <div style={{ minHeight: '100vh', background: '#060d1a', color: '#c2cdd8', fontFamily: "'Segoe UI', system-ui, sans-serif", display: 'flex', flexDirection: 'column' }}>
+      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #0a1628 0%, #0f172a 50%, #1e293b 100%)', color: '#e2e8f0', fontFamily: "'Segoe UI', system-ui, sans-serif", display: 'flex', flexDirection: 'column' }}>
         <style>{`
-          @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&display=swap');
-          @keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
-          @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+          @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&family=Inter:wght@400;500;600;700&display=swap');
+          * { font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; }
+          @keyframes fadeIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+          @keyframes slideUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}
+          @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.6;transform:scale(0.95)}}
           @keyframes spin{to{transform:rotate(360deg)}}
-          .nav-btn:hover{background:rgba(16,185,129,0.08)!important;color:#fff!important}
-          .card-row:hover{background:rgba(255,255,255,0.03)!important}
+          @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+          
+          .nav-btn:hover{
+            background:linear-gradient(135deg, rgba(99,102,241,0.15), rgba(139,92,246,0.15))!important;
+            color:#fff!important;
+            transform:translateY(-2px)!important;
+            boxShadow:0 6px 20px rgba(99,102,241,0.3)!important;
+          }
+          .card-row:hover{
+            background:rgba(255,255,255,0.05)!important;
+            transform:translateX(4px)!important;
+            boxShadow:0 4px 16px rgba(99,102,241,0.15)!important;
+          }
+          .card-row{
+            transition:all 0.3s cubic-bezier(0.4, 0, 0.2, 1)!important;
+          }
         `}</style>
 
         {/* Header */}
-        <header style={{ background: '#07101f', borderBottom: '1px solid rgba(255,255,255,0.06)', padding: '0 24px', display: 'flex', alignItems: 'center', height: '56px', gap: '12px', flexWrap: 'wrap' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginRight: '32px' }}>
-            <div style={{ width: '30px', height: '30px', borderRadius: '7px', background: 'linear-gradient(135deg,#10b981,#059669)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <span style={{ color: '#fff', fontSize: '14px', fontWeight: 700 }}>⚖</span>
-            </div>
-            <span style={{ fontFamily: "'Cinzel', Georgia, serif", fontSize: '18px', fontWeight: 400, color: '#fff', letterSpacing: '-0.3px' }}>LegalLens</span>
+        <header style={{ background: 'rgba(15, 23, 42, 0.8)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 4px 24px rgba(0,0,0,0.2)', padding: '0 24px', display: 'flex', alignItems: 'center', height: '64px', gap: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginRight: '32px' }}>
+            <ScalesRegular style={{ 
+              fontSize: '28px',
+              color: '#a5b4fc',
+              filter: 'drop-shadow(0 2px 8px rgba(99,102,241,0.4))'
+            }} />
+            <span style={{ 
+              fontFamily: "'Cinzel', Georgia, serif", 
+              fontSize: '20px', 
+              fontWeight: 600, 
+              background: 'linear-gradient(135deg, #fff 0%, #a5b4fc 100%)', 
+              WebkitBackgroundClip: 'text', 
+              WebkitTextFillColor: 'transparent', 
+              backgroundClip: 'text', 
+              letterSpacing: '0.5px' 
+            }}>LegalLens</span>
           </div>
 
           <nav style={{ display: 'flex', gap: '3px', flex: 1 }}>
             {[
-              { key: 'library', label: 'Library', icon: '📂' },
-              { key: 'upload', label: 'Upload & Analyze', icon: '📤', highlight: true },
-              { key: 'classify', label: 'Classification', icon: '🏷️' },
-              { key: 'translate', label: 'TranslatePro', icon: '🌐' },
-              { key: 'alerts', label: 'Alerts', icon: '⚠' }
-            ].map(n => (
+              { key: 'library', label: 'Library', highlight: false },
+              { key: 'upload', label: 'Upload & Analyze', highlight: true },
+              { key: 'classify', label: 'Classification', highlight: false },
+              { key: 'translate', label: 'TranslatePro', highlight: false },
+              { key: 'alerts', label: 'Alerts', highlight: false }
+            ].map(tab => (
               <button 
-                key={n.key}
+                key={tab.key}
                 className="nav-btn"
-                onClick={() => this.setState({ view: n.key as any })}
+                onClick={() => this.setState({ view: tab.key as any })}
                 style={{
-                  background: view === n.key ? (n.highlight ? 'rgba(99,102,241,0.12)' : 'rgba(16,185,129,0.1)') : 'transparent',
+                  background: view === tab.key ? (tab.highlight ? 'rgba(99,102,241,0.12)' : 'rgba(16,185,129,0.1)') : 'transparent',
                   border: 'none',
-                  color: view === n.key ? (n.highlight ? '#818cf8' : '#10b981') : '#5a6a7e',
+                  color: view === tab.key ? (tab.highlight ? '#818cf8' : '#10b981') : '#5a6a7e',
                   borderRadius: '8px',
-                  padding: '6px 12px',
+                  padding: '6px 10px',
                   cursor: 'pointer',
                   outline: 'none',
-                  fontSize: '11.5px',
+                  fontSize: '11px',
                   fontWeight: 500,
                   display: 'flex',
                   alignItems: 'center',
@@ -635,14 +684,18 @@ export default class LegalLens extends React.Component<ILegalLensProps, ILegalLe
                   whiteSpace: 'nowrap'
                 }}
               >
-                <span style={{ fontSize: '12px' }}>{n.icon}</span>
-                {n.label}
+                {tab.key === 'library' && <Library24Regular style={{ fontSize: '12px', width: '12px', height: '12px' }} />}
+                {tab.key === 'upload' && <ArrowUpload24Regular style={{ fontSize: '12px', width: '12px', height: '12px' }} />}
+                {tab.key === 'classify' && <DocumentSearch24Regular style={{ fontSize: '12px', width: '12px', height: '12px' }} />}
+                {tab.key === 'translate' && <LocalLanguage24Regular style={{ fontSize: '12px', width: '12px', height: '12px' }} />}
+                {tab.key === 'alerts' && <Alert24Regular style={{ fontSize: '12px', width: '12px', height: '12px' }} />}
+                {tab.label}
               </button>
             ))}
           </nav>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginLeft: 'auto' }}>
-            <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#10b981', animation: 'pulse 2s ease infinite' }} />
+            <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'linear-gradient(135deg, #10b981, #6ee7b7)', animation: 'pulse 2s ease infinite', boxShadow: '0 0 12px rgba(16,185,129,0.6)' }} />
             <span style={{ fontSize: '9.5px', color: '#5a6a7e' }}>Knowledge Agent Active</span>
           </div>
         </header>
@@ -684,7 +737,7 @@ export default class LegalLens extends React.Component<ILegalLensProps, ILegalLe
       <div style={{ animation: 'fadeIn 0.35s ease' }}>
         <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
           <div>
-            <h2 style={{ fontFamily: "'Cinzel', Georgia, serif", fontSize: '21px', fontWeight: 400, color: '#fff', margin: '0 0 3px' }}>
+            <h2 style={{ fontFamily: "'Cinzel', Georgia, serif", fontSize: '24px', fontWeight: 600, background: 'linear-gradient(135deg, #fff 0%, #a5b4fc 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text', letterSpacing: '0.5px', margin: '0 0 3px' }}>
               Governed Contract Library
             </h2>
             <p style={{ margin: 0, fontSize: '11px', color: '#5a6a7e' }}>
@@ -706,8 +759,8 @@ export default class LegalLens extends React.Component<ILegalLensProps, ILegalLe
           </div>
         </div>
 
-        <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '12px', overflow: 'hidden' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 130px 110px 80px 100px', padding: '9px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)', background: 'rgba(255,255,255,0.02)' }}>
+        <div style={{ background: 'rgba(255,255,255,0.03)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px', boxShadow: '0 8px 32px rgba(0,0,0,0.3)', overflow: 'hidden' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 130px 110px 80px 100px', padding: '12px 20px', borderBottom: '1px solid rgba(255,255,255,0.1)', background: 'linear-gradient(135deg, rgba(99,102,241,0.05), rgba(139,92,246,0.05))', backdropFilter: 'blur(10px)' }}>
             {['Contract', 'Type', 'Jurisdiction', 'Risk', 'Status'].map(h => (
               <span key={h} style={{ fontSize: '8px', color: '#4a5568', letterSpacing: '1.2px', textTransform: 'uppercase', fontWeight: 600 }}>{h}</span>
             ))}
@@ -827,7 +880,7 @@ export default class LegalLens extends React.Component<ILegalLensProps, ILegalLe
     return (
       <div style={{ animation: 'fadeIn 0.35s ease' }}>
         <div style={{ marginBottom: '20px' }}>
-          <h2 style={{ fontFamily: "'Cinzel', Georgia, serif", fontSize: '21px', fontWeight: 400, color: '#fff', margin: '0 0 3px' }}>
+          <h2 style={{ fontFamily: "'Cinzel', Georgia, serif", fontSize: '24px', fontWeight: 600, background: 'linear-gradient(135deg, #fff 0%, #a5b4fc 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text', letterSpacing: '0.5px', margin: '0 0 3px' }}>
             Alerts & Conflicts
           </h2>
           <p style={{ margin: 0, fontSize: '11px', color: '#5a6a7e' }}>
@@ -842,7 +895,7 @@ export default class LegalLens extends React.Component<ILegalLensProps, ILegalLe
             border: '1px solid rgba(16,185,129,0.2)', 
             borderRadius: '12px' 
           }}>
-            <div style={{ fontSize: '32px', marginBottom: '10px' }}>✅</div>
+            <CheckmarkCircleFilled style={{ fontSize: '32px', marginBottom: '10px', color: '#10b981' }} />
             <div style={{ fontSize: '13px', color: '#10b981', fontWeight: 600 }}>All Clear</div>
             <div style={{ fontSize: '10px', color: '#5a6a7e', marginTop: '5px' }}>
               No alerts detected. All contracts are in good standing.
@@ -870,7 +923,7 @@ export default class LegalLens extends React.Component<ILegalLensProps, ILegalLe
                       justifyContent: 'center', 
                       fontSize: '13px' 
                     }}>
-                      {a.type === 'duplicate' ? '📋' : a.type === 'conflict' ? '⚡' : '⏰'}
+                      {a.type === 'duplicate' ? <DocumentBulletListRegular style={{ fontSize: '16px', color: '#818cf8' }} /> : a.type === 'conflict' ? <WarningFilled style={{ fontSize: '16px', color: '#f59e0b' }} /> : <ClockRegular style={{ fontSize: '16px', color: '#ef4444' }} />}
                     </div>
                     <div>
                       <div style={{ fontSize: '12.5px', color: '#fff', fontWeight: 600 }}>{a.title}</div>
@@ -906,7 +959,7 @@ export default class LegalLens extends React.Component<ILegalLensProps, ILegalLe
       <div style={{ animation: 'fadeIn 0.35s ease' }}>
         <div style={{ marginBottom: '20px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
-            <h2 style={{ fontFamily: "'Cinzel', Georgia, serif", fontSize: '21px', fontWeight: 400, color: '#fff', margin: 0 }}>
+            <h2 style={{ fontFamily: "'Cinzel', Georgia, serif", fontSize: '24px', fontWeight: 600, background: 'linear-gradient(135deg, #fff 0%, #a5b4fc 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text', letterSpacing: '0.5px', margin: 0 }}>
               Upload & Analyze Contract
             </h2>
             <span style={{ fontSize: '8px', fontWeight: 700, letterSpacing: '1px', background: 'linear-gradient(135deg,#ef4444,#f59e0b)', color: '#fff', borderRadius: '4px', padding: '2px 7px' }}>
@@ -944,7 +997,7 @@ export default class LegalLens extends React.Component<ILegalLensProps, ILegalLe
               }}
               onClick={() => this.fileInputRef.current?.click()}
             >
-              <div style={{ fontSize: '64px', marginBottom: '16px', opacity: 0.3 }}>📄</div>
+              <DocumentRegular style={{ fontSize: '64px', marginBottom: '16px', opacity: 0.3, color: '#818cf8' }} />
               <div style={{ fontSize: '14px', color: '#c2cdd8', fontWeight: 600, marginBottom: '8px' }}>
                 Drag & drop contract file here
               </div>
@@ -996,7 +1049,7 @@ export default class LegalLens extends React.Component<ILegalLensProps, ILegalLe
 
         {uploadView === 'analyzing' && (
           <div>
-            <div style={{ padding: '24px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '12px' }}>
+            <div style={{ padding: '24px', background: 'rgba(255,255,255,0.03)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px', boxShadow: '0 8px 32px rgba(0,0,0,0.3)' }}>
               <div style={{ fontSize: '13px', color: '#c2cdd8', fontWeight: 600, marginBottom: '16px' }}>
                 Analyzing: {uploadedFileName}
               </div>
@@ -1075,7 +1128,7 @@ export default class LegalLens extends React.Component<ILegalLensProps, ILegalLe
 
             <div style={{ 
               padding: '24px',
-              background: this.getRiskScoreColor(analysisResult.overallRiskScore),
+              background: 'linear-gradient(135deg, ' + this.getRiskScoreColor(analysisResult.overallRiskScore) + ', rgba(0,0,0,0.1))',
               border: '1px solid rgba(255,255,255,0.1)',
               borderRadius: '12px',
               marginBottom: '20px',
@@ -1088,15 +1141,21 @@ export default class LegalLens extends React.Component<ILegalLensProps, ILegalLe
                 {analysisResult.overallRiskScore}
               </div>
               <div style={{ fontSize: '18px', color: '#8899aa' }}>/ 100</div>
-              <div style={{ marginTop: '8px', fontSize: '11px', color: '#c2cdd8' }}>
-                {analysisResult.overallRiskScore >= 70 ? '🔴 High Risk' : analysisResult.overallRiskScore >= 40 ? '🟠 Medium Risk' : '🟢 Low Risk'}
+              <div style={{ marginTop: '8px', fontSize: '11px', color: '#c2cdd8', display: 'flex', alignItems: 'center', gap: '6px', justifyContent: 'center' }}>
+                {analysisResult.overallRiskScore >= 70 ? (
+                  <><ErrorCircleFilled style={{ fontSize: '14px', color: '#ef4444' }} /> High Risk</>
+                ) : analysisResult.overallRiskScore >= 40 ? (
+                  <><WarningFilled style={{ fontSize: '14px', color: '#f59e0b' }} /> Medium Risk</>
+                ) : (
+                  <><CheckmarkCircleFilled style={{ fontSize: '14px', color: '#10b981' }} /> Low Risk</>
+                )}
               </div>
             </div>
 
             {analysisResult.riskFactors && analysisResult.riskFactors.length > 0 && (
               <div style={{ marginBottom: '20px' }}>
                 <h3 style={{ fontSize: '14px', color: '#fff', fontWeight: 600, marginBottom: '12px' }}>
-                  📊 Risk Factors ({analysisResult.riskFactors.length})
+                  <><ChartMultipleFilled style={{ fontSize: '14px', marginRight: '6px' }} />Risk Factors ({analysisResult.riskFactors.length})</>
                 </h3>
                 {analysisResult.riskFactors.map((factor, i) => (
                   <div key={i} style={{ 
@@ -1130,7 +1189,7 @@ export default class LegalLens extends React.Component<ILegalLensProps, ILegalLe
 
             <div>
               <h3 style={{ fontSize: '14px', color: '#fff', fontWeight: 600, marginBottom: '12px' }}>
-                📝 Clauses ({analysisResult.clauses.length})
+                <><DocumentBulletListRegular style={{ fontSize: '14px', marginRight: '6px' }} />Clauses ({analysisResult.clauses.length})</>
               </h3>
               {analysisResult.clauses.map((clause, i) => (
                 <div key={i} style={{ 
@@ -1209,10 +1268,10 @@ export default class LegalLens extends React.Component<ILegalLensProps, ILegalLe
       <div style={{ animation: 'fadeIn 0.35s ease' }}>
         <div style={{ marginBottom: '20px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
-            <h2 style={{ fontFamily: "'Cinzel', Georgia, serif", fontSize: '21px', fontWeight: 400, color: '#fff', margin: 0 }}>
+            <h2 style={{ fontFamily: "'Cinzel', Georgia, serif", fontSize: '24px', fontWeight: 600, background: 'linear-gradient(135deg, #fff 0%, #a5b4fc 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text', letterSpacing: '0.5px', margin: 0 }}>
               TranslatePro
             </h2>
-            <span style={{ fontSize: '8px', fontWeight: 700, letterSpacing: '1px', background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', color: '#fff', borderRadius: '4px', padding: '2px 7px' }}>
+            <span style={{ fontSize: '8px', fontWeight: 700, letterSpacing: '1px', background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a78bfa 100%)', boxShadow: '0 4px 20px rgba(99,102,241,0.4), 0 0 40px rgba(139,92,246,0.2)', color: '#fff', borderRadius: '4px', padding: '2px 7px' }}>
               AI POWERED
             </span>
           </div>
@@ -1259,7 +1318,7 @@ export default class LegalLens extends React.Component<ILegalLensProps, ILegalLe
                       transition: 'all 0.2s'
                     }}
                   >
-                    <div style={{ fontSize: '16px', marginBottom: '2px' }}>{l.flag}</div>
+                    <div style={{ fontSize: '16px', marginBottom: '2px', color: '#ffffff' }}>{l.flag}</div>
                     <div style={{ fontSize: '8.5px', color: selLang === l.code ? '#fff' : '#8899aa', fontWeight: 600 }}>{l.label}</div>
                   </button>
                 ))}
@@ -1314,8 +1373,8 @@ export default class LegalLens extends React.Component<ILegalLensProps, ILegalLe
             {this.renderMultilingualQA(contract)}
           </div>
         ) : !translating && (
-          <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '12px', padding: '44px 24px', textAlign: 'center' }}>
-            <div style={{ fontSize: '32px', marginBottom: '12px', opacity: 0.2 }}>🌐</div>
+          <div style={{ background: 'rgba(255,255,255,0.03)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px', boxShadow: '0 8px 32px rgba(0,0,0,0.3)', padding: '44px 24px', textAlign: 'center' }}>
+            <LocalLanguage24Regular style={{ fontSize: '32px', marginBottom: '12px', opacity: 0.2, color: '#8899aa' }} />
             <div style={{ fontSize: '13px', color: '#8899aa', marginBottom: '5px' }}>Select a contract and language above</div>
             <div style={{ fontSize: '10.5px', color: '#5a6a7e' }}>AI will translate the summary and all key clauses in real-time.</div>
           </div>
@@ -1335,23 +1394,23 @@ export default class LegalLens extends React.Component<ILegalLensProps, ILegalLe
             <div style={{ fontSize: '11px', color: '#e2e8f0', fontWeight: 600 }}>English — Original Document</div>
           </div>
 
-          <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '12px', overflow: 'hidden', marginBottom: '10px' }}>
+          <div style={{ background: 'rgba(255,255,255,0.03)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px', boxShadow: '0 8px 32px rgba(0,0,0,0.3)', overflow: 'hidden', marginBottom: '10px' }}>
             <div style={{ padding: '10px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)', background: 'rgba(255,255,255,0.02)' }}>
               <span style={{ fontSize: '8.5px', color: '#5a6a7e', letterSpacing: '1.2px', textTransform: 'uppercase', fontWeight: 600 }}>📝 Contract Summary</span>
             </div>
             <div style={{ padding: '16px' }}>
-              <p style={{ margin: 0, fontSize: '11.5px', color: '#c2cdd8', lineHeight: 1.8 }}>{contract.summary}</p>
+              <p style={{ margin: 0, fontSize: '11px', color: '#c2cdd8', lineHeight: 1.8 }}>{contract.summary}</p>
             </div>
           </div>
 
           {contract.clauses.map((c, i) => (
-            <div key={i} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '12px', overflow: 'hidden', marginBottom: '10px' }}>
-              <div style={{ padding: '9px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)', background: 'rgba(255,255,255,0.02)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div key={i} style={{ background: 'rgba(255,255,255,0.03)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px', boxShadow: '0 8px 32px rgba(0,0,0,0.3)', overflow: 'hidden', marginBottom: '10px' }}>
+              <div style={{ padding: '12px 20px', borderBottom: '1px solid rgba(255,255,255,0.1)', background: 'linear-gradient(135deg, rgba(99,102,241,0.05), rgba(139,92,246,0.05))', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <span style={{ fontSize: '9px', fontFamily: 'monospace', color: '#67e8f9', background: 'rgba(6,182,212,0.1)', border: '1px solid rgba(6,182,212,0.2)', borderRadius: '4px', padding: '2px 7px' }}>{c.ref}</span>
                 <span style={{ fontSize: '8.5px', color: '#5a6a7e', letterSpacing: '1px', textTransform: 'uppercase', fontWeight: 600 }}>{c.title}</span>
               </div>
               <div style={{ padding: '14px 16px' }}>
-                <p style={{ margin: 0, fontSize: '11.5px', color: '#c2cdd8', lineHeight: 1.8 }}>{c.text}</p>
+                <p style={{ margin: 0, fontSize: '11px', color: '#c2cdd8', lineHeight: 1.8 }}>{c.text}</p>
               </div>
             </div>
           ))}
@@ -1372,7 +1431,7 @@ export default class LegalLens extends React.Component<ILegalLensProps, ILegalLe
             </div>
           </div>
 
-          <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '12px', overflow: 'hidden', marginBottom: '10px' }}>
+          <div style={{ background: 'rgba(255,255,255,0.03)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px', boxShadow: '0 8px 32px rgba(0,0,0,0.3)', overflow: 'hidden', marginBottom: '10px' }}>
             <div style={{ padding: '10px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)', background: 'rgba(255,255,255,0.02)' }}>
               <span style={{ fontSize: '8.5px', color: '#5a6a7e', letterSpacing: '1.2px', textTransform: 'uppercase', fontWeight: 600 }}>📝 Contract Summary</span>
             </div>
@@ -1387,8 +1446,8 @@ export default class LegalLens extends React.Component<ILegalLensProps, ILegalLe
           </div>
 
           {contract.clauses.map((c, i) => (
-            <div key={i} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '12px', overflow: 'hidden', marginBottom: '10px' }}>
-              <div style={{ padding: '9px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)', background: 'rgba(255,255,255,0.02)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div key={i} style={{ background: 'rgba(255,255,255,0.03)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px', boxShadow: '0 8px 32px rgba(0,0,0,0.3)', overflow: 'hidden', marginBottom: '10px' }}>
+              <div style={{ padding: '12px 20px', borderBottom: '1px solid rgba(255,255,255,0.1)', background: 'linear-gradient(135deg, rgba(99,102,241,0.05), rgba(139,92,246,0.05))', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <span style={{ fontSize: '9px', fontFamily: 'monospace', color: '#818cf8', background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.25)', borderRadius: '4px', padding: '2px 7px' }}>{c.ref}</span>
                 <span style={{ fontSize: '8.5px', color: '#5a6a7e', letterSpacing: '1px', textTransform: 'uppercase', fontWeight: 600 }}>{c.title}</span>
               </div>
@@ -1414,7 +1473,7 @@ export default class LegalLens extends React.Component<ILegalLensProps, ILegalLe
       <div style={{ background: 'rgba(99,102,241,0.03)', border: '1px solid rgba(99,102,241,0.15)', borderRadius: '12px', overflow: 'hidden' }}>
         <div style={{ padding: '12px 16px', borderBottom: '1px solid rgba(99,102,241,0.15)', background: 'rgba(99,102,241,0.04)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <div style={{ width: '26px', height: '26px', borderRadius: '6px', background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px' }}>🤖</div>
+            <div style={{ width: '26px', height: '26px', borderRadius: '6px', background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a78bfa 100%)', boxShadow: '0 4px 20px rgba(99,102,241,0.4), 0 0 40px rgba(139,92,246,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px' }}>🤖</div>
             <div>
               <div style={{ fontSize: '12px', color: '#818cf8', fontWeight: 600 }}>Q&A Agent - {contract.name}</div>
               <div style={{ fontSize: '8.5px', color: '#5a6a7e' }}>Ask in your language · Powered by Azure AI Foundry</div>
@@ -1447,7 +1506,7 @@ export default class LegalLens extends React.Component<ILegalLensProps, ILegalLe
                   textAlign: 'center'
                 }}
               >
-                <div style={{ fontSize: '14px', marginBottom: '1px' }}>{l.flag}</div>
+                <div style={{ fontSize: '14px', marginBottom: '1px', color: '#ffffff' }}>{l.flag}</div>
                 <div style={{ fontSize: '7.5px', color: qaLanguage === l.code ? '#fff' : '#8899aa', fontWeight: 600 }}>{l.label}</div>
               </button>
             ))}
@@ -1457,8 +1516,8 @@ export default class LegalLens extends React.Component<ILegalLensProps, ILegalLe
         <div style={{ padding: '16px', minHeight: '200px', maxHeight: '400px', overflowY: 'auto' }}>
           {qaHistory.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '40px 20px' }}>
-              <div style={{ fontSize: '24px', marginBottom: '10px', opacity: 0.25 }}>💬</div>
-              <div style={{ fontSize: '11.5px', color: '#5a6a7e', marginBottom: '8px' }}>
+              <InfoRegular style={{ fontSize: '24px', marginBottom: '10px', opacity: 0.25, color: '#8899aa' }} />
+              <div style={{ fontSize: '11px', color: '#5a6a7e', marginBottom: '8px' }}>
                 No questions yet about {contract.name}
               </div>
               <div style={{ fontSize: '9.5px', color: '#4a5568', lineHeight: 1.6 }}>
@@ -1482,11 +1541,11 @@ export default class LegalLens extends React.Component<ILegalLensProps, ILegalLe
                     justifyContent: 'center', 
                     fontSize: '12px' 
                   }}>
-                    {msg.role === 'user' ? '👤' : '🤖'}
+                    {msg.role === 'user' ? <PeopleFilled style={{ fontSize: '14px', color: '#67e8f9' }} /> : <InfoRegular style={{ fontSize: '14px', color: '#818cf8' }} />}
                   </div>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: '8px', color: '#5a6a7e', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      {msg.language === 'de' ? '🇩🇪' : msg.language === 'es' ? '🇪🇸' : '🇬🇧'}
+                      <span style={{ fontSize: '10px', fontWeight: 700 }}>{msg.language === 'de' ? 'DE' : msg.language === 'es' ? 'ES' : 'EN'}</span>
                       <span style={{ textTransform: 'uppercase', fontWeight: 600, letterSpacing: '0.8px' }}>
                         {msg.role === 'user' ? 'You' : 'Agent'}
                       </span>
@@ -1528,7 +1587,7 @@ export default class LegalLens extends React.Component<ILegalLensProps, ILegalLe
         </div>
 
         <div style={{ padding: '12px 16px', borderTop: '1px solid rgba(99,102,241,0.15)', background: 'rgba(99,102,241,0.02)' }}>
-          <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-end' }}>
+          <div style={{ display: 'flex', gap: '20px', alignItems: 'flex-end' }}>
             <div style={{ flex: 1 }}>
               <input
                 type="text"
@@ -1548,7 +1607,7 @@ export default class LegalLens extends React.Component<ILegalLensProps, ILegalLe
                   borderRadius: '8px', 
                   padding: '10px 14px', 
                   color: '#e2e8f0', 
-                  fontSize: '11.5px', 
+                  fontSize: '11px', 
                   outline: 'none'
                 }}
               />
@@ -1561,12 +1620,14 @@ export default class LegalLens extends React.Component<ILegalLensProps, ILegalLe
                 border: 'none',
                 color: qaInput.trim() && !qaLoading ? '#fff' : '#5a6a7e',
                 borderRadius: '8px',
-                padding: '10px 18px',
+                padding: '10px 5px',
                 cursor: qaInput.trim() && !qaLoading ? 'pointer' : 'not-allowed',
                 fontSize: '11px',
                 fontWeight: 600,
                 outline: 'none',
-                whiteSpace: 'nowrap'
+                whiteSpace: 'nowrap',
+                flexShrink: 0,
+                minWidth: '70px'
               }}
             >
               {qaLoading ? 'Asking...' : 'Ask'}
@@ -1641,8 +1702,9 @@ private performActualClassification = async (): Promise<void> => {
     console.log('[Classification] Contract:', contract?.name);
     
     // Check if we have cached analysis for this document
-    if (fullAnalysis && uploadedFile) {
-      console.log('[Classification] ✓ Using cached analysis (consistent with Upload!)');
+    if (fullAnalysis && uploadedFile && contract?.name === uploadedFile.name) {
+      console.log('[Classification] ✓ Using cached analysis for:', uploadedFile.name);
+      console.log('[Classification] ✓ Results match Upload tab (same document)');
       
       let result;
       switch (selectedClassificationType) {
@@ -1675,7 +1737,14 @@ private performActualClassification = async (): Promise<void> => {
     }
     
     // No cached data - run fresh analysis
-    console.log('[Classification] No cached data, running fresh analysis...');
+    if (uploadedFile && contract?.name !== uploadedFile.name) {
+      console.log('[Classification] ⚠️  Selected different document than uploaded!');
+      console.log('[Classification] Uploaded:', uploadedFile.name);
+      console.log('[Classification] Selected:', contract?.name);
+      console.log('[Classification] Running fresh analysis (risk scores will differ)');
+    } else {
+      console.log('[Classification] No cached data, running fresh analysis...');
+    }
     
     // Fetch file and extract text
     let documentText = '';
@@ -2190,7 +2259,7 @@ private renderClassifySelect(): React.ReactElement {
                 {/* Label */}
                 <div>
                   <div style={{ 
-                    fontSize: '11.5px', 
+                    fontSize: '11px', 
                     color: selectedClassificationType === type.value ? '#818cf8' : '#c2cdd8',
                     fontWeight: 600,
                     marginBottom: '2px'
@@ -2454,8 +2523,8 @@ private renderClassificationPending(): React.ReactElement {
       padding: '36px 20px', 
       textAlign: 'center' 
     }}>
-      <div style={{ fontSize: '28px', marginBottom: '10px', opacity: 0.25 }}>⟳</div>
-      <div style={{ fontSize: '11.5px', color: '#5a6a7e' }}>
+      <ClockRegular style={{ fontSize: '28px', marginBottom: '10px', opacity: 0.25, color: '#8899aa' }} />
+      <div style={{ fontSize: '11px', color: '#5a6a7e' }}>
         Extracted metadata will appear here…
       </div>
     </div>

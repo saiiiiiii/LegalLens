@@ -414,12 +414,19 @@ ${contractInfo}`;
     console.log('[AzureAI] Resource:', resourceName);
     console.log('[AzureAI] Calling:', url);
 
-    const requestBody = {
+    const requestBody: any = {
       messages: messages,
       max_tokens: maxTokens,
-      temperature: 0.7,
-      response_format: { type: "json_object" }  // Force JSON mode
+      temperature: 0.7
     };
+    
+    // Only use JSON mode for classification (when user message contains "JSON")
+    // Don't use it for Q&A which needs natural language responses
+    const userMessage = messages.find(m => m.role === 'user')?.content || '';
+    if (userMessage.toLowerCase().includes('json') || userMessage.toLowerCase().includes('return only this json')) {
+      requestBody.response_format = { type: "json_object" };
+      console.log('[AzureAI] Using JSON mode for structured response');
+    }
 
     console.log('[AzureAI] Request body:', JSON.stringify(requestBody, null, 2));
 
