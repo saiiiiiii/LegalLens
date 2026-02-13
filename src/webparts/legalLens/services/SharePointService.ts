@@ -24,9 +24,7 @@ export class SharePointService implements ISharePointService {
     console.log('[SharePoint] Initialized with library:', libraryUrl);
   }
 
-  /**
-   * Get contracts from SharePoint library - NOW WITH DOCUMENT CONTENT
-   */
+  
   public async getContracts(): Promise<IContract[]> {
     try {
       const listTitle = this.getListTitleFromUrl(this.libraryUrl);
@@ -46,23 +44,21 @@ export class SharePointService implements ISharePointService {
 
       console.log('[SharePoint] Found', items.length, 'contracts');
       
-      // Map items and extract document content
       const contracts: IContract[] = [];
       
       for (let i = 0; i < items.length; i++) {
         const item = items[i];
         const contract = this.mapItemToContract(item, i);
         
-        // Extract document content if file exists
         if (item.FileRef) {
           try {
             console.log(`[SharePoint] Extracting content from: ${contract.name}`);
             const fullText = await this.extractDocumentContent(item.FileRef);
-            (contract as any).fullText = fullText; // Add fullText property
+            (contract as any).fullText = fullText;
             console.log(`[SharePoint] ✓ Extracted ${fullText.length} characters from ${contract.name}`);
           } catch (error) {
             console.warn(`[SharePoint] Could not extract content from ${contract.name}:`, error);
-            (contract as any).fullText = ''; // Empty if extraction fails
+            (contract as any).fullText = '';
           }
         }
         
@@ -77,19 +73,15 @@ export class SharePointService implements ISharePointService {
     }
   }
 
-  /**
-   * Extract document content from file
-   */
+  
   private async extractDocumentContent(fileUrl: string): Promise<string> {
     try {
       const file = this.sp.web.getFileByServerRelativePath(fileUrl);
       const blob = await file.getBlob();
       const fileName = fileUrl.split('/').pop() || '';
       
-      // Determine file type
       const fileType = blob.type;
       
-      // Extract based on file type
       if (fileType === 'text/plain' || fileName.endsWith('.txt')) {
         return await blob.text();
       }
@@ -100,12 +92,10 @@ export class SharePointService implements ISharePointService {
       }
       
       if (fileType === 'application/pdf' || fileName.endsWith('.pdf')) {
-        // PDF extraction requires additional library or Document Intelligence
         console.warn('[SharePoint] PDF extraction not implemented for:', fileName);
         return `[PDF Document: ${fileName}]\n\nNote: Full text extraction from PDF requires Document Intelligence service to be configured.`;
       }
       
-      // Try plain text extraction as fallback
       const text = await blob.text();
       if (text && text.length > 50 && !text.startsWith('PK')) {
         return text;
@@ -119,9 +109,7 @@ export class SharePointService implements ISharePointService {
     }
   }
 
-  /**
-   * Extract text from .docx file (ZIP-based Word document)
-   */
+  
   private async extractFromDocx(blob: Blob): Promise<string> {
     try {
       const arrayBuffer = await blob.arrayBuffer();
@@ -132,13 +120,11 @@ export class SharePointService implements ISharePointService {
         throw new Error('Invalid .docx format - missing document.xml');
       }
 
-      // Extract text from XML
-      // Word documents store text in <w:t> tags
       const textContent = documentXml
-        .replace(/<w:t[^>]*>/g, '')  // Remove opening tags
-        .replace(/<\/w:t>/g, ' ')     // Replace closing tags with space
-        .replace(/<[^>]+>/g, '')       // Remove all other XML tags
-        .replace(/\s+/g, ' ')          // Normalize whitespace
+        .replace(/<w:t[^>]*>/g, '')
+        .replace(/<\/w:t>/g, ' ')
+        .replace(/<[^>]+>/g, '')
+        .replace(/\s+/g, ' ')
         .trim();
 
       return textContent || '[No text found in document]';
@@ -149,9 +135,7 @@ export class SharePointService implements ISharePointService {
     }
   }
 
-  /**
-   * Get contract file as Blob
-   */
+  
   public async getContractFile(fileUrl: string): Promise<File> {
     try {
       console.log('[SharePoint] Fetching file from:', fileUrl);
@@ -159,12 +143,10 @@ export class SharePointService implements ISharePointService {
       const file = this.sp.web.getFileByServerRelativePath(fileUrl);
       const blob = await file.getBlob();
       
-      // Extract filename from URL
       const fileName = fileUrl.split('/').pop() || 'contract.docx';
       
       console.log('[SharePoint] Downloaded file:', fileName, 'Size:', blob.size);
       
-      // Convert Blob to File (File extends Blob with name and lastModified)
       const fileObject = new File([blob], fileName, { 
         type: blob.type,
         lastModified: Date.now()
@@ -177,9 +159,7 @@ export class SharePointService implements ISharePointService {
     }
   }
 
-  /**
-   * Save analyzed contract to SharePoint - WORKING VERSION
-   */
+  
   public async saveAnalyzedContract(
     fileName: string,
     fileBlob: Blob,
@@ -191,7 +171,6 @@ export class SharePointService implements ISharePointService {
       console.log('[SharePoint] File:', fileName);
       console.log('[SharePoint] Analysis result:', analysisResult);
       
-      // Step 1: Upload file
       console.log('[SharePoint] Step 1: Uploading file...');
       await this.sp.web.lists
         .getByTitle(listTitle)
@@ -201,7 +180,6 @@ export class SharePointService implements ISharePointService {
       
       console.log('[SharePoint] Step 1: File uploaded successfully');
 
-      // Step 2: Get the file we just uploaded
       console.log('[SharePoint] Step 2: Getting uploaded file...');
       const file = await this.sp.web.lists
         .getByTitle(listTitle)
@@ -211,12 +189,10 @@ export class SharePointService implements ISharePointService {
       
       console.log('[SharePoint] Step 2: File retrieved');
 
-      // Step 3: Get list item from file
       console.log('[SharePoint] Step 3: Getting list item...');
       const item = await file.getItem();
       console.log('[SharePoint] Step 3: List item retrieved');
 
-      // Step 4: Update metadata
       console.log('[SharePoint] Step 4: Updating metadata...');
       const metadata = {
         Title: analysisResult.fileName || fileName,
@@ -245,17 +221,13 @@ export class SharePointService implements ISharePointService {
     }
   }
 
-  /**
-   * Extract list title from URL
-   */
+  
   private getListTitleFromUrl(url: string): string {
     const segments = url.split('/').filter(s => s.length > 0);
     return segments[segments.length - 1];
   }
 
-  /**
-   * Map SharePoint item to IContract
-   */
+  
   private mapItemToContract(item: any, index: number): IContract {
     const parties = this.parseMultiValue(item.Parties);
     const tags = this.parseMultiValue(item.Tags);

@@ -72,7 +72,7 @@ export class AzureAIFoundryService implements IAzureAIFoundryService {
     this.projectEndpoint = projectEndpoint;
     this.apiKey = apiKey;
     this.deploymentName = deploymentName;
-    
+
     console.log('[AzureAI] Initialized with:');
     console.log('  Endpoint:', projectEndpoint);
     console.log('  Deployment:', deploymentName);
@@ -87,7 +87,7 @@ export class AzureAIFoundryService implements IAzureAIFoundryService {
     try {
       // Extract text from file
       const extractedText = await this.extractTextFromFile(fileBlob);
-      
+
       // Analyze with AI
       const analysisPrompt = `Analyze this legal contract and extract key information.
 
@@ -157,7 +157,7 @@ Respond ONLY with valid JSON (no markdown, no code blocks):
 
     try {
       const text = await this.extractTextFromFile(fileBlob);
-      
+
       const prompt = `Classify this document as "${classificationType}".
 
 Text: ${text.substring(0, 2000)}
@@ -244,7 +244,7 @@ Output ONLY the translation, no explanations.`;
 
     // Build contract info - prefer full text if available
     let contractInfo = '';
-    
+
     if (contract.fullText && contract.fullText.length > 100) {
       // Use actual document content
       console.log('[AzureAI] Using full document text (length:', contract.fullText.length, ')');
@@ -281,7 +281,7 @@ Be specific and reference actual contract terms.
 ${contractInfo}`;
 
     const messages: any[] = [{ role: 'system', content: systemPrompt }];
-    
+
     conversationHistory.forEach(msg => {
       messages.push({
         role: msg.role === 'user' ? 'user' : 'assistant',
@@ -312,7 +312,7 @@ ${contractInfo}`;
     try {
       const fileName = (fileBlob as File).name || '';
       const fileType = fileBlob.type;
-      
+
       console.log('[AzureAI] Extracting text from:', fileName, 'Type:', fileType);
 
       // For .txt files - direct text extraction
@@ -323,8 +323,8 @@ ${contractInfo}`;
       }
 
       // For .docx files - extract from XML
-      if (fileType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || 
-          fileName.endsWith('.docx')) {
+      if (fileType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+        fileName.endsWith('.docx')) {
         console.log('[AzureAI] Extracting from .docx file...');
         return await this.extractFromDocx(fileBlob);
       }
@@ -358,11 +358,11 @@ ${contractInfo}`;
     try {
       // Read as ArrayBuffer
       const arrayBuffer = await fileBlob.arrayBuffer();
-      
+
       // Use JSZip to extract the document.xml from .docx
       const zip = await JSZip.loadAsync(arrayBuffer);
       const documentXml = await zip.file('word/document.xml')?.async('text');
-      
+
       if (!documentXml) {
         console.error('[AzureAI] Could not find document.xml in .docx');
         return '[Invalid .docx file format]';
@@ -402,11 +402,11 @@ ${contractInfo}`;
     // Azure AI Foundry uses Azure OpenAI endpoint format
     // Your endpoint: https://legallex-resource.services.ai.azure.com/api/projects/legallex
     // Becomes: https://legallex-resource.openai.azure.com/openai/deployments/gpt-4o/chat/completions
-    
+
     // Extract resource name from AI Foundry endpoint
     const resourceMatch = this.projectEndpoint.match(/https:\/\/([^.]+)-resource\.services\.ai\.azure\.com/);
     const resourceName = resourceMatch ? resourceMatch[1] : 'legallex';
-    
+
     // Build Azure OpenAI endpoint
     const azureOpenAIEndpoint = `https://${resourceName}-resource.openai.azure.com`;
     const url = `${azureOpenAIEndpoint}/openai/deployments/${this.deploymentName}/chat/completions?api-version=2024-08-01-preview`;
@@ -419,7 +419,7 @@ ${contractInfo}`;
       max_tokens: maxTokens,
       temperature: 0.7
     };
-    
+
     // Only use JSON mode for classification (when user message contains "JSON")
     // Don't use it for Q&A which needs natural language responses
     const userMessage = messages.find(m => m.role === 'user')?.content || '';
@@ -449,7 +449,7 @@ ${contractInfo}`;
 
     const data = await response.json();
     console.log('[AzureAI] Success! Response received');
-    
+
     return data.choices[0]?.message?.content || '';
   }
 
@@ -463,7 +463,7 @@ ${contractInfo}`;
         .replace(/```json\s*/g, '')
         .replace(/```\s*/g, '')
         .trim();
-      
+
       return JSON.parse(cleaned);
     } catch (error) {
       console.error('[AzureAI] JSON parse error:', error);
