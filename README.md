@@ -30,7 +30,9 @@ AI-powered contract management web part for SharePoint Online with auto-classifi
 | ExpiryDate | Date | Contract expiration date |
 | Tags | Multiple lines of text | Semicolon-separated tags (e.g., GDPR;SOC2;CCPA) |
 | RiskScore | Number | Risk score from 0-100 |
-
+| AI Analysis Complete | Yes/No | AI Analysis Completed or Not |
+| Analysis Date | Date | Analysis date |
+| Effective Date | Date | Effective Date date |
 
 ## Version History
 
