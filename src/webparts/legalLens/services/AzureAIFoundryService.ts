@@ -399,9 +399,6 @@ ${contractInfo}`;
    * Call AI with message history - Azure OpenAI format for AI Foundry
    */
   private async callAIWithMessages(messages: any[], maxTokens: number = 1500): Promise<string> {
-    // Azure AI Foundry uses Azure OpenAI endpoint format
-    // Your endpoint: https://legallex-resource.services.ai.azure.com/api/projects/legallex
-    // Becomes: https://legallex-resource.openai.azure.com/openai/deployments/gpt-4o/chat/completions
 
     // Extract resource name from AI Foundry endpoint
     const resourceMatch = this.projectEndpoint.match(/https:\/\/([^.]+)-resource\.services\.ai\.azure\.com/);

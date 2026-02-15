@@ -99,7 +99,7 @@ export interface ILegalLensState {
   qaInput: string;
   qaLoading: boolean;
   
-  // New Dynamic Classification state
+  // Classification state
   classifyState: {
     step: number;
     done: boolean;
@@ -107,7 +107,7 @@ export interface ILegalLensState {
   } | null;
   selectedClassificationType: string;
   
-  // Unified analysis cache (all 4 types)
+  // Unified analysis cache
   fullAnalysis: {
     contractType?: any;
     riskAssessment?: any;
@@ -116,6 +116,9 @@ export interface ILegalLensState {
   } | null;
   
   pulseAlert: boolean;
+  
+  //  ADD THIS FOR TAG FILTERING
+  selectedTag: string | null;
 }
 
 export default class LegalLens extends React.Component<ILegalLensProps, ILegalLensState> {
@@ -124,62 +127,61 @@ export default class LegalLens extends React.Component<ILegalLensProps, ILegalLe
   private fileInputRef: React.RefObject<HTMLInputElement>;
 
   constructor(props: ILegalLensProps) {
-    super(props);
+  super(props);
+  
+  this.state = {
+    view: 'library',
+    contracts: [],
+    loading: true,
+    error: null,
     
-    this.state = {
-      view: 'library',
-      contracts: [],
-      loading: true,
-      error: null,
-      
-      uploadView: 'select',
-      uploadedFile: null,
-      uploadedFileName: '',
-      analysisResult: null,
-      analyzingProgress: 0,
-      analyzeError: null,
-      
-      classificationView: 'select',
-      selectedFileForClassification: 0,
-      classificationType: 'contract-type',
-      classificationResult: null,
-      classifying: false,
-      classifyError: null,
-      
-      selContract: 0,
-      selLang: 'en',
-      translating: false,
-      translateProgress: 0,
-      cache: {},
-      translateError: null,
-      
-      qaLanguage: 'en',
-      qaHistory: [],
-      qaInput: '',
-      qaLoading: false,
-      
-      // New Dynamic Classification state
-      classifyState: null,
-      selectedClassificationType: 'contract_type',
-      
-      // Unified analysis cache
-      fullAnalysis: null,
-      
-      pulseAlert: false
-    };
+    uploadView: 'select',
+    uploadedFile: null,
+    uploadedFileName: '',
+    analysisResult: null,
+    analyzingProgress: 0,
+    analyzeError: null,
     
-    this._isMounted = false;
-    this.fileInputRef = React.createRef();
+    classificationView: 'select',
+    selectedFileForClassification: 0,
+    classificationType: 'contract-type',
+    classificationResult: null,
+    classifying: false,
+    classifyError: null,
     
-    // Bind methods
-    this.loadContracts = this.loadContracts.bind(this);
-    this.runTranslation = this.runTranslation.bind(this);
-    this.handleMultilingualQuestion = this.handleMultilingualQuestion.bind(this);
-    this.handleFileUpload = this.handleFileUpload.bind(this);
-    this.handleClassification = this.handleClassification.bind(this);
-    this.riskColor = this.riskColor.bind(this);
-    this.statusColor = this.statusColor.bind(this);
-  }
+    selContract: 0,
+    selLang: 'en',
+    translating: false,
+    translateProgress: 0,
+    cache: {},
+    translateError: null,
+    
+    qaLanguage: 'en',
+    qaHistory: [],
+    qaInput: '',
+    qaLoading: false,
+    
+    classifyState: null,
+    selectedClassificationType: 'contract_type',
+    fullAnalysis: null,
+    pulseAlert: false,
+    
+    //  ADD THIS FOR TAG FILTERING
+    selectedTag: null
+  };
+  
+  this._isMounted = false;
+  this.fileInputRef = React.createRef();
+  
+  // Bind methods
+  this.loadContracts = this.loadContracts.bind(this);
+  this.runTranslation = this.runTranslation.bind(this);
+  this.handleMultilingualQuestion = this.handleMultilingualQuestion.bind(this);
+  this.handleFileUpload = this.handleFileUpload.bind(this);
+  this.handleClassification = this.handleClassification.bind(this);
+  this.riskColor = this.riskColor.bind(this);
+  this.statusColor = this.statusColor.bind(this);
+}
 
   public componentDidMount(): void {
     this._isMounted = true;
@@ -727,56 +729,193 @@ export default class LegalLens extends React.Component<ILegalLensProps, ILegalLe
   }
 
   private renderLibrary(): React.ReactElement {
-    const { contracts } = this.state;
-    // Get all unique tags
-    const allTagsArray: string[] = [];
-    contracts.forEach((c: IContract) => {
-      c.tags.forEach(tag => {
-        if (allTagsArray.indexOf(tag) === -1) {
-          allTagsArray.push(tag);
-        }
-      });
+  const { contracts, selectedTag } = this.state;
+  
+  // Filter contracts by selected tag
+  const displayedContracts = selectedTag
+    ? contracts.filter(c => c.tags.includes(selectedTag))
+    : contracts;
+  
+  // Get all unique tags with counts
+  const tagCounts: { [tag: string]: number } = {};
+  contracts.forEach((c: IContract) => {
+    c.tags.forEach(tag => {
+      tagCounts[tag] = (tagCounts[tag] || 0) + 1;
     });
-    const allTags = allTagsArray;
+  });
+  
+  // Sort by frequency and take top 15
+  const topTags = Object.entries(tagCounts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 15)
+    .map(([tag, count]) => ({ tag, count }));
 
-    return (
-      <div style={{ animation: 'fadeIn 0.35s ease' }}>
-        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
-          <div>
-            <h2 style={{ fontFamily: "'Cinzel', Georgia, serif", fontSize: '24px', fontWeight: 600, background: 'linear-gradient(135deg, #fff 0%, #a5b4fc 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text', letterSpacing: '0.5px', margin: '0 0 3px' }}>
-              Governed Contract Library
-            </h2>
-            <p style={{ margin: 0, fontSize: '11px', color: '#64748b' }}>
-              Auto-classified · Metadata enriched · Compliance monitored
-            </p>
-          </div>
-          <div style={{ display: 'flex', gap: '8px' }}>
-            {[
-              { l: 'Total', v: contracts.length.toString(), c: '#06b6d4' },
-              { l: 'Compliant', v: contracts.filter(c => c.status === 'compliant').length.toString(), c: '#10b981' },
-              { l: 'Warnings', v: contracts.filter(c => c.status === 'warning').length.toString(), c: '#f59e0b' },
-              { l: 'Alerts', v: contracts.filter(c => c.flag === 'Expiring soon' || c.flag === 'Expired' || c.risk >= 70).length.toString(), c: '#ef4444' }
-            ].map(s => (
-              <div key={s.l} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '8px', padding: '7px 12px', textAlign: 'center', minWidth: '62px' }}>
-                <div style={{ fontSize: '17px', fontWeight: 700, color: s.c, lineHeight: 1.2 }}>{s.v}</div>
-                <div style={{ fontSize: '8px', color: '#64748b', letterSpacing: '0.5px', textTransform: 'uppercase', marginTop: '1px' }}>{s.l}</div>
-              </div>
-            ))}
+  return (
+    <div style={{ animation: 'fadeIn 0.35s ease' }}>
+      {/* Tag Filter Bar */}
+      {topTags.length > 0 && (
+        <div style={{ 
+          marginBottom: '16px', 
+          padding: '12px', 
+          background: 'rgba(255,255,255,0.02)', 
+          borderRadius: '8px',
+          border: '1px solid rgba(255,255,255,0.06)'
+        }}>
+          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center' }}>
+            <span style={{ fontSize: '8.5px', color: '#64748b', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+              Filter by tag:
+            </span>
+            
+            {/* Clear Filter Button */}
+            {selectedTag && (
+              <button
+                onClick={() => this.setState({ selectedTag: null })}
+                style={{
+                  background: 'rgba(239,68,68,0.12)',
+                  border: '1px solid rgba(239,68,68,0.2)',
+                  color: '#ef4444',
+                  borderRadius: '4px',
+                  padding: '4px 10px',
+                  fontSize: '8.5px',
+                  cursor: 'pointer',
+                  fontWeight: 600,
+                  transition: 'all 0.2s',
+                  outline: 'none'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(239,68,68,0.2)'}
+                onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(239,68,68,0.12)'}
+              >
+                ✕ Clear Filter
+              </button>
+            )}
+            
+            {topTags.map(({ tag, count }) => {
+              const isSelected = selectedTag === tag;
+              return (
+                <button
+                  key={tag}
+                  onClick={() => this.setState({ 
+                    selectedTag: isSelected ? null : tag 
+                  })}
+                  style={{
+                    fontSize: '8.5px',
+                    fontFamily: 'monospace',
+                    background: isSelected 
+                      ? 'rgba(6,182,212,0.2)' 
+                      : 'rgba(6,182,212,0.08)',
+                    border: isSelected
+                      ? '1px solid rgba(6,182,212,0.4)'
+                      : '1px solid rgba(6,182,212,0.18)',
+                    borderRadius: '4px',
+                    padding: '4px 10px',
+                    color: isSelected ? '#22d3ee' : '#67e8f9',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                    fontWeight: isSelected ? 600 : 400,
+                    outline: 'none'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isSelected) {
+                      e.currentTarget.style.background = 'rgba(6,182,212,0.12)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isSelected) {
+                      e.currentTarget.style.background = 'rgba(6,182,212,0.08)';
+                    }
+                  }}
+                  title={`${count} contract${count > 1 ? 's' : ''}`}
+                >
+                  {tag}
+                  <span style={{ 
+                    fontSize: '7px', 
+                    marginLeft: '4px', 
+                    opacity: 0.7,
+                    fontWeight: 700
+                  }}>
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
           </div>
         </div>
+      )}
+      
+      {/* Header with filtered count */}
+      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
+        <div>
+          <h2 style={{ 
+            fontFamily: "'Cinzel', Georgia, serif", 
+            fontSize: '24px', 
+            fontWeight: 600, 
+            background: 'linear-gradient(135deg, #fff 0%, #a5b4fc 100%)', 
+            WebkitBackgroundClip: 'text', 
+            WebkitTextFillColor: 'transparent', 
+            backgroundClip: 'text', 
+            letterSpacing: '0.5px', 
+            margin: '0 0 3px' 
+          }}>
+            {selectedTag ? `Contracts tagged: "${selectedTag}"` : 'Governed Contract Library'}
+          </h2>
+          <p style={{ margin: 0, fontSize: '11px', color: '#64748b' }}>
+            {selectedTag 
+              ? `Showing ${displayedContracts.length} of ${contracts.length} contracts`
+              : 'Auto-classified · Metadata enriched · Compliance monitored'
+            }
+          </p>
+        </div>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          {[
+            { l: 'Total', v: contracts.length.toString(), c: '#06b6d4' },
+            { l: 'Compliant', v: contracts.filter(c => c.status === 'compliant').length.toString(), c: '#10b981' },
+            { l: 'Warnings', v: contracts.filter(c => c.status === 'warning').length.toString(), c: '#f59e0b' },
+            { l: 'Alerts', v: contracts.filter(c => c.flag === 'Expiring soon' || c.flag === 'Expired' || c.risk >= 70).length.toString(), c: '#ef4444' }
+          ].map(s => (
+            <div key={s.l} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '8px', padding: '7px 12px', textAlign: 'center', minWidth: '62px' }}>
+              <div style={{ fontSize: '17px', fontWeight: 700, color: s.c, lineHeight: 1.2 }}>{s.v}</div>
+              <div style={{ fontSize: '8px', color: '#64748b', letterSpacing: '0.5px', textTransform: 'uppercase', marginTop: '1px' }}>{s.l}</div>
+            </div>
+          ))}
+        </div>
+      </div>
 
-        <div style={{ background: 'rgba(255,255,255,0.03)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px', boxShadow: '0 8px 32px rgba(0,0,0,0.3)', overflow: 'hidden' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 130px 110px 80px 100px', padding: '12px 20px', borderBottom: '1px solid rgba(255,255,255,0.1)', background: 'linear-gradient(135deg, rgba(99,102,241,0.05), rgba(139,92,246,0.05))', backdropFilter: 'blur(10px)' }}>
-            {['Contract', 'Type', 'Jurisdiction', 'Risk', 'Status'].map(h => (
-              <span key={h} style={{ fontSize: '8px', color: '#64748b', letterSpacing: '1.2px', textTransform: 'uppercase', fontWeight: 600 }}>{h}</span>
-            ))}
+      {/* Contract Table - using displayedContracts instead of contracts */}
+      <div style={{ background: 'rgba(255,255,255,0.03)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px', boxShadow: '0 8px 32px rgba(0,0,0,0.3)', overflow: 'hidden' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 130px 110px 80px 100px', padding: '12px 20px', borderBottom: '1px solid rgba(255,255,255,0.1)', background: 'linear-gradient(135deg, rgba(99,102,241,0.05), rgba(139,92,246,0.05))', backdropFilter: 'blur(10px)' }}>
+          {['Contract', 'Type', 'Jurisdiction', 'Risk', 'Status'].map(h => (
+            <span key={h} style={{ fontSize: '8px', color: '#64748b', letterSpacing: '1.2px', textTransform: 'uppercase', fontWeight: 600 }}>{h}</span>
+          ))}
+        </div>
+        
+        {displayedContracts.length === 0 ? (
+          <div style={{ padding: '40px', textAlign: 'center', color: '#64748b' }}>
+            <DocumentRegular style={{ fontSize: '48px', opacity: 0.3, marginBottom: '16px' }} />
+            <div style={{ fontSize: '13px', marginBottom: '8px' }}>No contracts match this filter</div>
+            <button
+              onClick={() => this.setState({ selectedTag: null })}
+              style={{
+                background: 'rgba(99,102,241,0.12)',
+                border: '1px solid rgba(99,102,241,0.2)',
+                color: '#818cf8',
+                borderRadius: '6px',
+                padding: '8px 16px',
+                fontSize: '11px',
+                cursor: 'pointer',
+                fontWeight: 600,
+                marginTop: '8px'
+              }}
+            >
+              Clear Filter
+            </button>
           </div>
-          {contracts.map((c, i) => (
+        ) : (
+          displayedContracts.map((c, i) => (
             <div key={c.id} className="card-row" style={{ 
               display: 'grid', 
               gridTemplateColumns: '1fr 130px 110px 80px 100px', 
               padding: '11px 16px', 
-              borderBottom: i < contracts.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none', 
+              borderBottom: i < displayedContracts.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none', 
               alignItems: 'center', 
               transition: 'background 0.2s',
               animation: `fadeIn 0.3s ease ${i * 0.07}s both`
@@ -803,22 +942,12 @@ export default class LegalLens extends React.Component<ILegalLensProps, ILegalLe
                 )}
               </div>
             </div>
-          ))}
-        </div>
-
-        {allTags.length > 0 && (
-          <div style={{ marginTop: '14px', display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center' }}>
-            <span style={{ fontSize: '8.5px', color: '#64748b' }}>Auto-tagged:</span>
-            {allTags.map(t => (
-              <span key={t} style={{ fontSize: '8.5px', fontFamily: 'monospace', background: 'rgba(6,182,212,0.08)', border: '1px solid rgba(6,182,212,0.18)', borderRadius: '3px', padding: '2px 6px', color: '#67e8f9' }}>
-                {t}
-              </span>
-            ))}
-          </div>
+          ))
         )}
       </div>
-    );
-  }
+    </div>
+  );
+}
 
   private renderAlerts(): React.ReactElement {
     // Generate alerts dynamically from contract data
@@ -1044,9 +1173,9 @@ export default class LegalLens extends React.Component<ILegalLensProps, ILegalLe
                 }}
                 style={{ width: '100%', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', padding: '10px 14px', color: '#e2e8f0', fontSize: '12px', outline: 'none', cursor: 'pointer' }}
               >
-                <option value="-1">Choose contract from library...</option>
+                <option value="-1" style={{ background: '#1e293b', color: '#e2e8f0' }}>Choose contract from library...</option>
                 {this.state.contracts.map((c, i) => (
-                  <option key={i} value={i}>{c.name}</option>
+                  <option key={i} value={i} style={{ background: '#1e293b', color: '#e2e8f0' }}>{c.name}</option>
                 ))}
               </select>
             </div>
@@ -1121,7 +1250,7 @@ export default class LegalLens extends React.Component<ILegalLensProps, ILegalLe
               alignItems: 'center',
               gap: '10px'
             }}>
-              <span style={{ fontSize: '18px' }}>✅</span>
+              <span style={{ fontSize: '18px' }}></span>
               <div>
                 <div style={{ fontSize: '11px', color: '#10b981', fontWeight: 600 }}>
                   Analysis Complete & Saved to SharePoint
@@ -1298,7 +1427,7 @@ export default class LegalLens extends React.Component<ILegalLensProps, ILegalLe
                 style={{ width: '100%', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', padding: '9px 34px 9px 12px', color: '#e2e8f0', fontSize: '12px', outline: 'none', cursor: 'pointer' }}
               >
                 {contracts.map((c, i) => (
-                  <option key={i} value={i}>{c.name}</option>
+                  <option key={i} value={i} style={{ background: '#1e293b', color: '#e2e8f0' }}>{c.name}</option>
                 ))}
               </select>
             </div>
@@ -1646,10 +1775,6 @@ export default class LegalLens extends React.Component<ILegalLensProps, ILegalLe
       </div>
     );
   }
-
-  // ============================================================================
-  // CLASSIFICATION METHODS (DYNAMIC TYPES)
-  // ============================================================================
 
 /**
  * STEP 1: Start classification simulation
@@ -2134,10 +2259,6 @@ private handleClassifyClick = (): void => {
   this.setState({ classificationView: 'processing' });
 };
 
-// ============================================================================
-// RENDER METHODS
-// ============================================================================
-
 /**
  * Main classification render
  */
@@ -2205,7 +2326,7 @@ private renderClassifySelect(): React.ReactElement {
             }}
           >
             {contracts.map((c, i) => (
-              <option key={i} value={i}>{c.name}</option>
+              <option key={i} value={i} style={{ background: '#1e293b', color: '#e2e8f0' }}>{c.name}</option>
             ))}
           </select>
         </div>
@@ -2381,13 +2502,6 @@ private renderClassifyProcessing(): React.ReactElement {
     </>
   );
 }
-
-// Continue in next file...
-
-
-  // ============================================================================
-  // CLASSIFICATION RENDERING METHODS
-  // ============================================================================
 
 /**
  * Render progress steps (LEFT column)

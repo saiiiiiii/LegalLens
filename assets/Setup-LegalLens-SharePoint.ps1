@@ -1,0 +1,337 @@
+
+# LegalLens - SharePoint Library Setup Script
+
+
+# CONFIGURATION - UPDATE THESE VALUES
+$SiteUrl = "https://yourtenant.sharepoint.com/sites/yoursite"  # Your SharePoint site URL
+$LibraryName = "Contracts"                                      # Document library name
+$LibraryDescription = "Contract repository for LegalLens AI analysis"
+
+
+# STEP 1: Connect to SharePoint
+
+
+Write-Host "============================================" -ForegroundColor Cyan
+Write-Host "LegalLens SharePoint Setup" -ForegroundColor Cyan
+Write-Host "============================================" -ForegroundColor Cyan
+Write-Host ""
+
+# Check if PnP PowerShell is installed
+if (-not (Get-Module -ListAvailable -Name PnP.PowerShell)) {
+    Write-Host "PnP.PowerShell module not found!" -ForegroundColor Red
+    Write-Host ""
+    Write-Host "Installing PnP.PowerShell module..." -ForegroundColor Yellow
+    Install-Module -Name PnP.PowerShell -Scope CurrentUser -Force
+    Write-Host "Module installed successfully!" -ForegroundColor Green
+    Write-Host ""
+}
+
+Write-Host "Connecting to SharePoint site..." -ForegroundColor Yellow
+Write-Host "Site: $SiteUrl" -ForegroundColor Gray
+Write-Host ""
+
+try {
+    Connect-PnPOnline -Url $SiteUrl -Interactive
+    Write-Host "Connected successfully!" -ForegroundColor Green
+    Write-Host ""
+} catch {
+    Write-Host "Failed to connect to SharePoint!" -ForegroundColor Red
+    Write-Host "Error: $_" -ForegroundColor Red
+    exit
+}
+
+
+# STEP 2: Create Document Library
+
+
+Write-Host "============================================" -ForegroundColor Cyan
+Write-Host "Creating Document Library" -ForegroundColor Cyan
+Write-Host "============================================" -ForegroundColor Cyan
+Write-Host ""
+
+# Check if library already exists
+$existingLibrary = Get-PnPList -Identity $LibraryName -ErrorAction SilentlyContinue
+
+if ($existingLibrary) {
+    Write-Host "Library '$LibraryName' already exists!" -ForegroundColor Yellow
+    $response = Read-Host "Do you want to add missing columns to existing library? (Y/N)"
+    
+    if ($response -ne "Y" -and $response -ne "y") {
+        Write-Host "Setup cancelled by user" -ForegroundColor Red
+        exit
+    }
+    
+    Write-Host "Using existing library" -ForegroundColor Green
+    Write-Host ""
+} else {
+    Write-Host "Creating library: $LibraryName" -ForegroundColor Yellow
+    
+    try {
+        New-PnPList -Title $LibraryName -Template DocumentLibrary -OnQuickLaunch
+        Write-Host "Library created successfully!" -ForegroundColor Green
+        Write-Host ""
+    } catch {
+        Write-Host "Failed to create library!" -ForegroundColor Red
+        Write-Host "Error: $_" -ForegroundColor Red
+        exit
+    }
+}
+
+# Update library description
+Set-PnPList -Identity $LibraryName -Description $LibraryDescription
+
+
+# STEP 3: Create Custom Columns
+
+
+Write-Host "============================================" -ForegroundColor Cyan
+Write-Host "Creating Custom Columns" -ForegroundColor Cyan
+Write-Host "============================================" -ForegroundColor Cyan
+Write-Host ""
+
+# Function to add field safely (skip if exists)
+function Add-CustomField {
+    param(
+        [string]$FieldName,
+        [string]$DisplayName,
+        [string]$FieldType,
+        [hashtable]$AdditionalParams = @{}
+    )
+    
+    $existingField = Get-PnPField -List $LibraryName -Identity $FieldName -ErrorAction SilentlyContinue
+    
+    if ($existingField) {
+        Write-Host "  ⏭️  Field '$DisplayName' already exists - skipping" -ForegroundColor Gray
+    } else {
+        Write-Host "  Creating field: $DisplayName" -ForegroundColor Yellow
+        try {
+            Add-PnPField -List $LibraryName -DisplayName $DisplayName -InternalName $FieldName -Type $FieldType -AddToDefaultView @AdditionalParams
+            Write-Host "  Created: $DisplayName" -ForegroundColor Green
+        } catch {
+            Write-Host "  Warning: Could not create '$DisplayName'" -ForegroundColor Yellow
+            Write-Host "  Error: $_" -ForegroundColor Gray
+        }
+    }
+}
+
+# Contract Type (Choice field)
+Write-Host ""
+Write-Host "1. Contract Type" -ForegroundColor Cyan
+Add-CustomField -FieldName "ContractType" -DisplayName "Contract Type" -FieldType "Choice" -AdditionalParams @{
+    Choices = @(
+        "Vendor Agreement",
+        "Service Agreement", 
+        "NDA",
+        "SaaS Agreement",
+        "Employment Agreement",
+        "Lease Agreement",
+        "Partnership Agreement",
+        "License Agreement",
+        "Master Service Agreement",
+        "Statement of Work",
+        "General Agreement",
+        "Other"
+    )
+    DefaultValue = "General Agreement"
+}
+
+# Jurisdiction (Single line of text)
+Write-Host ""
+Write-Host "2. Jurisdiction" -ForegroundColor Cyan
+Add-CustomField -FieldName "Jurisdiction" -DisplayName "Jurisdiction" -FieldType "Text"
+
+# Status (Choice field)
+Write-Host ""
+Write-Host "3. Status" -ForegroundColor Cyan
+Add-CustomField -FieldName "Status" -DisplayName "Status" -FieldType "Choice" -AdditionalParams @{
+    Choices = @("Compliant", "Warning", "Critical")
+    DefaultValue = "Compliant"
+}
+
+# Parties (Multiple lines of text - semicolon separated)
+Write-Host ""
+Write-Host "4. Parties" -ForegroundColor Cyan
+Add-CustomField -FieldName "Parties" -DisplayName "Parties" -FieldType "Note" -AdditionalParams @{
+    NumberOfLines = 2
+}
+
+# Expiry Date (Date field)
+Write-Host ""
+Write-Host "5. Expiry Date" -ForegroundColor Cyan
+Add-CustomField -FieldName "ExpiryDate" -DisplayName "Expiry Date" -FieldType "DateTime" -AdditionalParams @{
+    DisplayFormat = "DateOnly"
+}
+
+# Tags (Multiple lines of text - semicolon separated)
+Write-Host ""
+Write-Host "6. Tags" -ForegroundColor Cyan
+Add-CustomField -FieldName "Tags" -DisplayName "Tags" -FieldType "Note" -AdditionalParams @{
+    NumberOfLines = 3
+}
+
+# Risk Score (Number field)
+Write-Host ""
+Write-Host "7. Risk Score" -ForegroundColor Cyan
+Add-CustomField -FieldName "RiskScore" -DisplayName "Risk Score" -FieldType "Number" -AdditionalParams @{
+    MinimumValue = 0
+    MaximumValue = 100
+    DefaultValue = 0
+}
+
+# AI Analysis Complete (Yes/No field)
+Write-Host ""
+Write-Host "8. AI Analysis Complete" -ForegroundColor Cyan
+Add-CustomField -FieldName "AIAnalysisComplete" -DisplayName "AI Analysis Complete" -FieldType "Boolean" -AdditionalParams @{
+    DefaultValue = $false
+}
+
+# Analysis Date (Date field)
+Write-Host ""
+Write-Host "9. Analysis Date" -ForegroundColor Cyan
+Add-CustomField -FieldName "AnalysisDate" -DisplayName "Analysis Date" -FieldType "DateTime" -AdditionalParams @{
+    DisplayFormat = "DateOnly"
+}
+
+# Effective Date (Date field)
+Write-Host ""
+Write-Host "10. Effective Date" -ForegroundColor Cyan
+Add-CustomField -FieldName "EffectiveDate" -DisplayName "Effective Date" -FieldType "DateTime" -AdditionalParams @{
+    DisplayFormat = "DateOnly"
+}
+
+
+# STEP 4: Create Views
+
+
+Write-Host ""
+Write-Host "============================================" -ForegroundColor Cyan
+Write-Host "Creating Custom Views" -ForegroundColor Cyan
+Write-Host "============================================" -ForegroundColor Cyan
+Write-Host ""
+
+# All Documents View (Enhanced)
+Write-Host "Creating view: All Contracts" -ForegroundColor Yellow
+try {
+    $viewFields = @("DocIcon", "LinkFilename", "ContractType", "Jurisdiction", "Status", "Parties", "ExpiryDate", "RiskScore", "Modified")
+    
+    # Check if view exists
+    $existingView = Get-PnPView -List $LibraryName -Identity "All Contracts" -ErrorAction SilentlyContinue
+    
+    if ($existingView) {
+        Write-Host " View 'All Contracts' already exists - skipping" -ForegroundColor Gray
+    } else {
+        Add-PnPView -List $LibraryName -Title "All Contracts" -Fields $viewFields -SetAsDefault
+        Write-Host "  Created view: All Contracts" -ForegroundColor Green
+    }
+} catch {
+    Write-Host " Warning: Could not create 'All Contracts' view" -ForegroundColor Yellow
+}
+
+# High Risk Contracts View
+Write-Host "Creating view: High Risk Contracts" -ForegroundColor Yellow
+try {
+    $existingView = Get-PnPView -List $LibraryName -Identity "High Risk Contracts" -ErrorAction SilentlyContinue
+    
+    if ($existingView) {
+        Write-Host "View 'High Risk Contracts' already exists - skipping" -ForegroundColor Gray
+    } else {
+        Add-PnPView -List $LibraryName -Title "High Risk Contracts" -Fields $viewFields -Query "<Where><Geq><FieldRef Name='RiskScore'/><Value Type='Number'>70</Value></Geq></Where>"
+        Write-Host "Created view: High Risk Contracts" -ForegroundColor Green
+    }
+} catch {
+    Write-Host "Warning: Could not create 'High Risk Contracts' view" -ForegroundColor Yellow
+}
+
+# Expiring Soon View
+Write-Host "Creating view: Expiring Soon" -ForegroundColor Yellow
+try {
+    $existingView = Get-PnPView -List $LibraryName -Identity "Expiring Soon" -ErrorAction SilentlyContinue
+    
+    if ($existingView) {
+        Write-Host "View 'Expiring Soon' already exists - skipping" -ForegroundColor Gray
+    } else {
+        $in90Days = (Get-Date).AddDays(90).ToString("yyyy-MM-dd")
+        Add-PnPView -List $LibraryName -Title "Expiring Soon" -Fields $viewFields -Query "<Where><And><IsNotNull><FieldRef Name='ExpiryDate'/></IsNotNull><Leq><FieldRef Name='ExpiryDate'/><Value Type='DateTime'>$in90Days</Value></Leq></And></Where>"
+        Write-Host " Created view: Expiring Soon" -ForegroundColor Green
+    }
+} catch {
+    Write-Host " Warning: Could not create 'Expiring Soon' view" -ForegroundColor Yellow
+}
+
+
+# STEP 5: Configure Library Settings
+
+
+Write-Host ""
+Write-Host "============================================" -ForegroundColor Cyan
+Write-Host "Configuring Library Settings" -ForegroundColor Cyan
+Write-Host "============================================" -ForegroundColor Cyan
+Write-Host ""
+
+Write-Host "Enabling versioning..." -ForegroundColor Yellow
+try {
+    Set-PnPList -Identity $LibraryName -EnableVersioning $true -MajorVersions 50
+    Write-Host "Versioning enabled (50 major versions)" -ForegroundColor Green
+} catch {
+    Write-Host " Warning: Could not enable versioning" -ForegroundColor Yellow
+}
+
+Write-Host "Enabling content approval..." -ForegroundColor Yellow
+try {
+    Set-PnPList -Identity $LibraryName -EnableModeration $false
+    Write-Host "Content approval configured" -ForegroundColor Green
+} catch {
+    Write-Host " Warning: Could not configure content approval" -ForegroundColor Yellow
+}
+
+
+# STEP 6: Summary
+
+
+Write-Host ""
+Write-Host "============================================" -ForegroundColor Cyan
+Write-Host "Setup Complete!" -ForegroundColor Green
+Write-Host "============================================" -ForegroundColor Cyan
+Write-Host ""
+
+Write-Host "Library Created/Updated: $LibraryName" -ForegroundColor Green
+Write-Host "Custom Columns: 10 fields added" -ForegroundColor Green
+Write-Host "Custom Views: 3 views created" -ForegroundColor Green
+Write-Host "Library Settings: Configured" -ForegroundColor Green
+Write-Host ""
+
+Write-Host "============================================" -ForegroundColor Cyan
+Write-Host "Column Summary" -ForegroundColor Cyan
+Write-Host "============================================" -ForegroundColor Cyan
+Write-Host ""
+Write-Host "  1. Contract Type       (Choice)" -ForegroundColor White
+Write-Host "  2. Jurisdiction        (Text)" -ForegroundColor White
+Write-Host "  3. Status             (Choice: Compliant, Warning, Critical)" -ForegroundColor White
+Write-Host "  4. Parties            (Multi-line text)" -ForegroundColor White
+Write-Host "  5. Expiry Date        (Date)" -ForegroundColor White
+Write-Host "  6. Tags               (Multi-line text)" -ForegroundColor White
+Write-Host "  7. Risk Score         (Number: 0-100)" -ForegroundColor White
+Write-Host "  8. AI Analysis Complete (Yes/No)" -ForegroundColor White
+Write-Host "  9. Analysis Date      (DateTime)" -ForegroundColor White
+Write-Host " 10. Effective Date     (Date)" -ForegroundColor White
+Write-Host ""
+
+Write-Host "============================================" -ForegroundColor Cyan
+Write-Host "Next Steps" -ForegroundColor Cyan
+Write-Host "============================================" -ForegroundColor Cyan
+Write-Host ""
+Write-Host "1. Upload sample contracts to the library" -ForegroundColor Yellow
+Write-Host "2. Update web part properties with library name: '$LibraryName'" -ForegroundColor Yellow
+Write-Host "3. Deploy LegalLens web part to your site" -ForegroundColor Yellow
+Write-Host "4. Test the AI analysis features" -ForegroundColor Yellow
+Write-Host ""
+
+Write-Host "Library URL:" -ForegroundColor Cyan
+Write-Host "$SiteUrl/$LibraryName" -ForegroundColor White
+Write-Host ""
+
+Write-Host " Setup complete! You can now use LegalLens." -ForegroundColor Green
+Write-Host ""
+
+# Disconnect
+Disconnect-PnPOnline
