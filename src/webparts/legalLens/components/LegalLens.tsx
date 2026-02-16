@@ -24,45 +24,7 @@ import {
 } from '@fluentui/react-icons';
 import { LibraryView } from './Library/LibraryView';
 import { ILegalLensState } from './ILegalLensState';
-
-// LANGS configuration for multilingual support
-const LANGS = [
-  { code: 'en', name: 'English', flag: '🇬🇧', label: 'English' },
-  { code: 'de', name: 'German', flag: '🇩🇪', label: 'Deutsch' },
-  { code: 'es', name: 'Spanish', flag: '🇪🇸', label: 'Español' }
-];
-
-const CLASSIFICATION_TYPES = [
-  {
-    value: 'contract_type',
-    label: 'Contract Type Classification',
-    description: 'Identify document type (NDA, Vendor Agreement, SLA, etc.)'
-  },
-  {
-    value: 'risk_assessment',
-    label: 'Risk Assessment',
-    description: 'Analyze risk factors, liability, and compliance issues'
-  },
-  {
-    value: 'compliance_check',
-    label: 'Compliance Check',
-    description: 'Verify GDPR, CCPA, SOC2, ISO27001 requirements'
-  },
-  {
-    value: 'entity_extraction',
-    label: 'Entity Extraction',
-    description: 'Extract parties, dates, amounts, jurisdictions'
-  }
-];
-
-const CLASSIFY_STEPS = [
-  { phase: "Document Intelligence", detail: "Extracting structured fields from uploaded document…", duration: 1800 },
-  { phase: "Entity Recognition", detail: "Identifying parties, dates, jurisdictions, key clauses…", duration: 1400 },
-  { phase: "Semantic Indexing", detail: "Generating embedding vector for similarity search…", duration: 1200 },
-  { phase: "Duplicate Scan", detail: "Querying knowledge base for semantically similar contracts…", duration: 1600 },
-  { phase: "Metadata Tagging", detail: "Writing enriched metadata to SharePoint list columns…", duration: 1000 },
-  { phase: "Classification Complete", detail: "Contract classified and indexed. Monitoring active.", duration: 0 }
-];
+import { CLASSIFY_STEPS, CLASSIFICATION_TYPES, LANGS } from '../constants';
 
 export default class LegalLens extends React.Component<ILegalLensProps, ILegalLensState> {
   private pulseInterval: any;
@@ -3035,6 +2997,4 @@ RETURN ONLY THIS JSON:
       </div>
     );
   }
-
-
 }
