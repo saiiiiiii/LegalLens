@@ -16,7 +16,7 @@ export interface IContract {
   clauses: IClause[];
   flag?: string;
   fileUrl?: string;
-  fullText?: string;  // NEW: Full document content for Q&A
+  fullText?: string;
 }
 
 export interface IClause {

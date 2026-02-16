@@ -1,6 +1,10 @@
 @import '~@microsoft/sp-office-ui-fabric-core/dist/sass/SPFabricCore.scss';
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&family=Inter:wght@300;400;500;600;700;800&display=swap');
 
+// ============================================================================
+// DESIGN TOKENS - PREMIUM COLOR PALETTE
+// ============================================================================
+
 // Primary Colors (Indigo/Purple Gradient)
 $color-primary: #6366f1;
 $color-primary-light: #818cf8;
@@ -35,20 +39,22 @@ $color-border-subtle: rgba(255, 255, 255, 0.06);
 $color-border-default: rgba(255, 255, 255, 0.1);
 $color-border-strong: rgba(255, 255, 255, 0.15);
 
+// ============================================================================
 // TYPOGRAPHY - INTER FONT FAMILY
+// ============================================================================
 
 $font-family-base: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
 $font-family-display: 'Cinzel', Georgia, serif;
 $font-family-mono: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
 
-$font-size-2xs: 0.625rem;  
-$font-size-xs: 0.6875rem;  
-$font-size-sm: 0.75rem;    
-$font-size-base: 0.875rem; 
-$font-size-lg: 1rem;       
-$font-size-xl: 1.125rem;   
-$font-size-2xl: 1.25rem;   
-$font-size-3xl: 1.5rem;    
+$font-size-2xs: 0.625rem;    // 10px
+$font-size-xs: 0.6875rem;    // 11px
+$font-size-sm: 0.75rem;      // 12px
+$font-size-base: 0.875rem;   // 14px
+$font-size-lg: 1rem;         // 16px
+$font-size-xl: 1.125rem;     // 18px
+$font-size-2xl: 1.25rem;     // 20px
+$font-size-3xl: 1.5rem;      // 24px
 
 $font-weight-light: 300;
 $font-weight-normal: 400;
@@ -61,19 +67,23 @@ $line-height-tight: 1.25;
 $line-height-normal: 1.5;
 $line-height-relaxed: 1.75;
 
+// ============================================================================
 // SPACING - STANDARDIZED 4PX GRID
+// ============================================================================
 
 $spacing-0: 0;
-$spacing-1: 0.25rem;  
-$spacing-2: 0.5rem;   
-$spacing-3: 0.75rem;  
-$spacing-4: 1rem;     
-$spacing-5: 1.25rem;  
-$spacing-6: 1.5rem;   
-$spacing-8: 2rem;     
-$spacing-10: 2.5rem;  
+$spacing-1: 0.25rem;    // 4px
+$spacing-2: 0.5rem;     // 8px
+$spacing-3: 0.75rem;    // 12px
+$spacing-4: 1rem;       // 16px
+$spacing-5: 1.25rem;    // 20px - Standard padding
+$spacing-6: 1.5rem;     // 24px
+$spacing-8: 2rem;       // 32px
+$spacing-10: 2.5rem;    // 40px
 
+// ============================================================================
 // EFFECTS - SHADOWS, BLUR, RADIUS
+// ============================================================================
 
 // Border Radius
 $radius-sm: 0.375rem;   // 6px
@@ -110,7 +120,9 @@ $transition-fast: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
 $transition-base: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 $transition-slow: 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 
+// ============================================================================
 // MIXINS - REUSABLE PATTERNS
+// ============================================================================
 
 // Glassmorphism Effect
 @mixin glassmorphism($opacity: 0.03) {
@@ -165,7 +177,9 @@ $transition-slow: 0.5s cubic-bezier(0.4, 0, 0.2, 1);
   }
 }
 
+// ============================================================================
 // ANIMATIONS - SMOOTH & PROFESSIONAL
+// ============================================================================
 
 @keyframes fadeIn {
   from {
@@ -224,7 +238,9 @@ $transition-slow: 0.5s cubic-bezier(0.4, 0, 0.2, 1);
   }
 }
 
+// ============================================================================
 // BASE STYLES - MAIN CONTAINER
+// ============================================================================
 
 .legalLens {
   min-height: 100vh;
@@ -241,7 +257,9 @@ $transition-slow: 0.5s cubic-bezier(0.4, 0, 0.2, 1);
   }
 }
 
+// ============================================================================
 // HEADER - GLASSMORPHISM WITH BLUR
+// ============================================================================
 
 .header {
   position: sticky;
@@ -288,7 +306,9 @@ $transition-slow: 0.5s cubic-bezier(0.4, 0, 0.2, 1);
   letter-spacing: 0.5px;
 }
 
+// ============================================================================
 // NAVIGATION - ENHANCED TABS
+// ============================================================================
 
 .nav {
   display: flex;
@@ -360,7 +380,9 @@ $transition-slow: 0.5s cubic-bezier(0.4, 0, 0.2, 1);
   animation: pulse 2.2s ease infinite;
 }
 
+// ============================================================================
 // MAIN CONTENT - SMOOTH SCROLLING
+// ============================================================================
 
 .mainContent {
   flex: 1;
@@ -399,7 +421,9 @@ $transition-slow: 0.5s cubic-bezier(0.4, 0, 0.2, 1);
   color: $color-text-muted;
 }
 
+// ============================================================================
 // STATS ROW - PREMIUM CARDS
+// ============================================================================
 
 .statsRow {
   display: flex;
@@ -434,7 +458,9 @@ $transition-slow: 0.5s cubic-bezier(0.4, 0, 0.2, 1);
   margin-top: 2px;
 }
 
+// ============================================================================
 // CONTRACT TABLE - GLASSMORPHISM
+// ============================================================================
 
 .contractTable {
   @include glassmorphism;
@@ -541,7 +567,9 @@ $transition-slow: 0.5s cubic-bezier(0.4, 0, 0.2, 1);
   font-weight: $font-weight-semibold;
 }
 
+// ============================================================================
 // TAGS - MONOSPACE STYLE
+// ============================================================================
 
 .tagsRow {
   margin-top: $spacing-4;
@@ -572,7 +600,9 @@ $transition-slow: 0.5s cubic-bezier(0.4, 0, 0.2, 1);
   }
 }
 
+// ============================================================================
 // ALERTS - PREMIUM CARDS
+// ============================================================================
 
 .alertsList {
   display: flex;
@@ -666,7 +696,9 @@ $transition-slow: 0.5s cubic-bezier(0.4, 0, 0.2, 1);
   line-height: $line-height-relaxed;
 }
 
+// ============================================================================
 // LOADING - SMOOTH ANIMATION
+// ============================================================================
 
 .loadingContainer {
   min-height: 400px;
@@ -692,7 +724,9 @@ $transition-slow: 0.5s cubic-bezier(0.4, 0, 0.2, 1);
   color: $color-text-secondary;
 }
 
+// ============================================================================
 // ERROR - PREMIUM STYLING
+// ============================================================================
 
 .errorContainer {
   padding: $spacing-10 $spacing-6;
@@ -744,7 +778,9 @@ $transition-slow: 0.5s cubic-bezier(0.4, 0, 0.2, 1);
   }
 }
 
+// ============================================================================
 // UTILITY CLASSES
+// ============================================================================
 
 .textGradient {
   @include gradient-text;
