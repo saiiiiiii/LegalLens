@@ -13,16 +13,13 @@ import {
   ChartMultipleFilled,
   CircleFilled,
   InfoRegular,
-  LightbulbRegular,
   ClockRegular,
-  CalendarRegular,
   PeopleFilled,
   DocumentBulletListRegular,
-  ShieldCheckmarkFilled,
   ScalesRegular,
   BotRegular
 } from '@fluentui/react-icons';
-import { LibraryView } from './Library/LibraryView';
+import { LibraryView } from './Tabs/Library/LibraryView';
 import { ILegalLensState } from './ILegalLensState';
 import { CLASSIFY_STEPS, CLASSIFICATION_TYPES, LANGS } from '../constants';
 import { IContract } from '../models/IContract';

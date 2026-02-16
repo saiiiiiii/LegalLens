@@ -1,6 +1,6 @@
 import * as React from 'react';
-import { ISharePointService } from '../../services/SharePointService';
-import { useContracts } from '../../hooks/useContracts';
+import { ISharePointService } from '../../../services/SharePointService';
+import { useContracts } from '../../../hooks/useContracts';
 import { ContractTable } from './ContractTable';
 import { StatsCards } from './StatsCards';
 import { TagFilter } from './TagFilter';
