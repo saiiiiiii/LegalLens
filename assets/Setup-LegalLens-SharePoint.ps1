@@ -1,16 +1,38 @@
+<#
+.SYNOPSIS
+    Creates the SharePoint document library, columns, and views for LegalLens.
 
-# LegalLens - SharePoint Library Setup Script
+.PARAMETER SiteUrl
+    The SharePoint site URL where the library will be created.
 
+.PARAMETER LibraryName
+    The name of the document library. Defaults to "Contracts".
 
-# CONFIGURATION - UPDATE THESE VALUES
-$SiteUrl = "https://yourtenant.sharepoint.com/sites/yoursite"  # Your SharePoint site URL
-$LibraryName = "Contracts"                                      # Document library name
+.PARAMETER ClientId
+    The Azure AD app client ID for authentication.
+
+.EXAMPLE
+    .\Setup-LegalLens-SharePoint.ps1 -SiteUrl "https://contoso.sharepoint.com/sites/LegalLens" -ClientId "your-client-id"
+
+.EXAMPLE
+    .\Setup-LegalLens-SharePoint.ps1 -SiteUrl "https://contoso.sharepoint.com/sites/LegalLens" -ClientId "your-client-id" -LibraryName "LegalDocs"
+#>
+
+param(
+    [Parameter(Mandatory = $true)]
+    [string]$SiteUrl,
+
+    [Parameter(Mandatory = $true)]
+    [string]$ClientId,
+
+    [Parameter(Mandatory = $false)]
+    [string]$LibraryName = "Contracts"
+)
+
 $LibraryDescription = "Contract repository for LegalLens AI analysis"
 
 
 # STEP 1: Connect to SharePoint
-
-
 Write-Host "============================================" -ForegroundColor Cyan
 Write-Host "LegalLens SharePoint Setup" -ForegroundColor Cyan
 Write-Host "============================================" -ForegroundColor Cyan
@@ -31,7 +53,7 @@ Write-Host "Site: $SiteUrl" -ForegroundColor Gray
 Write-Host ""
 
 try {
-    Connect-PnPOnline -Url $SiteUrl -Interactive
+    Connect-PnPOnline -Url $SiteUrl -Interactive -ClientId $ClientId
     Write-Host "Connected successfully!" -ForegroundColor Green
     Write-Host ""
 } catch {
@@ -42,8 +64,6 @@ try {
 
 
 # STEP 2: Create Document Library
-
-
 Write-Host "============================================" -ForegroundColor Cyan
 Write-Host "Creating Document Library" -ForegroundColor Cyan
 Write-Host "============================================" -ForegroundColor Cyan
@@ -82,8 +102,6 @@ Set-PnPList -Identity $LibraryName -Description $LibraryDescription
 
 
 # STEP 3: Create Custom Columns
-
-
 Write-Host "============================================" -ForegroundColor Cyan
 Write-Host "Creating Custom Columns" -ForegroundColor Cyan
 Write-Host "============================================" -ForegroundColor Cyan
@@ -95,17 +113,22 @@ function Add-CustomField {
         [string]$FieldName,
         [string]$DisplayName,
         [string]$FieldType,
-        [hashtable]$AdditionalParams = @{}
+        [hashtable]$AdditionalParams = @{},
+        [hashtable]$FieldProperties = @{}
     )
-    
+
     $existingField = Get-PnPField -List $LibraryName -Identity $FieldName -ErrorAction SilentlyContinue
-    
+
     if ($existingField) {
         Write-Host "  ⏭️  Field '$DisplayName' already exists - skipping" -ForegroundColor Gray
     } else {
         Write-Host "  Creating field: $DisplayName" -ForegroundColor Yellow
         try {
             Add-PnPField -List $LibraryName -DisplayName $DisplayName -InternalName $FieldName -Type $FieldType -AddToDefaultView @AdditionalParams
+            # Set additional properties that Add-PnPField doesn't support directly
+            if ($FieldProperties.Count -gt 0) {
+                Set-PnPField -List $LibraryName -Identity $FieldName -Values $FieldProperties
+            }
             Write-Host "  Created: $DisplayName" -ForegroundColor Green
         } catch {
             Write-Host "  Warning: Could not create '$DisplayName'" -ForegroundColor Yellow
@@ -120,7 +143,7 @@ Write-Host "1. Contract Type" -ForegroundColor Cyan
 Add-CustomField -FieldName "ContractType" -DisplayName "Contract Type" -FieldType "Choice" -AdditionalParams @{
     Choices = @(
         "Vendor Agreement",
-        "Service Agreement", 
+        "Service Agreement",
         "NDA",
         "SaaS Agreement",
         "Employment Agreement",
@@ -132,6 +155,7 @@ Add-CustomField -FieldName "ContractType" -DisplayName "Contract Type" -FieldTyp
         "General Agreement",
         "Other"
     )
+} -FieldProperties @{
     DefaultValue = "General Agreement"
 }
 
@@ -145,64 +169,63 @@ Write-Host ""
 Write-Host "3. Status" -ForegroundColor Cyan
 Add-CustomField -FieldName "Status" -DisplayName "Status" -FieldType "Choice" -AdditionalParams @{
     Choices = @("Compliant", "Warning", "Critical")
+} -FieldProperties @{
     DefaultValue = "Compliant"
 }
 
 # Parties (Multiple lines of text - semicolon separated)
 Write-Host ""
 Write-Host "4. Parties" -ForegroundColor Cyan
-Add-CustomField -FieldName "Parties" -DisplayName "Parties" -FieldType "Note" -AdditionalParams @{
+Add-CustomField -FieldName "Parties" -DisplayName "Parties" -FieldType "Note" -FieldProperties @{
     NumberOfLines = 2
 }
 
 # Expiry Date (Date field)
 Write-Host ""
 Write-Host "5. Expiry Date" -ForegroundColor Cyan
-Add-CustomField -FieldName "ExpiryDate" -DisplayName "Expiry Date" -FieldType "DateTime" -AdditionalParams @{
-    DisplayFormat = "DateOnly"
+Add-CustomField -FieldName "ExpiryDate" -DisplayName "Expiry Date" -FieldType "DateTime" -FieldProperties @{
+    DisplayFormat = [Microsoft.SharePoint.Client.DateTimeFieldFormatType]::DateOnly
 }
 
 # Tags (Multiple lines of text - semicolon separated)
 Write-Host ""
 Write-Host "6. Tags" -ForegroundColor Cyan
-Add-CustomField -FieldName "Tags" -DisplayName "Tags" -FieldType "Note" -AdditionalParams @{
+Add-CustomField -FieldName "Tags" -DisplayName "Tags" -FieldType "Note" -FieldProperties @{
     NumberOfLines = 3
 }
 
 # Risk Score (Number field)
 Write-Host ""
 Write-Host "7. Risk Score" -ForegroundColor Cyan
-Add-CustomField -FieldName "RiskScore" -DisplayName "Risk Score" -FieldType "Number" -AdditionalParams @{
+Add-CustomField -FieldName "RiskScore" -DisplayName "Risk Score" -FieldType "Number" -FieldProperties @{
     MinimumValue = 0
     MaximumValue = 100
-    DefaultValue = 0
+    DefaultValue = "0"
 }
 
 # AI Analysis Complete (Yes/No field)
 Write-Host ""
 Write-Host "8. AI Analysis Complete" -ForegroundColor Cyan
-Add-CustomField -FieldName "AIAnalysisComplete" -DisplayName "AI Analysis Complete" -FieldType "Boolean" -AdditionalParams @{
-    DefaultValue = $false
+Add-CustomField -FieldName "AIAnalysisComplete" -DisplayName "AI Analysis Complete" -FieldType "Boolean" -FieldProperties @{
+    DefaultValue = "0"
 }
 
 # Analysis Date (Date field)
 Write-Host ""
 Write-Host "9. Analysis Date" -ForegroundColor Cyan
-Add-CustomField -FieldName "AnalysisDate" -DisplayName "Analysis Date" -FieldType "DateTime" -AdditionalParams @{
-    DisplayFormat = "DateOnly"
+Add-CustomField -FieldName "AnalysisDate" -DisplayName "Analysis Date" -FieldType "DateTime" -FieldProperties @{
+    DisplayFormat = [Microsoft.SharePoint.Client.DateTimeFieldFormatType]::DateOnly
 }
 
 # Effective Date (Date field)
 Write-Host ""
 Write-Host "10. Effective Date" -ForegroundColor Cyan
-Add-CustomField -FieldName "EffectiveDate" -DisplayName "Effective Date" -FieldType "DateTime" -AdditionalParams @{
-    DisplayFormat = "DateOnly"
+Add-CustomField -FieldName "EffectiveDate" -DisplayName "Effective Date" -FieldType "DateTime" -FieldProperties @{
+    DisplayFormat = [Microsoft.SharePoint.Client.DateTimeFieldFormatType]::DateOnly
 }
 
 
 # STEP 4: Create Views
-
-
 Write-Host ""
 Write-Host "============================================" -ForegroundColor Cyan
 Write-Host "Creating Custom Views" -ForegroundColor Cyan
@@ -260,8 +283,6 @@ try {
 
 
 # STEP 5: Configure Library Settings
-
-
 Write-Host ""
 Write-Host "============================================" -ForegroundColor Cyan
 Write-Host "Configuring Library Settings" -ForegroundColor Cyan
@@ -276,7 +297,7 @@ try {
     Write-Host " Warning: Could not enable versioning" -ForegroundColor Yellow
 }
 
-Write-Host "Enabling content approval..." -ForegroundColor Yellow
+Write-Host "Disabling content approval..." -ForegroundColor Yellow
 try {
     Set-PnPList -Identity $LibraryName -EnableModeration $false
     Write-Host "Content approval configured" -ForegroundColor Green
@@ -286,8 +307,6 @@ try {
 
 
 # STEP 6: Summary
-
-
 Write-Host ""
 Write-Host "============================================" -ForegroundColor Cyan
 Write-Host "Setup Complete!" -ForegroundColor Green
