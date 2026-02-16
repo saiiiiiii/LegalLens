@@ -5,8 +5,9 @@ import "@pnp/sp/items";
 import "@pnp/sp/files";
 import "@pnp/sp/folders";
 import { WebPartContext } from "@microsoft/sp-webpart-base";
-import { IContract, IClause } from '../components/ILegalLensProps';
 import * as JSZip from 'jszip';
+import { IContract } from "../models/IContract";
+import { IClause } from "../models/IClause";
 
 export interface ISharePointService {
   getContracts(): Promise<IContract[]>;

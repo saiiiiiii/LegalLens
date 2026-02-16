@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { IContract } from '../components/ILegalLensProps';
 import { ISharePointService } from '../services/SharePointService';
+import { IContract } from '../models/IContract';
 
 export interface IUseContractsResult {
   contracts: IContract[];

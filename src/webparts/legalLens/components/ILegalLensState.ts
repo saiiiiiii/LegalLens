@@ -1,5 +1,6 @@
-import { IContractAnalysis, IClassificationResult } from '../services/AzureAIFoundryService';
-import { IContract } from './ILegalLensProps';
+import { IClassificationResult } from '../models/IClassificationResult';
+import { IContract } from '../models/IContract';
+import { IContractAnalysis } from '../models/IContractAnalysis';
 
 export interface ILegalLensState {
   view: 'library' | 'upload' | 'classify' | 'translate' | 'alerts';

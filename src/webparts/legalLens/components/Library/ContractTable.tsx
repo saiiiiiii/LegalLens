@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { DetailsList, DetailsListLayoutMode, IColumn, SelectionMode } from '@fluentui/react/lib/DetailsList';
-import { IContract } from '../ILegalLensProps';
 import { DocumentRegular } from '@fluentui/react-icons';
+import { IContract } from '../../models/IContract';
 
 export interface IContractTableProps {
   contracts: IContract[];

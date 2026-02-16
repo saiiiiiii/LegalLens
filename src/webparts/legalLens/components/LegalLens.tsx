@@ -1,5 +1,5 @@
 import * as React from 'react';
-import type { ILegalLensProps, IContract } from './ILegalLensProps';
+import type { ILegalLensProps } from './ILegalLensProps';
 import {
   Library24Regular,
   ArrowUpload24Regular,
@@ -25,6 +25,7 @@ import {
 import { LibraryView } from './Library/LibraryView';
 import { ILegalLensState } from './ILegalLensState';
 import { CLASSIFY_STEPS, CLASSIFICATION_TYPES, LANGS } from '../constants';
+import { IContract } from '../models/IContract';
 
 export default class LegalLens extends React.Component<ILegalLensProps, ILegalLensState> {
   private pulseInterval: any;
