@@ -99,7 +99,11 @@ export interface ILegalLensState {
   qaHistory: Array<{ role: string; text: string; language: string; citedClauses?: string[] }>;
   qaInput: string;
   qaLoading: boolean;
+<<<<<<< HEAD
 
+=======
+  
+>>>>>>> 33992968eb991a6653596d6a9f387ae5b57ccc5f
   // Classification state
   classifyState: {
     step: number;
@@ -107,7 +111,11 @@ export interface ILegalLensState {
     result?: any;
   } | null;
   selectedClassificationType: string;
+<<<<<<< HEAD
 
+=======
+  
+>>>>>>> 33992968eb991a6653596d6a9f387ae5b57ccc5f
   // Unified analysis cache
   fullAnalysis: {
     contractType?: any;
@@ -117,6 +125,9 @@ export interface ILegalLensState {
   } | null;
 
   pulseAlert: boolean;
+  
+  //  ADD THIS FOR TAG FILTERING
+  selectedTag: string | null;
 }
 
 export default class LegalLens extends React.Component<ILegalLensProps, ILegalLensState> {
@@ -125,6 +136,7 @@ export default class LegalLens extends React.Component<ILegalLensProps, ILegalLe
   private fileInputRef: React.RefObject<HTMLInputElement>;
 
   constructor(props: ILegalLensProps) {
+<<<<<<< HEAD
     super(props);
 
     this.state = {
@@ -177,6 +189,63 @@ export default class LegalLens extends React.Component<ILegalLensProps, ILegalLe
     this.riskColor = this.riskColor.bind(this);
     this.statusColor = this.statusColor.bind(this);
   }
+=======
+  super(props);
+  
+  this.state = {
+    view: 'library',
+    contracts: [],
+    loading: true,
+    error: null,
+    
+    uploadView: 'select',
+    uploadedFile: null,
+    uploadedFileName: '',
+    analysisResult: null,
+    analyzingProgress: 0,
+    analyzeError: null,
+    
+    classificationView: 'select',
+    selectedFileForClassification: 0,
+    classificationType: 'contract-type',
+    classificationResult: null,
+    classifying: false,
+    classifyError: null,
+    
+    selContract: 0,
+    selLang: 'en',
+    translating: false,
+    translateProgress: 0,
+    cache: {},
+    translateError: null,
+    
+    qaLanguage: 'en',
+    qaHistory: [],
+    qaInput: '',
+    qaLoading: false,
+    
+    classifyState: null,
+    selectedClassificationType: 'contract_type',
+    fullAnalysis: null,
+    pulseAlert: false,
+    
+    //  ADD THIS FOR TAG FILTERING
+    selectedTag: null
+  };
+  
+  this._isMounted = false;
+  this.fileInputRef = React.createRef();
+  
+  // Bind methods
+  this.loadContracts = this.loadContracts.bind(this);
+  this.runTranslation = this.runTranslation.bind(this);
+  this.handleMultilingualQuestion = this.handleMultilingualQuestion.bind(this);
+  this.handleFileUpload = this.handleFileUpload.bind(this);
+  this.handleClassification = this.handleClassification.bind(this);
+  this.riskColor = this.riskColor.bind(this);
+  this.statusColor = this.statusColor.bind(this);
+}
+>>>>>>> 33992968eb991a6653596d6a9f387ae5b57ccc5f
 
   public componentDidMount(): void {
     this._isMounted = true;
@@ -724,6 +793,230 @@ export default class LegalLens extends React.Component<ILegalLensProps, ILegalLe
     }
   }
 
+<<<<<<< HEAD
+=======
+  private renderLibrary(): React.ReactElement {
+  const { contracts, selectedTag } = this.state;
+  
+  // Filter contracts by selected tag
+  const displayedContracts = selectedTag
+    ? contracts.filter(c => c.tags.includes(selectedTag))
+    : contracts;
+  
+  // Get all unique tags with counts
+  const tagCounts: { [tag: string]: number } = {};
+  contracts.forEach((c: IContract) => {
+    c.tags.forEach(tag => {
+      tagCounts[tag] = (tagCounts[tag] || 0) + 1;
+    });
+  });
+  
+  // Sort by frequency and take top 15
+  const topTags = Object.entries(tagCounts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 15)
+    .map(([tag, count]) => ({ tag, count }));
+
+  return (
+    <div style={{ animation: 'fadeIn 0.35s ease' }}>
+      {/* Tag Filter Bar */}
+      {topTags.length > 0 && (
+        <div style={{ 
+          marginBottom: '16px', 
+          padding: '12px', 
+          background: 'rgba(255,255,255,0.02)', 
+          borderRadius: '8px',
+          border: '1px solid rgba(255,255,255,0.06)'
+        }}>
+          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center' }}>
+            <span style={{ fontSize: '8.5px', color: '#64748b', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+              Filter by tag:
+            </span>
+            
+            {/* Clear Filter Button */}
+            {selectedTag && (
+              <button
+                onClick={() => this.setState({ selectedTag: null })}
+                style={{
+                  background: 'rgba(239,68,68,0.12)',
+                  border: '1px solid rgba(239,68,68,0.2)',
+                  color: '#ef4444',
+                  borderRadius: '4px',
+                  padding: '4px 10px',
+                  fontSize: '8.5px',
+                  cursor: 'pointer',
+                  fontWeight: 600,
+                  transition: 'all 0.2s',
+                  outline: 'none'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(239,68,68,0.2)'}
+                onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(239,68,68,0.12)'}
+              >
+                ✕ Clear Filter
+              </button>
+            )}
+            
+            {topTags.map(({ tag, count }) => {
+              const isSelected = selectedTag === tag;
+              return (
+                <button
+                  key={tag}
+                  onClick={() => this.setState({ 
+                    selectedTag: isSelected ? null : tag 
+                  })}
+                  style={{
+                    fontSize: '8.5px',
+                    fontFamily: 'monospace',
+                    background: isSelected 
+                      ? 'rgba(6,182,212,0.2)' 
+                      : 'rgba(6,182,212,0.08)',
+                    border: isSelected
+                      ? '1px solid rgba(6,182,212,0.4)'
+                      : '1px solid rgba(6,182,212,0.18)',
+                    borderRadius: '4px',
+                    padding: '4px 10px',
+                    color: isSelected ? '#22d3ee' : '#67e8f9',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                    fontWeight: isSelected ? 600 : 400,
+                    outline: 'none'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isSelected) {
+                      e.currentTarget.style.background = 'rgba(6,182,212,0.12)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isSelected) {
+                      e.currentTarget.style.background = 'rgba(6,182,212,0.08)';
+                    }
+                  }}
+                  title={`${count} contract${count > 1 ? 's' : ''}`}
+                >
+                  {tag}
+                  <span style={{ 
+                    fontSize: '7px', 
+                    marginLeft: '4px', 
+                    opacity: 0.7,
+                    fontWeight: 700
+                  }}>
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+      
+      {/* Header with filtered count */}
+      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
+        <div>
+          <h2 style={{ 
+            fontFamily: "'Cinzel', Georgia, serif", 
+            fontSize: '24px', 
+            fontWeight: 600, 
+            background: 'linear-gradient(135deg, #fff 0%, #a5b4fc 100%)', 
+            WebkitBackgroundClip: 'text', 
+            WebkitTextFillColor: 'transparent', 
+            backgroundClip: 'text', 
+            letterSpacing: '0.5px', 
+            margin: '0 0 3px' 
+          }}>
+            {selectedTag ? `Contracts tagged: "${selectedTag}"` : 'Governed Contract Library'}
+          </h2>
+          <p style={{ margin: 0, fontSize: '11px', color: '#64748b' }}>
+            {selectedTag 
+              ? `Showing ${displayedContracts.length} of ${contracts.length} contracts`
+              : 'Auto-classified · Metadata enriched · Compliance monitored'
+            }
+          </p>
+        </div>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          {[
+            { l: 'Total', v: contracts.length.toString(), c: '#06b6d4' },
+            { l: 'Compliant', v: contracts.filter(c => c.status === 'compliant').length.toString(), c: '#10b981' },
+            { l: 'Warnings', v: contracts.filter(c => c.status === 'warning').length.toString(), c: '#f59e0b' },
+            { l: 'Alerts', v: contracts.filter(c => c.flag === 'Expiring soon' || c.flag === 'Expired' || c.risk >= 70).length.toString(), c: '#ef4444' }
+          ].map(s => (
+            <div key={s.l} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '8px', padding: '7px 12px', textAlign: 'center', minWidth: '62px' }}>
+              <div style={{ fontSize: '17px', fontWeight: 700, color: s.c, lineHeight: 1.2 }}>{s.v}</div>
+              <div style={{ fontSize: '8px', color: '#64748b', letterSpacing: '0.5px', textTransform: 'uppercase', marginTop: '1px' }}>{s.l}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Contract Table - using displayedContracts instead of contracts */}
+      <div style={{ background: 'rgba(255,255,255,0.03)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px', boxShadow: '0 8px 32px rgba(0,0,0,0.3)', overflow: 'hidden' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 130px 110px 80px 100px', padding: '12px 20px', borderBottom: '1px solid rgba(255,255,255,0.1)', background: 'linear-gradient(135deg, rgba(99,102,241,0.05), rgba(139,92,246,0.05))', backdropFilter: 'blur(10px)' }}>
+          {['Contract', 'Type', 'Jurisdiction', 'Risk', 'Status'].map(h => (
+            <span key={h} style={{ fontSize: '8px', color: '#64748b', letterSpacing: '1.2px', textTransform: 'uppercase', fontWeight: 600 }}>{h}</span>
+          ))}
+        </div>
+        
+        {displayedContracts.length === 0 ? (
+          <div style={{ padding: '40px', textAlign: 'center', color: '#64748b' }}>
+            <DocumentRegular style={{ fontSize: '48px', opacity: 0.3, marginBottom: '16px' }} />
+            <div style={{ fontSize: '13px', marginBottom: '8px' }}>No contracts match this filter</div>
+            <button
+              onClick={() => this.setState({ selectedTag: null })}
+              style={{
+                background: 'rgba(99,102,241,0.12)',
+                border: '1px solid rgba(99,102,241,0.2)',
+                color: '#818cf8',
+                borderRadius: '6px',
+                padding: '8px 16px',
+                fontSize: '11px',
+                cursor: 'pointer',
+                fontWeight: 600,
+                marginTop: '8px'
+              }}
+            >
+              Clear Filter
+            </button>
+          </div>
+        ) : (
+          displayedContracts.map((c, i) => (
+            <div key={c.id} className="card-row" style={{ 
+              display: 'grid', 
+              gridTemplateColumns: '1fr 130px 110px 80px 100px', 
+              padding: '11px 16px', 
+              borderBottom: i < displayedContracts.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none', 
+              alignItems: 'center', 
+              transition: 'background 0.2s',
+              animation: `fadeIn 0.3s ease ${i * 0.07}s both`
+            }}>
+              <div>
+                <div style={{ fontSize: '12px', color: '#e2e8f0', fontWeight: 500, marginBottom: '1px' }}>{c.name}</div>
+                <div style={{ fontSize: '9px', color: '#64748b' }}>Expires: {c.expiry}</div>
+              </div>
+              <span style={{ fontSize: '10.5px', color: '#94a3b8' }}>{c.type}</span>
+              <span style={{ fontSize: '10.5px', color: '#94a3b8' }}>{c.jurisdiction}</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                <div style={{ width: '24px', height: '3px', borderRadius: '2px', background: 'rgba(255,255,255,0.08)', overflow: 'hidden' }}>
+                  <div style={{ width: `${c.risk}%`, height: '100%', background: this.riskColor(c.risk), borderRadius: '2px' }} />
+                </div>
+                <span style={{ fontSize: '8.5px', color: this.riskColor(c.risk), fontWeight: 600 }}>{c.risk}</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <div style={{ width: '5px', height: '5px', borderRadius: '50%', background: this.statusColor(c.status) }} />
+                <span style={{ fontSize: '9.5px', color: this.statusColor(c.status), textTransform: 'capitalize' }}>{c.status}</span>
+                {c.flag && (
+                  <span style={{ fontSize: '7.5px', background: 'rgba(245,158,11,0.12)', color: '#f59e0b', borderRadius: '3px', padding: '1px 4px', marginLeft: '3px' }}>
+                    {c.flag}
+                  </span>
+                )}
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+
+>>>>>>> 33992968eb991a6653596d6a9f387ae5b57ccc5f
   private renderAlerts(): React.ReactElement {
     // Generate alerts dynamically from contract data
     const alerts: any[] = [];
@@ -1551,6 +1844,7 @@ export default class LegalLens extends React.Component<ILegalLensProps, ILegalLe
     );
   }
 
+<<<<<<< HEAD
   /**
    * STEP 1: Start classification simulation
    */
@@ -1583,6 +1877,36 @@ export default class LegalLens extends React.Component<ILegalLensProps, ILegalLe
       // Continue to next step
       setTimeout(runNextStep, CLASSIFY_STEPS[currentStep].duration);
     };
+=======
+/**
+ * STEP 1: Start classification simulation
+ */
+private startClassificationSimulation = (): void => {
+  console.log('[Classification] Starting simulation...');
+  
+  let currentStep = 0;
+  this.setState({ classifyState: { step: 0, done: false } });
+
+  const runNextStep = () => {
+    currentStep++;
+    
+    // Check if we've completed all animation steps
+    if (currentStep >= CLASSIFY_STEPS.length) {
+      // All animation steps done - now run actual AI classification
+      console.log('[Classification] Animation complete, starting AI analysis...');
+      this.performActualClassification();
+      return;
+    }
+    
+    console.log(`[Classification] Step ${currentStep}: ${CLASSIFY_STEPS[currentStep].phase}`);
+    
+    this.setState({ 
+      classifyState: { 
+        step: currentStep, 
+        done: false
+      } 
+    });
+>>>>>>> 33992968eb991a6653596d6a9f387ae5b57ccc5f
 
     // Start first step
     setTimeout(runNextStep, CLASSIFY_STEPS[0].duration);
@@ -2013,7 +2337,131 @@ RETURN ONLY THIS JSON:
       default:
         return {};
     }
+<<<<<<< HEAD
   };
+=======
+    
+    console.error('[Classification] No valid JSON found in response');
+    return null;
+    
+  } catch (error) {
+    console.error('[Classification] JSON parse error:', error);
+    console.error('[Classification] Response was:', response.substring(0, 200));
+    return null;
+  }
+};
+
+/**
+ * Get fallback result based on type
+ */
+private getFallbackResult(classificationType: string): any {
+  switch (classificationType) {
+    case 'contract_type':
+      return {
+        documentType: 'Vendor Agreement',
+        parties: ['NovaCorp Inc', 'LegalLens Inc'],
+        jurisdiction: 'Delaware, USA',
+        effectiveDate: '2026-02-15',
+        expiryDate: '2028-02-15',
+        keyClauses: ['Liability Cap (§4.2)', 'Termination (§9.1)', 'IP Ownership (§11.3)'],
+        autoTags: ['SOC2', 'ISO27001', 'CCPA'],
+        duplicateFlag: 'No duplicates found ✓',
+        confidence: 0.97
+      };
+    
+    case 'risk_assessment':
+      return {
+        overallRiskScore: 45,
+        riskLevel: 'Medium',
+        status: 'warning',
+        riskFactors: [
+          {
+            category: 'Liability',
+            factor: 'Limited liability cap',
+            severity: 'High',
+            score: 75,
+            description: 'Liability capped at $2M',
+            recommendation: 'Consider increasing to $5M'
+          }
+        ],
+        complianceIssues: ['Missing GDPR clause'],
+        mitigationSteps: ['Add GDPR addendum'],
+        confidence: 0.92
+      };
+    
+    case 'compliance_check':
+      return {
+        overallCompliance: 'Partial',
+        complianceScore: 72,
+        regulations: [
+          {
+            name: 'GDPR',
+            status: 'Compliant',
+            score: 95,
+            findings: ['✓ Data processing present'],
+            recommendations: []
+          }
+        ],
+        criticalIssues: 2,
+        warnings: 3,
+        confidence: 0.89
+      };
+    
+    case 'entity_extraction':
+      return {
+        parties: [
+          { name: 'NovaCorp Inc', role: 'Vendor', jurisdiction: 'Delaware' }
+        ],
+        dates: {
+          effective: '2026-02-15',
+          expiry: '2028-02-15'
+        },
+        financialTerms: {
+          contractValue: '$500,000 annually',
+          liabilityCap: '$2,000,000'
+        },
+        governingLaw: 'Delaware, USA',
+        confidence: 0.94
+      };
+    
+    default:
+      return {};
+  }
+};
+
+/**
+ * Reset classification
+ */
+private resetClassification = (): void => {
+  this.setState({ 
+    classifyState: null,
+    classificationView: 'select',
+    uploadedFile: null,
+    uploadedFileName: ''
+  });
+};
+
+/**
+ * Handle Classify button click
+ */
+private handleClassifyClick = (): void => {
+  this.setState({ classificationView: 'processing' });
+};
+
+/**
+ * Main classification render
+ */
+private renderClassify(): React.ReactElement {
+  const { classificationView } = this.state;
+
+  return (
+    <div style={{ animation: 'fadeIn 0.35s ease' }}>
+      {classificationView === 'select' && this.renderClassifySelect()}
+      {classificationView === 'processing' && this.renderClassifyProcessing()}
+    </div>
+  );
+}
+>>>>>>> 33992968eb991a6653596d6a9f387ae5b57ccc5f
 
   /**
    * Reset classification
@@ -2064,11 +2512,35 @@ RETURN ONLY THIS JSON:
             color: '#fff',
             margin: '0 0 3px'
           }}>
+<<<<<<< HEAD
             Document Classification
           </h2>
           <p style={{ margin: 0, fontSize: '11px', color: '#64748b' }}>
             AI-powered classification · Select document and classification type
           </p>
+=======
+            Step 1: Select Document
+          </label>
+          <select 
+            value={selectedFileForClassification}
+            onChange={e => this.setState({ selectedFileForClassification: Number(e.target.value) })}
+            style={{ 
+              width: '100%', 
+              background: 'rgba(255,255,255,0.04)', 
+              border: '1px solid rgba(255,255,255,0.1)', 
+              borderRadius: '8px', 
+              padding: '10px 14px', 
+              color: '#e2e8f0', 
+              fontSize: '12px', 
+              outline: 'none', 
+              cursor: 'pointer' 
+            }}
+          >
+            {contracts.map((c, i) => (
+              <option key={i} value={i} style={{ background: '#1e293b', color: '#e2e8f0' }}>{c.name}</option>
+            ))}
+          </select>
+>>>>>>> 33992968eb991a6653596d6a9f387ae5b57ccc5f
         </div>
 
         <div style={{ maxWidth: '600px' }}>
@@ -2257,12 +2729,45 @@ RETURN ONLY THIS JSON:
           )}
         </div>
 
+<<<<<<< HEAD
         {/* Two-column layout */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
 
           {/* LEFT: Progress Steps */}
           <div>
             {this.renderProgressSteps()}
+=======
+/**
+ * Render progress steps (LEFT column)
+ */
+private renderProgressSteps(): React.ReactElement {
+  const { classifyState, uploadedFileName, contracts, selectedFileForClassification } = this.state;
+  const contract = contracts[selectedFileForClassification];
+
+  return (
+    <>
+      {/* File info card */}
+      <div style={{ 
+        background: 'rgba(255,255,255,0.025)', 
+        border: '1px solid rgba(255,255,255,0.08)', 
+        borderRadius: '12px', 
+        padding: '20px', 
+        marginBottom: '14px' 
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
+          <div style={{ 
+            width: '36px', 
+            height: '36px', 
+            borderRadius: '9px', 
+            background: 'rgba(16,185,129,0.1)', 
+            border: '1px solid rgba(16,185,129,0.25)', 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            fontSize: '16px' 
+          }}>
+            📄
+>>>>>>> 33992968eb991a6653596d6a9f387ae5b57ccc5f
           </div>
 
           {/* RIGHT: Results */}

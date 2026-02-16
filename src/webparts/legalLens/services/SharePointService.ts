@@ -24,6 +24,43 @@ export class SharePointService implements ISharePointService {
     console.log('[SharePoint] Initialized with library:', libraryUrl);
   }
 
+  private formatDateForSharePoint(dateString: string): string | null {
+    if (!dateString || dateString === 'Not specified' || dateString === 'null') {
+      return null;
+    }
+
+    try {
+      // Handle different date formats
+      let date: Date;
+
+      // Check if already ISO format with time
+      if (dateString.includes('T')) {
+        date = new Date(dateString);
+      }
+      // Handle YYYY-MM-DD format
+      else if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+        // Add time component at noon UTC to avoid timezone issues
+        date = new Date(`${dateString}T12:00:00Z`);
+      }
+      // Handle other formats
+      else {
+        date = new Date(dateString);
+      }
+
+      // Validate the date
+      if (isNaN(date.getTime())) {
+        console.warn('[SharePoint] Invalid date:', dateString);
+        return null;
+      }
+
+      // Return ISO string (includes time)
+      return date.toISOString();
+    } catch (error) {
+      console.warn('[SharePoint] Error parsing date:', dateString, error);
+      return null;
+    }
+  }
+
   
   public async getContracts(): Promise<IContract[]> {
     try {
@@ -36,7 +73,8 @@ export class SharePointService implements ISharePointService {
         .select(
           'Id', 'Title', 'FileRef', 'FileLeafRef',
           'ContractType', 'Jurisdiction', 'Status',
-          'Parties', 'ExpiryDate', 'Tags', 'RiskScore', 'Created'
+          'Parties', 'ExpiryDate', 'Tags', 'RiskScore', 'Created',
+          'EffectiveDate', 'AnalysisDate', 'AIAnalysisComplete'
         )
         .expand('File')
         .orderBy('Created', false)
@@ -50,6 +88,7 @@ export class SharePointService implements ISharePointService {
         const item = items[i];
         const contract = this.mapItemToContract(item, i);
         
+        // Only extract text if file exists
         if (item.FileRef) {
           try {
             console.log(`[SharePoint] Extracting content from: ${contract.name}`);
@@ -69,7 +108,15 @@ export class SharePointService implements ISharePointService {
 
     } catch (error) {
       console.error('[SharePoint] Error fetching contracts:', error);
-      throw new Error('Failed to load contracts from SharePoint library');
+      
+      // More user-friendly error message
+      if (error.message && error.message.includes('does not exist')) {
+        const match = error.message.match(/'([^']+)'/);
+        const fieldName = match ? match[1] : 'Unknown field';
+        throw new Error(`SharePoint column '${fieldName}' not found. Please check library configuration.`);
+      }
+      
+      throw new Error('Failed to load contracts. Please check configuration and try again.');
     }
   }
 
@@ -194,21 +241,38 @@ export class SharePointService implements ISharePointService {
       console.log('[SharePoint] Step 3: List item retrieved');
 
       console.log('[SharePoint] Step 4: Updating metadata...');
-      const metadata = {
+      
+      const expiryDate = this.formatDateForSharePoint(analysisResult.expiryDate);
+      const effectiveDate = this.formatDateForSharePoint(analysisResult.effectiveDate);
+      const analysisDate = new Date().toISOString(); // Current timestamp
+      
+      const metadata: any = {
         Title: analysisResult.fileName || fileName,
         ContractType: analysisResult.contractType || 'General Agreement',
         Jurisdiction: analysisResult.jurisdiction || 'Not specified',
         Status: analysisResult.overallRiskScore >= 70 ? 'Critical' : 
                 analysisResult.overallRiskScore >= 40 ? 'Warning' : 'Compliant',
         Parties: analysisResult.parties ? analysisResult.parties.join(';') : '',
-        ExpiryDate: analysisResult.expiryDate && analysisResult.expiryDate !== 'Not specified' ? 
-                    analysisResult.expiryDate : null,
         Tags: analysisResult.riskFactors && analysisResult.riskFactors.length > 0 ? 
               analysisResult.riskFactors.map((f: any) => f.factor).join(';') : '',
-        RiskScore: analysisResult.overallRiskScore || 0
+        RiskScore: analysisResult.overallRiskScore || 0,
+        AIAnalysisComplete: true, 
+        AnalysisDate: analysisDate
       };
 
+      // Only add date fields if they have valid values
+      if (expiryDate) {
+        metadata.ExpiryDate = expiryDate;
+      }
+      
+      if (effectiveDate) {
+        metadata.EffectiveDate = effectiveDate;
+      }
+
       console.log('[SharePoint] Metadata to update:', metadata);
+      console.log('[SharePoint] ExpiryDate formatted:', expiryDate);
+      console.log('[SharePoint] EffectiveDate formatted:', effectiveDate);
+      console.log('[SharePoint] AIAnalysisComplete: true');
       
       await item.update(metadata);
 
@@ -217,6 +281,14 @@ export class SharePointService implements ISharePointService {
     } catch (error) {
       console.error('[SharePoint] ✗ Error saving contract:', error);
       console.error('[SharePoint] Error details:', JSON.stringify(error, null, 2));
+      
+      // Better error message
+      if (error.message && error.message.includes('does not exist')) {
+        const match = error.message.match(/'([^']+)'/);
+        const fieldName = match ? match[1] : 'Unknown field';
+        throw new Error(`SharePoint column '${fieldName}' not found. Internal name might be different from display name.`);
+      }
+      
       throw new Error(`Failed to save contract: ${error.message || error}`);
     }
   }
