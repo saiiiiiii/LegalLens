@@ -361,37 +361,24 @@ export default class LegalLens extends React.Component<ILegalLensProps, ILegalLe
     }
 
     return (
-      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #0a1628 0%, #0f172a 50%, #1e293b 100%)', color: '#e2e8f0', fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif", display: 'flex', flexDirection: 'column' }}>
+      <div className="legallens-wp" style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #0a1628 0%, #0f172a 50%, #1e293b 100%)', color: '#e2e8f0', fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif", display: 'flex', flexDirection: 'column' }}>
         <style>{`
-          @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&family=Inter:wght@300;400;500;600;700;800&display=swap');
-          * { 
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif !important;
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
-          }
-          h1, h2, h3, h4, h5, h6 {
-            font-family: 'Cinzel', Georgia, serif !important;
-          }
-          * { font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; }
           @keyframes fadeIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
           @keyframes slideUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}
           @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.6;transform:scale(0.95)}}
           @keyframes spin{to{transform:rotate(360deg)}}
           @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
-          
-          .nav-btn:hover{
-            background:linear-gradient(135deg, rgba(99,102,241,0.15), rgba(139,92,246,0.15))!important;
-            color:#fff!important;
-            transform:translateY(-2px)!important;
-            boxShadow:0 6px 20px rgba(99,102,241,0.3)!important;
+          .legallens-wp .nav-btn:hover{
+            background:linear-gradient(135deg, rgba(99,102,241,0.15), rgba(139,92,246,0.15));
+            color:#fff;
+            transform:translateY(-2px);
           }
-          .card-row:hover{
-            background:rgba(255,255,255,0.05)!important;
-            transform:translateX(4px)!important;
-            boxShadow:0 4px 16px rgba(99,102,241,0.15)!important;
+          .legallens-wp .card-row:hover{
+            background:rgba(255,255,255,0.05);
+            transform:translateX(4px);
           }
-          .card-row{
-            transition:all 0.3s cubic-bezier(0.4, 0, 0.2, 1)!important;
+          .legallens-wp .card-row{
+            transition:all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
           }
         `}</style>
 
@@ -1962,9 +1949,6 @@ RETURN ONLY THIS JSON:
     );
   }
 
-  /**
-   * COMPLIANCE CHECK RESULTS
-   */
   private renderComplianceResults(result: any): React.ReactElement {
     const complianceColor = result.overallCompliance === 'Compliant' ? '#10b981' :
       result.overallCompliance === 'Partial' ? '#f59e0b' : '#ef4444';
@@ -2140,9 +2124,6 @@ RETURN ONLY THIS JSON:
     );
   }
 
-  /**
-   * ENTITY EXTRACTION RESULTS
-   */
   private renderEntityExtractionResults(result: any): React.ReactElement {
     return (
       <div style={{ animation: 'fadeIn 0.4s ease' }}>
