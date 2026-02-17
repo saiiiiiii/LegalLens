@@ -1,0 +1,669 @@
+.confidenceScore {
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 10px;
+  padding: 12px 16px;
+}
+
+.confidenceValue {
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.confidenceLabel {
+  font-size: 10px;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.confidenceSublabel {
+  font-size: 8.5px;
+  color: #64748b;
+}
+
+// ClassifyProcessing
+
+.processingHeading {
+  font-family: 'Cinzel', Georgia, serif;
+  font-size: 21px;
+  font-weight: 400;
+  color: #fff;
+  margin: 0 0 3px;
+}
+
+.processingSubheading {
+  font-size: 11px;
+  color: #64748b;
+}
+
+.resetButton {
+  background: rgba(16, 185, 129, 0.1) !important;
+  border: 1px solid rgba(16, 185, 129, 0.3) !important;
+  color: #10b981 !important;
+  border-radius: 7px !important;
+  font-size: 11px;
+  font-weight: 600;
+
+  &:hover {
+    background: rgba(16, 185, 129, 0.18) !important;
+  }
+}
+
+.pendingPanel {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  padding: 36px 20px;
+}
+
+.pendingIcon {
+  font-size: 28px;
+  margin-bottom: 10px;
+  opacity: 0.25;
+  color: #94a3b8;
+}
+
+.pendingText {
+  font-size: 11px;
+  color: #64748b;
+}
+
+// ProgressSteps
+
+.fileCard {
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.fileIcon {
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  border-radius: 9px;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  font-size: 16px;
+}
+
+.fileName {
+  font-size: 12px;
+  color: #e2e8f0;
+  font-weight: 600;
+}
+
+.fileSource {
+  font-size: 9.5px;
+  color: #64748b;
+}
+
+.progressTrack {
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 3px;
+  height: 3px;
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #10b981, #06b6d4);
+  transition: width 0.5s ease;
+
+  &.progressDone {
+    background: #10b981;
+  }
+}
+
+.stepRow {
+  padding: 9px 12px;
+  border-radius: 8px;
+  transition: all 0.3s;
+  align-items: flex-start;
+}
+
+.stepPending {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.stepActive {
+  background: rgba(16, 185, 129, 0.06);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.stepDone {
+  background: rgba(16, 185, 129, 0.03);
+  border: 1px solid rgba(16, 185, 129, 0.12);
+}
+
+.stepIndicator {
+  width: 20px;
+  height: 20px;
+  min-width: 20px;
+  border-radius: 50%;
+  margin-top: 1px;
+  background: rgba(255, 255, 255, 0.05);
+
+  &.indicatorDone {
+    background: #10b981;
+  }
+
+  &.indicatorActive {
+    background: rgba(16, 185, 129, 0.15);
+    border: 2px solid #10b981;
+  }
+}
+
+.checkmark {
+  color: #fff;
+  font-size: 10px;
+}
+
+.spinner {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 2px solid #10b981;
+  animation: spin 0.8s linear infinite;
+}
+
+.stepPhase {
+  font-size: 11px;
+  color: #64748b;
+  font-weight: 500;
+
+  &.phaseDone {
+    color: #10b981;
+  }
+
+  &.phaseActive {
+    color: #e2e8f0;
+  }
+}
+
+.stepDetail {
+  font-size: 9.5px;
+  color: #64748b;
+  margin-top: 1px;
+
+  &.detailActive {
+    color: #94a3b8;
+  }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+// ClassifySelect
+
+.selectHeading {
+  font-family: 'Cinzel', Georgia, serif;
+  font-size: 21px;
+  font-weight: 400;
+  color: #fff;
+  margin: 0 0 3px;
+}
+
+.selectSubheading {
+  margin: 0;
+  font-size: 11px;
+  color: #64748b;
+}
+
+.selectHeadingWrap {
+  margin-bottom: 20px;
+}
+
+.selectForm {
+  max-width: 600px;
+}
+
+.selectStep {
+  margin-bottom: 20px;
+}
+
+.selectTypeStep {
+  margin-bottom: 24px;
+}
+
+.stepLabel {
+  display: block;
+  font-size: 10px;
+  color: #64748b;
+  margin-bottom: 8px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.selectDropdown {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 10px 14px;
+  color: #e2e8f0;
+  font-size: 12px;
+  outline: none;
+  cursor: pointer;
+
+  option {
+    background: #1e293b;
+    color: #e2e8f0;
+  }
+}
+
+.typeCard {
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &.typeCardSelected {
+    background: rgba(99, 102, 241, 0.1);
+    border-color: rgba(99, 102, 241, 0.4);
+  }
+}
+
+.radioOuter {
+  width: 16px;
+  height: 16px;
+  min-width: 16px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &.radioSelected {
+    border-color: #818cf8;
+    background: #818cf8;
+  }
+}
+
+.radioInner {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #fff;
+}
+
+.typeTitle {
+  font-size: 11px;
+  color: #e2e8f0;
+  font-weight: 600;
+  margin-bottom: 2px;
+
+  &.typeTitleSelected {
+    color: #818cf8;
+  }
+}
+
+.typeDescription {
+  font-size: 9.5px;
+  color: #64748b;
+}
+
+.classifyButton {
+  width: 100%;
+  height: 40px;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  border: none;
+  color: #fff;
+  border-radius: 8px;
+  padding: 12px 20px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  outline: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 2px 14px rgba(99, 102, 241, 0.35);
+  &:hover {
+    color: #fff;
+    box-shadow: 0 4px 18px rgba(99, 102, 241, 0.45);
+  }
+}
+
+.classifyButtonIcon {
+  font-size: 12px;
+  color: #fff;
+  padding-right: 4px;
+}
+
+// Shared ResultTypes styles
+
+.resultFadeIn {
+  animation: fadeIn 0.4s ease;
+}
+
+.statusDot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+}
+
+.resultLabel {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.resultItemTitle {
+  font-size: 11px;
+  color: #e2e8f0;
+  font-weight: 600;
+}
+
+.resultItemMeta {
+  font-size: 9px;
+  color: #64748b;
+}
+
+// ComplianceResults
+
+.compliancePanel {
+  background: rgba(99, 102, 241, 0.04);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.complianceScoreRow {
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.complianceScoreValue {
+  font-size: 28px;
+  font-weight: 700;
+}
+
+.regCard {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.regScore {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.regStatusBadge {
+  font-size: 8px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+
+.findingText {
+  font-size: 9px;
+}
+
+.recommendationSection {
+  padding-top: 6px;
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.recommendationText {
+  font-size: 9px;
+  color: #f59e0b;
+}
+
+.issueSummary {
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 6px;
+}
+
+.issueSummaryItem {
+  text-align: center;
+}
+
+.issueSummaryCriticalValue {
+  font-size: 16px;
+  font-weight: 700;
+  color: #ef4444;
+}
+
+.issueSummaryWarningValue {
+  font-size: 16px;
+  font-weight: 700;
+  color: #f59e0b;
+}
+
+.issueSummaryLabel {
+  font-size: 9px;
+  color: #64748b;
+}
+
+// ContractTypeResults
+
+.contractPanel {
+  background: rgba(16, 185, 129, 0.04);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.resultHeader {
+  margin-bottom: 12px;
+}
+
+.contractDot {
+  composes: statusDot;
+  background: #10b981;
+}
+
+.contractLabel {
+  composes: resultLabel;
+  color: #10b981;
+}
+
+.fieldRow {
+  padding: 6px 0;
+}
+
+.fieldRowBorder {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.fieldLabel {
+  font-size: 9.5px;
+  color: #64748b;
+}
+
+.fieldValue {
+  font-size: 10.5px;
+  color: #e2e8f0;
+  font-weight: 500;
+  text-align: right;
+  max-width: 200px;
+}
+
+.autoTag {
+  font-size: 8.5px;
+  font-family: monospace;
+  background: rgba(6, 182, 212, 0.1);
+  border: 1px solid rgba(6, 182, 212, 0.2);
+  border-radius: 3px;
+  padding: 1px 5px;
+  color: #67e8f9;
+}
+
+.duplicateFlag {
+  font-size: 10.5px;
+  color: #10b981;
+  font-weight: 500;
+}
+
+// RiskAssessmentResults
+
+.riskPanel {
+  background: rgba(239, 68, 68, 0.04);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.riskScoreRow {
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.riskScoreValue {
+  font-size: 28px;
+  font-weight: 700;
+}
+
+.riskFactorCard {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 6px;
+  padding: 10px;
+}
+
+.riskFactorName {
+  font-size: 10px;
+  color: #e2e8f0;
+  font-weight: 600;
+}
+
+.riskFactorDesc {
+  font-size: 9px;
+  color: #94a3b8;
+}
+
+.complianceIssuesBox {
+  padding: 10px;
+  background: rgba(239, 68, 68, 0.06);
+  border-radius: 6px;
+}
+
+.complianceIssuesTitle {
+  font-size: 9px;
+  color: #ef4444;
+  font-weight: 600;
+}
+
+.complianceIssueItem {
+  font-size: 9px;
+  color: #f87171;
+}
+
+.mitigationTitle {
+  font-size: 9px;
+  color: #10b981;
+  font-weight: 600;
+}
+
+.mitigationStep {
+  font-size: 9px;
+  color: #94a3b8;
+}
+
+// EntityExtractionResults
+
+.entityPanel {
+  background: rgba(6, 182, 212, 0.04);
+  border: 1px solid rgba(6, 182, 212, 0.2);
+  border-radius: 12px;
+  padding: 20px;
+  max-height: 500px;
+  overflow-y: auto;
+}
+
+.entityDot {
+  composes: statusDot;
+  background: #06b6d4;
+}
+
+.entityLabel {
+  composes: resultLabel;
+  color: #06b6d4;
+}
+
+.sectionTitle {
+  font-size: 9px;
+  color: #64748b;
+  font-weight: 600;
+}
+
+.entityCard {
+  background: rgba(255, 255, 255, 0.02);
+  padding: 8px 10px;
+  border-radius: 6px;
+}
+
+.entityName {
+  font-size: 10.5px;
+  color: #e2e8f0;
+  font-weight: 600;
+}
+
+.entityMeta {
+  font-size: 9px;
+  color: #64748b;
+}
+
+.entityContact {
+  font-size: 8.5px;
+  color: #67e8f9;
+}
+
+.kvRow {
+  padding: 4px 0;
+}
+
+.kvRowBorder {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.kvKey {
+  font-size: 9px;
+  color: #94a3b8;
+  text-transform: capitalize;
+}
+
+.kvValue {
+  font-size: 9px;
+  color: #e2e8f0;
+  font-weight: 500;
+}
+
+.kvFinancialValue {
+  font-size: 9px;
+  color: #10b981;
+  font-weight: 600;
+}
+
+.obligationItem {
+  font-size: 9px;
+  color: #e2e8f0;
+  padding: 6px 8px;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 4px;
+}
+
+.legalNote {
+  font-size: 9px;
+  color: #64748b;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
