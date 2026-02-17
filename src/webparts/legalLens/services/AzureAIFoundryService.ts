@@ -1,4 +1,7 @@
 import * as JSZip from 'jszip';
+import { IClassificationResult } from '../models/IClassificationResult';
+import { IContractAnalysis } from '../models/IContractAnalysis';
+import { IMultilingualAnswer } from '../models/IMultilingualAnswer';
 
 export interface IAzureAIFoundryService {
   analyzeContract(fileBlob: Blob, fileName: string): Promise<IContractAnalysis>;
@@ -7,56 +10,6 @@ export interface IAzureAIFoundryService {
   askQuestionMultilingual(question: string, questionLang: string, contract: any, conversationHistory: any[]): Promise<IMultilingualAnswer>;
   extractTextFromFile(file: File | Blob): Promise<string>;
   callAI(prompt: string, maxTokens: number): Promise<string>;
-}
-
-export interface IContractAnalysis {
-  fileName: string;
-  parties: string[];
-  effectiveDate: string;
-  expiryDate: string;
-  jurisdiction: string;
-  contractType: string;
-  clauses: Array<{
-    ref: string;
-    title: string;
-    text: string;
-    riskLevel: 'low' | 'medium' | 'high';
-    riskReason?: string;
-  }>;
-  overallRiskScore: number;
-  riskFactors: Array<{
-    factor: string;
-    severity: 'low' | 'medium' | 'high' | 'critical';
-    description: string;
-    recommendation: string;
-  }>;
-  summary: string;
-  analyzedAt: string;
-}
-
-export interface IClassificationResult {
-  classificationType: string;
-  confidence: number;
-  primaryCategory: string;
-  secondaryCategories: string[];
-  detectedLanguage: string;
-  keyTerms: string[];
-  suggestedTags: string[];
-  complianceFlags: Array<{
-    regulation: string;
-    applicable: boolean;
-    reason: string;
-  }>;
-  classifiedAt: string;
-}
-
-export interface IMultilingualAnswer {
-  question: string;
-  questionLanguage: string;
-  answer: string;
-  answerLanguage: string;
-  citedClauses: string[];
-  confidence: number;
 }
 
 export class AzureAIFoundryService implements IAzureAIFoundryService {

@@ -105,7 +105,7 @@ export const TagFilter: React.FC<ITagFilterProps> = ({
                 opacity: 0.7,
                 fontWeight: 700
               }}>
-                {count}
+                {`(${count})`}
               </span>
             </DefaultButton>
           );

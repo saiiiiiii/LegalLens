@@ -629,7 +629,7 @@ export default class LegalLens extends React.Component<ILegalLensProps, ILegalLe
               alignItems: 'center',
               gap: '10px'
             }}>
-              <span style={{ fontSize: '18px' }}></span>
+              <span style={{ fontSize: '18px' }}/>
               <div>
                 <div style={{ fontSize: '11px', color: '#10b981', fontWeight: 600 }}>
                   Analysis Complete & Saved to SharePoint
