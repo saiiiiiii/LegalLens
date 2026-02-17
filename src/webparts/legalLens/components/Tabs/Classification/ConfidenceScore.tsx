@@ -1,4 +1,6 @@
 import * as React from 'react';
+import { Stack, Text } from '@fluentui/react';
+import styles from './Classification.module.scss';
 
 export interface IConfidenceScoreProps {
   value: number;
@@ -9,26 +11,18 @@ export interface IConfidenceScoreProps {
 
 export const ConfidenceScore: React.FC<IConfidenceScoreProps> = ({ value, label, sublabel, color }) => {
     return (
-      <div style={{
-        background: 'rgba(255,255,255,0.025)',
-        border: '1px solid rgba(255,255,255,0.06)',
-        borderRadius: '10px',
-        padding: '12px 16px',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '12px'
-      }}>
-        <div style={{ fontSize: '24px', fontWeight: 700, color }}>
+      <Stack horizontal verticalAlign="center" tokens={{ childrenGap: 12 }} className={styles.confidenceScore}>
+        <Text className={styles.confidenceValue} style={{ color }}>
           {Math.round(value * 100)}%
-        </div>
-        <div>
-          <div style={{ fontSize: '10px', color: '#94a3b8', fontWeight: 500 }}>
+        </Text>
+        <Stack>
+          <Text className={styles.confidenceLabel}>
             {label}
-          </div>
-          <div style={{ fontSize: '8.5px', color: '#64748b' }}>
+          </Text>
+          <Text className={styles.confidenceSublabel}>
             {sublabel}
-          </div>
-        </div>
-      </div>
+          </Text>
+        </Stack>
+      </Stack>
     );
 };
