@@ -197,3 +197,117 @@
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
 }
+
+// Shared ResultTypes styles
+
+.resultFadeIn {
+  animation: fadeIn 0.4s ease;
+}
+
+.statusDot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+}
+
+.resultLabel {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.resultItemTitle {
+  font-size: 11px;
+  color: #e2e8f0;
+  font-weight: 600;
+}
+
+.resultItemMeta {
+  font-size: 9px;
+  color: #64748b;
+}
+
+// ComplianceResults
+
+.compliancePanel {
+  background: rgba(99, 102, 241, 0.04);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.complianceScoreRow {
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.complianceScoreValue {
+  font-size: 28px;
+  font-weight: 700;
+}
+
+.regCard {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.regScore {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.regStatusBadge {
+  font-size: 8px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+
+.findingText {
+  font-size: 9px;
+}
+
+.recommendationSection {
+  padding-top: 6px;
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.recommendationText {
+  font-size: 9px;
+  color: #f59e0b;
+}
+
+.issueSummary {
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 6px;
+}
+
+.issueSummaryItem {
+  text-align: center;
+}
+
+.issueSummaryCriticalValue {
+  font-size: 16px;
+  font-weight: 700;
+  color: #ef4444;
+}
+
+.issueSummaryWarningValue {
+  font-size: 16px;
+  font-weight: 700;
+  color: #f59e0b;
+}
+
+.issueSummaryLabel {
+  font-size: 9px;
+  color: #64748b;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}

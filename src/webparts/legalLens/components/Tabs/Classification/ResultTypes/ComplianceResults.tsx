@@ -1,146 +1,87 @@
 import * as React from 'react';
+import { Stack, Text } from '@fluentui/react';
 import { ConfidenceScore } from '../ConfidenceScore';
+import { statusColor, statusBgColor, findingColor } from '../../../../utils/colorUtils';
+import styles from '../Classification.module.scss';
 
 export const ComplianceResults: React.FC<{ result: any }> = ({ result }) => {
-    const complianceColor = result.overallCompliance === 'Compliant' ? '#10b981' :
-      result.overallCompliance === 'Partial' ? '#f59e0b' : '#ef4444';
+    const complianceColor = statusColor(result.overallCompliance);
 
     return (
-      <div style={{ animation: 'fadeIn 0.4s ease' }}>
-        <div style={{
-          background: 'rgba(99,102,241,0.04)',
-          border: '1px solid rgba(99,102,241,0.2)',
-          borderRadius: '12px',
-          padding: '20px',
-          marginBottom: '12px'
-        }}>
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '5px',
-            marginBottom: '12px'
-          }}>
-            <div style={{ width: '5px', height: '5px', borderRadius: '50%', background: complianceColor }} />
-            <span style={{
-              fontSize: '9px',
-              color: complianceColor,
-              fontWeight: 600,
-              letterSpacing: '1px',
-              textTransform: 'uppercase'
-            }}>
+      <Stack tokens={{ childrenGap: 12 }} className={styles.resultFadeIn}>
+        <Stack className={styles.compliancePanel} tokens={{ childrenGap: 12 }}>
+          {/* Header dot + label */}
+          <Stack horizontal verticalAlign="center" tokens={{ childrenGap: 5 }}>
+            <div className={styles.statusDot} style={{ background: complianceColor }} />
+            <Text className={styles.resultLabel} style={{ color: complianceColor }}>
               Compliance Check Complete
-            </span>
-          </div>
+            </Text>
+          </Stack>
 
-          <div style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            padding: '12px 0',
-            borderBottom: '1px solid rgba(255,255,255,0.04)'
-          }}>
-            <div>
-              <div style={{ fontSize: '11px', color: '#e2e8f0', fontWeight: 600 }}>
-                Overall Compliance
-              </div>
-              <div style={{ fontSize: '9px', color: '#64748b' }}>
-                {result.overallCompliance || 'Partial'}
-              </div>
-            </div>
-            <div style={{ fontSize: '28px', fontWeight: 700, color: complianceColor }}>
+          {/* Overall score row */}
+          <Stack horizontal horizontalAlign="space-between" verticalAlign="center" className={styles.complianceScoreRow}>
+            <Stack>
+              <Text className={styles.resultItemTitle}>Overall Compliance</Text>
+              <Text className={styles.resultItemMeta}>{result.overallCompliance || 'Partial'}</Text>
+            </Stack>
+            <Text className={styles.complianceScoreValue} style={{ color: complianceColor }}>
               {result.complianceScore || 72}%
-            </div>
-          </div>
+            </Text>
+          </Stack>
 
-          <div style={{ marginTop: '12px' }}>
+          {/* Regulations */}
+          <Stack tokens={{ childrenGap: 8 }}>
             {(result.regulations || []).map((reg: any, i: number) => {
-              const regColor = reg.status === 'Compliant' ? '#10b981' :
-                reg.status === 'Partial' ? '#f59e0b' : '#ef4444';
+              const regColor = statusColor(reg.status);
 
               return (
-                <div
-                  key={i}
-                  style={{
-                    background: 'rgba(255,255,255,0.02)',
-                    border: '1px solid rgba(255,255,255,0.06)',
-                    borderRadius: '8px',
-                    padding: '12px',
-                    marginBottom: '8px'
-                  }}
-                >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                    <div style={{ fontSize: '11px', color: '#e2e8f0', fontWeight: 600 }}>
-                      {reg.name}
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{ fontSize: '14px', fontWeight: 700, color: regColor }}>
+                <Stack key={i} className={styles.regCard} tokens={{ childrenGap: 8 }}>
+                  <Stack horizontal horizontalAlign="space-between" verticalAlign="center">
+                    <Text className={styles.resultItemTitle}>{reg.name}</Text>
+                    <Stack horizontal verticalAlign="center" tokens={{ childrenGap: 8 }}>
+                      <Text className={styles.regScore} style={{ color: regColor }}>
                         {reg.score}%
-                      </span>
-                      <span style={{
-                        fontSize: '8px',
-                        fontWeight: 700,
-                        padding: '2px 6px',
-                        borderRadius: '3px',
-                        background: reg.status === 'Compliant' ? 'rgba(16,185,129,0.15)' :
-                          reg.status === 'Partial' ? 'rgba(245,158,11,0.15)' : 'rgba(239,68,68,0.15)',
-                        color: regColor
-                      }}>
+                      </Text>
+                      <Text className={styles.regStatusBadge} style={{ background: statusBgColor(reg.status), color: regColor }}>
                         {reg.status}
-                      </span>
-                    </div>
-                  </div>
+                      </Text>
+                    </Stack>
+                  </Stack>
 
-                  <div style={{ marginBottom: '6px' }}>
+                  <Stack tokens={{ childrenGap: 2 }}>
                     {(reg.findings || []).map((finding: string, j: number) => (
-                      <div key={j} style={{
-                        fontSize: '9px',
-                        color: finding.startsWith('✓') ? '#10b981' :
-                          finding.startsWith('⚠') ? '#f59e0b' : '#ef4444',
-                        marginBottom: '2px'
-                      }}>
+                      <Text key={j} className={styles.findingText} style={{ color: findingColor(finding) }}>
                         {finding}
-                      </div>
+                      </Text>
                     ))}
-                  </div>
+                  </Stack>
 
                   {reg.recommendations && reg.recommendations.length > 0 && (
-                    <div style={{ paddingTop: '6px', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+                    <Stack tokens={{ childrenGap: 2 }} className={styles.recommendationSection}>
                       {reg.recommendations.map((rec: string, j: number) => (
-                        <div key={j} style={{ fontSize: '9px', color: '#f59e0b', marginBottom: '2px' }}>
-                          → {rec}
-                        </div>
+                        <Text key={j} className={styles.recommendationText}>→ {rec}</Text>
                       ))}
-                    </div>
+                    </Stack>
                   )}
-                </div>
+                </Stack>
               );
             })}
-          </div>
+          </Stack>
 
-          <div style={{
-            marginTop: '12px',
-            display: 'flex',
-            gap: '12px',
-            padding: '10px',
-            background: 'rgba(255,255,255,0.02)',
-            borderRadius: '6px'
-          }}>
-            <div style={{ flex: 1, textAlign: 'center' }}>
-              <div style={{ fontSize: '16px', fontWeight: 700, color: '#ef4444' }}>
-                {result.criticalIssues || 0}
-              </div>
-              <div style={{ fontSize: '8px', color: '#64748b' }}>Critical</div>
-            </div>
-            <div style={{ flex: 1, textAlign: 'center' }}>
-              <div style={{ fontSize: '16px', fontWeight: 700, color: '#f59e0b' }}>
-                {result.warnings || 0}
-              </div>
-              <div style={{ fontSize: '8px', color: '#64748b' }}>Warnings</div>
-            </div>
-          </div>
-        </div>
+          {/* Summary counters */}
+          <Stack horizontal tokens={{ childrenGap: 12 }} className={styles.issueSummary}>
+            <Stack.Item grow={1} className={styles.issueSummaryItem}>
+              <Text className={styles.issueSummaryCriticalValue}>{result.criticalIssues || 0}</Text>
+              <Text className={styles.issueSummaryLabel}> Critical</Text>
+            </Stack.Item>
+            <Stack.Item grow={1} className={styles.issueSummaryItem}>
+              <Text className={styles.issueSummaryWarningValue}>{result.warnings || 0}</Text>
+              <Text className={styles.issueSummaryLabel}> Warnings</Text>
+            </Stack.Item>
+          </Stack>
+        </Stack>
 
         <ConfidenceScore value={result.confidence || 0.89} label="Analysis Confidence" sublabel="Compliance verification" color="#818cf8" />
-      </div>
+      </Stack>
     );
 };
