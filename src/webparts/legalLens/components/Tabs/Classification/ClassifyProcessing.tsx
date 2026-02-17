@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { Stack, Text, DefaultButton } from '@fluentui/react';
 import { IContract } from '../../../models/IContract';
 import { ClockRegular } from '@fluentui/react-icons';
 import { ProgressSteps } from './ProgressSteps';
@@ -6,6 +7,7 @@ import { ContractTypeResults } from './ResultTypes/ContractTypeResults';
 import { RiskAssessmentResults } from './ResultTypes/RiskAssessmentResults';
 import { ComplianceResults } from './ResultTypes/ComplianceResults';
 import { EntityExtractionResults } from './ResultTypes/EntityExtractionResults';
+import styles from './Classification.module.scss';
 
 export interface IClassifyState {
   step: number;
@@ -44,79 +46,43 @@ export const ClassifyProcessing: React.FC<IClassifyProcessingProps> = ({
     };
 
     return (
-      <>
-        {/* Header */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'flex-end',
-          justifyContent: 'space-between',
-          marginBottom: '20px',
-          flexWrap: 'wrap',
-          gap: '12px'
-        }}>
-          <div>
-            <h2 style={{
-              fontFamily: "'Cinzel', Georgia, serif",
-              fontSize: '21px',
-              fontWeight: 400,
-              color: '#fff',
-              margin: '0 0 3px'
-            }}>
-              Live Classification
-            </h2>
-            <p style={{ margin: 0, fontSize: '11px', color: '#64748b' }}>
+      <Stack tokens={{ childrenGap: 20 }}>
+        <Stack horizontal horizontalAlign="space-between" verticalAlign="end" wrap tokens={{ childrenGap: 12 }}>
+          <Stack>
+            <Text className={styles.processingHeading}>Live Classification</Text>
+            <Text className={styles.processingSubheading}>
               Knowledge Agent classifies document in real-time
-            </p>
-          </div>
+            </Text>
+          </Stack>
           {classifyState?.done && (
-            <button
+            <DefaultButton
+              text="↻ Classify Another"
               onClick={onReset}
-              style={{
-                background: 'rgba(16,185,129,0.1)',
-                border: '1px solid rgba(16,185,129,0.3)',
-                color: '#10b981',
-                borderRadius: '7px',
-                padding: '6px 14px',
-                cursor: 'pointer',
-                fontSize: '11px',
-                fontWeight: 600,
-                outline: 'none'
-              }}
-            >
-              ↻ Classify Another
-            </button>
+              className={styles.resetButton}
+            />
           )}
-        </div>
+        </Stack>
 
-        {/* Two-column layout */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-          {/* LEFT: Progress Steps */}
-          <div>
+        <Stack horizontal tokens={{ childrenGap: 16 }}>
+          <Stack.Item grow={1} styles={{ root: { flexBasis: 0 } }}>
             <ProgressSteps
               classifyState={classifyState}
               uploadedFileName={uploadedFileName}
               contract={contract}
             />
-          </div>
+          </Stack.Item>
 
-          {/* RIGHT: Results */}
-          <div>
+          <Stack.Item grow={1} styles={{ root: { flexBasis: 0 } }}>
             {classifyState?.done && classifyState.result ? renderResults() : (
-              <div style={{
-                background: 'rgba(255,255,255,0.02)',
-                border: '1px solid rgba(255,255,255,0.06)',
-                borderRadius: '12px',
-                padding: '36px 20px',
-                textAlign: 'center'
-              }}>
-                <ClockRegular style={{ fontSize: '28px', marginBottom: '10px', opacity: 0.25, color: '#94a3b8' }} />
-                <div style={{ fontSize: '11px', color: '#64748b' }}>
+              <Stack horizontalAlign="center" className={styles.pendingPanel}>
+                <ClockRegular className={styles.pendingIcon} />
+                <Text className={styles.pendingText}>
                   Extracted metadata will appear here…
-                </div>
-              </div>
+                </Text>
+              </Stack>
             )}
-          </div>
-        </div>
-      </>
+          </Stack.Item>
+        </Stack>
+      </Stack>
     );
 };
