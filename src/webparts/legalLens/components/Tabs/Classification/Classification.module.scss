@@ -367,6 +367,94 @@
   font-weight: 500;
 }
 
+// EntityExtractionResults
+
+.entityPanel {
+  background: rgba(6, 182, 212, 0.04);
+  border: 1px solid rgba(6, 182, 212, 0.2);
+  border-radius: 12px;
+  padding: 20px;
+  max-height: 500px;
+  overflow-y: auto;
+}
+
+.entityDot {
+  composes: statusDot;
+  background: #06b6d4;
+}
+
+.entityLabel {
+  composes: resultLabel;
+  color: #06b6d4;
+}
+
+.sectionTitle {
+  font-size: 9px;
+  color: #64748b;
+  font-weight: 600;
+}
+
+.entityCard {
+  background: rgba(255, 255, 255, 0.02);
+  padding: 8px 10px;
+  border-radius: 6px;
+}
+
+.entityName {
+  font-size: 10.5px;
+  color: #e2e8f0;
+  font-weight: 600;
+}
+
+.entityMeta {
+  font-size: 9px;
+  color: #64748b;
+}
+
+.entityContact {
+  font-size: 8.5px;
+  color: #67e8f9;
+}
+
+.kvRow {
+  padding: 4px 0;
+}
+
+.kvRowBorder {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.kvKey {
+  font-size: 9px;
+  color: #94a3b8;
+  text-transform: capitalize;
+}
+
+.kvValue {
+  font-size: 9px;
+  color: #e2e8f0;
+  font-weight: 500;
+}
+
+.kvFinancialValue {
+  font-size: 9px;
+  color: #10b981;
+  font-weight: 600;
+}
+
+.obligationItem {
+  font-size: 9px;
+  color: #e2e8f0;
+  padding: 6px 8px;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 4px;
+}
+
+.legalNote {
+  font-size: 9px;
+  color: #64748b;
+}
+
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
