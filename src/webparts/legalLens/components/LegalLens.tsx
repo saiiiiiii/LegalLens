@@ -22,6 +22,7 @@ import { ILegalLensState } from './ILegalLensState';
 import { CLASSIFY_STEPS, CLASSIFICATION_TYPES } from '../constants';
 import { AlertsView } from './Tabs/Alerts/AlertsView';
 import { TranslateView } from './Tabs/Translate/TranslateView';
+import { ClassificationView } from './Tabs/Classification/ClassificationView';
 
 export default class LegalLens extends React.Component<ILegalLensProps, ILegalLensState> {
   private pulseInterval: any;
@@ -458,7 +459,8 @@ export default class LegalLens extends React.Component<ILegalLensProps, ILegalLe
       case 'library':
         return <LibraryView sharePointService={this.props.sharePointService} />;
       case 'upload': return this.renderUpload();
-      case 'classify': return this.renderClassify();
+      //case 'classify': return this.renderClassify();
+      case 'classify': return <ClassificationView contracts={this.state.contracts} sharePointService={this.props.sharePointService} aiFoundryService={this.props.aiFoundryService} uploadedFile={this.state.uploadedFile} fullAnalysis={this.state.fullAnalysis} />;
       case 'translate': return <TranslateView contracts={this.state.contracts} aiFoundryService={this.props.aiFoundryService} />
       case 'alerts': return <AlertsView contracts={this.state.contracts} />;
       default: return <LibraryView sharePointService={this.props.sharePointService} />;
