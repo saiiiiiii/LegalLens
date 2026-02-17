@@ -1,8 +1,10 @@
 import * as React from 'react';
+import { Stack, Text } from '@fluentui/react';
 import { IContract } from '../../../models/IContract';
 import { IAzureAIFoundryService } from '../../../services/AzureAIFoundryService';
 import { LANGS } from '../../../constants/languages';
 import { BotRegular, InfoRegular, PeopleFilled } from '@fluentui/react-icons';
+import styles from './Translate.module.scss';
 
 export interface IQAMessage {
   role: string;
@@ -42,6 +44,8 @@ const getLanguageName = (code: string): string => {
     }
 };
 
+const getLangCode = (lang: string): string => lang.toUpperCase();
+
 export const MultilingualQA: React.FC<IMultilingualQAProps> = ({ contract, aiFoundryService }) => {
     const [qaLanguage, setQaLanguage] = React.useState('en');
     const [qaHistory, setQaHistory] = React.useState<IQAMessage[]>([]);
@@ -53,7 +57,6 @@ export const MultilingualQA: React.FC<IMultilingualQAProps> = ({ contract, aiFou
         return () => { mountedRef.current = false; };
     }, []);
 
-    // Reset history when contract changes
     React.useEffect(() => {
         setQaHistory([]);
         setQaInput('');
@@ -106,26 +109,26 @@ export const MultilingualQA: React.FC<IMultilingualQAProps> = ({ contract, aiFou
     };
 
     return (
-      <div style={{ background: 'rgba(99,102,241,0.03)', border: '1px solid rgba(99,102,241,0.15)', borderRadius: '12px', overflow: 'hidden' }}>
-        <div style={{ padding: '12px 16px', borderBottom: '1px solid rgba(99,102,241,0.15)', background: 'rgba(99,102,241,0.04)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <div style={{ width: '26px', height: '26px', borderRadius: '6px', background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a78bfa 100%)', boxShadow: '0 4px 20px rgba(99,102,241,0.4), 0 0 40px rgba(139,92,246,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', color: '#818cf8' }}><BotRegular /></div>
-            <div>
-              <div style={{ fontSize: '12px', color: '#818cf8', fontWeight: 600 }}>Q&A Agent - {contract.name}</div>
-              <div style={{ fontSize: '8.5px', color: '#64748b' }}>Ask in your language · Powered by Azure AI Foundry</div>
-            </div>
-          </div>
+      <Stack className={styles.qaPanel}>
+        {/* Header */}
+        <Stack horizontal horizontalAlign="space-between" verticalAlign="center" className={styles.qaHeader}>
+          <Stack horizontal verticalAlign="center" tokens={{ childrenGap: 8 }}>
+            <div className={styles.qaHeaderIcon}><BotRegular /></div>
+            <Stack>
+              <Text className={styles.qaTitle}>Q&A Agent - {contract.name}</Text>
+              <Text className={styles.qaSubtitle}>Ask in your language · Powered by Azure AI Foundry</Text>
+            </Stack>
+          </Stack>
           {qaHistory.length > 0 && (
             <button onClick={() => setQaHistory([])} style={{ background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.25)', color: '#818cf8', borderRadius: '6px', padding: '4px 10px', cursor: 'pointer', fontSize: '9px', fontWeight: 600, outline: 'none' }}>
               Clear Chat
             </button>
           )}
-        </div>
+        </Stack>
 
-        <div style={{ padding: '12px 16px', borderBottom: '1px solid rgba(99,102,241,0.15)' }}>
-          <label style={{ fontSize: '9px', color: '#64748b', letterSpacing: '1px', textTransform: 'uppercase', fontWeight: 600, display: 'block', marginBottom: '6px' }}>
-            Ask in Your Language
-          </label>
+        {/* Language selector */}
+        <Stack className={styles.qaLangSection}>
+          <Text className={styles.qaLangLabel}>Ask in Your Language</Text>
           <div style={{ display: 'flex', gap: '6px' }}>
             {LANGS.map(l => (
               <button
@@ -147,82 +150,72 @@ export const MultilingualQA: React.FC<IMultilingualQAProps> = ({ contract, aiFou
               </button>
             ))}
           </div>
-        </div>
+        </Stack>
 
-        <div style={{ padding: '20px', minHeight: '200px', maxHeight: '400px', overflowY: 'auto' }}>
+        {/* Messages */}
+        <Stack className={styles.qaMessages}>
           {qaHistory.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '40px 20px' }}>
-              <InfoRegular style={{ fontSize: '24px', marginBottom: '10px', opacity: 0.25, color: '#94a3b8' }} />
-              <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '8px' }}>
+            <Stack horizontalAlign="center" className={styles.qaEmptyState}>
+              <InfoRegular className={styles.qaEmptyIcon} />
+              <Text className={styles.qaEmptyTitle}>
                 No questions yet about {contract.name}
-              </div>
-              <div style={{ fontSize: '9.5px', color: '#64748b', lineHeight: 1.6 }}>
+              </Text>
+              <Text className={styles.qaEmptyHint}>
                 Ask anything in {getLanguageName(qaLanguage)} —<br />
                 liability caps, termination, jurisdiction, parties, obligations
-              </div>
-            </div>
+              </Text>
+            </Stack>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {qaHistory.map((msg, i) => (
-                <div key={i} style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
-                  <div style={{
-                    width: '28px',
-                    height: '28px',
-                    minWidth: '28px',
-                    borderRadius: '50%',
-                    background: msg.role === 'user' ? 'rgba(6,182,212,0.15)' : 'rgba(99,102,241,0.15)',
-                    border: `1px solid ${msg.role === 'user' ? 'rgba(6,182,212,0.3)' : 'rgba(99,102,241,0.3)'}`,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '12px'
-                  }}>
-                    {msg.role === 'user' ? <PeopleFilled style={{ fontSize: '14px', color: '#67e8f9' }} /> : <BotRegular style={{ fontSize: '14px', color: '#818cf8' }} />}
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: '8px', color: '#64748b', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <span style={{ fontSize: '10px', fontWeight: 700 }}>{msg.language === 'de' ? 'DE' : msg.language === 'es' ? 'ES' : 'EN'}</span>
-                      <span style={{ textTransform: 'uppercase', fontWeight: 600, letterSpacing: '0.8px' }}>
-                        {msg.role === 'user' ? 'You' : 'Agent'}
-                      </span>
+            <Stack tokens={{ childrenGap: 12 }}>
+              {qaHistory.map((msg, i) => {
+                const isUser = msg.role === 'user';
+                return (
+                  <div key={i} className={styles.qaMsgRow}>
+                    <div className={isUser ? styles.qaMsgAvatarUser : styles.qaMsgAvatarBot}>
+                      {isUser
+                        ? <PeopleFilled style={{ fontSize: '14px', color: '#67e8f9' }} />
+                        : <BotRegular style={{ fontSize: '14px', color: '#818cf8' }} />
+                      }
                     </div>
-                    <div style={{
-                      background: msg.role === 'user' ? 'rgba(6,182,212,0.06)' : 'rgba(255,255,255,0.02)',
-                      border: `1px solid ${msg.role === 'user' ? 'rgba(6,182,212,0.15)' : 'rgba(255,255,255,0.06)'}`,
-                      borderRadius: '10px',
-                      padding: '10px 14px'
-                    }}>
-                      <div style={{ fontSize: '11px', color: msg.role === 'user' ? '#67e8f9' : '#e2e8f0', lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>
-                        {msg.text}
+                    <Stack grow={1}>
+                      <div className={styles.qaMsgMeta}>
+                        <Text className={styles.qaMsgLangCode}>{getLangCode(msg.language)}</Text>
+                        <Text className={styles.qaMsgRole}>{isUser ? 'You' : 'Agent'}</Text>
                       </div>
-                      {msg.citedClauses && msg.citedClauses.length > 0 && (
-                        <div style={{ marginTop: '8px', fontSize: '9px', color: '#818cf8', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                          <span>📎</span>
-                          <span>{msg.citedClauses.join(', ')}</span>
-                        </div>
-                      )}
-                    </div>
+                      <Stack className={isUser ? styles.qaMsgBubbleUser : styles.qaMsgBubbleBot}>
+                        <Text className={isUser ? styles.qaMsgTextUser : styles.qaMsgTextBot}>
+                          {msg.text}
+                        </Text>
+                        {msg.citedClauses && msg.citedClauses.length > 0 && (
+                          <Stack horizontal verticalAlign="center" className={styles.qaCitedClauses}>
+                            <Text>📎</Text>
+                            <Text className={styles.qaCitedText}>{msg.citedClauses.join(', ')}</Text>
+                          </Stack>
+                        )}
+                      </Stack>
+                    </Stack>
                   </div>
-                </div>
-              ))}
+                );
+              })}
               {qaLoading && (
-                <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
-                  <div style={{ width: '28px', height: '28px', minWidth: '28px', borderRadius: '50%', background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px' }}>🤖</div>
-                  <div style={{ flex: 1, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '10px', padding: '10px 14px' }}>
-                    <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
-                      <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#818cf8', animation: 'pulse 1.5s ease infinite' }} />
-                      <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#818cf8', animation: 'pulse 1.5s ease infinite 0.2s' }} />
-                      <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#818cf8', animation: 'pulse 1.5s ease infinite 0.4s' }} />
-                      <span style={{ fontSize: '9px', color: '#64748b', marginLeft: '6px' }}>Agent is thinking...</span>
-                    </div>
-                  </div>
+                <div className={styles.qaMsgRow}>
+                  <div className={styles.qaMsgAvatarBot}>🤖</div>
+                  <Stack grow={1} className={styles.qaMsgBubbleBot}>
+                    <Stack horizontal verticalAlign="center" tokens={{ childrenGap: 4 }}>
+                      <div className={styles.qaLoadingDot} />
+                      <div className={styles.qaLoadingDot} style={{ animationDelay: '0.2s' }} />
+                      <div className={styles.qaLoadingDot} style={{ animationDelay: '0.4s' }} />
+                      <Text className={styles.qaLoadingText}>Agent is thinking...</Text>
+                    </Stack>
+                  </Stack>
                 </div>
               )}
-            </div>
+            </Stack>
           )}
-        </div>
+        </Stack>
 
-        <div style={{ padding: '12px 16px', borderTop: '1px solid rgba(99,102,241,0.15)', background: 'rgba(99,102,241,0.02)' }}>
+        {/* Input bar */}
+        <Stack className={styles.qaInputBar}>
           <div style={{ display: 'flex', gap: '25px', alignItems: 'flex-end' }}>
             <div style={{ flex: 1 }}>
               <input
@@ -269,10 +262,10 @@ export const MultilingualQA: React.FC<IMultilingualQAProps> = ({ contract, aiFou
               {qaLoading ? 'Asking...' : 'Ask'}
             </button>
           </div>
-          <div style={{ marginTop: '8px', fontSize: '8.5px', color: '#64748b' }}>
+          <Text className={styles.qaExamples}>
             💡 {(EXAMPLE_QUESTIONS[qaLanguage] || EXAMPLE_QUESTIONS.en).join(' • ')}
-          </div>
-        </div>
-      </div>
+          </Text>
+        </Stack>
+      </Stack>
     );
 };
