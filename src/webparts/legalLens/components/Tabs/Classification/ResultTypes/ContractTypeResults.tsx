@@ -1,106 +1,61 @@
 import * as React from 'react';
+import { Stack, Text } from '@fluentui/react';
 import { ConfidenceScore } from '../ConfidenceScore';
+import styles from '../Classification.module.scss';
+
+const FIELDS: [string, (r: any) => string][] = [
+    ['Document Type', r => r.documentType],
+    ['Parties', r => (r.parties || []).join(' · ')],
+    ['Jurisdiction', r => r.jurisdiction],
+    ['Effective Date', r => r.effectiveDate],
+    ['Expiry Date', r => r.expiryDate],
+    ['Key Clauses', r => (r.keyClauses || []).join(', ')],
+];
 
 export const ContractTypeResults: React.FC<{ result: any }> = ({ result }) => {
     return (
-      <div style={{ animation: 'fadeIn 0.4s ease' }}>
-        <div style={{
-          background: 'rgba(16,185,129,0.04)',
-          border: '1px solid rgba(16,185,129,0.2)',
-          borderRadius: '12px',
-          padding: '20px',
-          marginBottom: '12px'
-        }}>
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '5px',
-            marginBottom: '12px'
-          }}>
-            <div style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#10b981' }} />
-            <span style={{
-              fontSize: '9px',
-              color: '#10b981',
-              fontWeight: 600,
-              letterSpacing: '1px',
-              textTransform: 'uppercase'
-            }}>
+      <Stack tokens={{ childrenGap: 12 }} className={styles.resultFadeIn}>
+        <Stack className={styles.contractPanel} tokens={{ childrenGap: 0 }}>
+          {/* Header */}
+          <Stack horizontal verticalAlign="center" tokens={{ childrenGap: 5 }} className={styles.resultHeader}>
+            <div className={styles.contractDot} />
+            <Text className={styles.contractLabel}>
               Contract Type Classification
-            </span>
-          </div>
+            </Text>
+          </Stack>
 
-          {[
-            ['Document Type', result.documentType],
-            ['Parties', (result.parties || []).join(' · ')],
-            ['Jurisdiction', result.jurisdiction],
-            ['Effective Date', result.effectiveDate],
-            ['Expiry Date', result.expiryDate],
-            ['Key Clauses', (result.keyClauses || []).join(', ')]
-          ].map(([label, value], i) => (
-            <div
-              key={i}
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                padding: '6px 0',
-                borderBottom: i < 5 ? '1px solid rgba(255,255,255,0.04)' : 'none'
-              }}
+          {/* Field rows */}
+          {FIELDS.map(([label, getValue], i) => (
+            <Stack horizontal horizontalAlign="space-between" key={i}
+              className={`${styles.fieldRow} ${i < FIELDS.length - 1 ? styles.fieldRowBorder : ''}`}
             >
-              <span style={{ fontSize: '9.5px', color: '#64748b' }}>{label}</span>
-              <span style={{
-                fontSize: '10.5px',
-                color: '#e2e8f0',
-                fontWeight: 500,
-                textAlign: 'right',
-                maxWidth: '200px'
-              }}>
-                {value || 'Not specified'}
-              </span>
-            </div>
+              <Text className={styles.fieldLabel}>{label}</Text>
+              <Text className={styles.fieldValue}>{getValue(result) || 'Not specified'}</Text>
+            </Stack>
           ))}
 
+          {/* Auto-Tags */}
           {result.autoTags && result.autoTags.length > 0 && (
-            <div style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              padding: '6px 0',
-              borderBottom: '1px solid rgba(255,255,255,0.04)'
-            }}>
-              <span style={{ fontSize: '9.5px', color: '#64748b' }}>Auto-Tags</span>
-              <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+            <Stack horizontal horizontalAlign="space-between" className={`${styles.fieldRow} ${styles.fieldRowBorder}`}>
+              <Text className={styles.fieldLabel}>Auto-Tags</Text>
+              <Stack horizontal tokens={{ childrenGap: 4 }} wrap horizontalAlign="end">
                 {result.autoTags.map((tag: string) => (
-                  <span
-                    key={tag}
-                    style={{
-                      fontSize: '8.5px',
-                      fontFamily: 'monospace',
-                      background: 'rgba(6,182,212,0.1)',
-                      border: '1px solid rgba(6,182,212,0.2)',
-                      borderRadius: '3px',
-                      padding: '1px 5px',
-                      color: '#67e8f9'
-                    }}
-                  >
-                    {tag}
-                  </span>
+                  <Text key={tag} className={styles.autoTag}>{tag}</Text>
                 ))}
-              </div>
-            </div>
+              </Stack>
+            </Stack>
           )}
 
-          <div style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            padding: '6px 0'
-          }}>
-            <span style={{ fontSize: '9.5px', color: '#64748b' }}>Duplicate Flag</span>
-            <span style={{ fontSize: '10.5px', color: '#10b981', fontWeight: 500 }}>
+          {/* Duplicate Flag */}
+          <Stack horizontal horizontalAlign="space-between" className={styles.fieldRow}>
+            <Text className={styles.fieldLabel}>Duplicate Flag</Text>
+            <Text className={styles.duplicateFlag}>
               {result.duplicateFlag || 'No duplicates found ✓'}
-            </span>
-          </div>
-        </div>
+            </Text>
+          </Stack>
+        </Stack>
 
         <ConfidenceScore value={result.confidence || 0.97} label="Classification Confidence" sublabel="Document Intelligence + semantic analysis" color="#10b981" />
-      </div>
+      </Stack>
     );
 };
