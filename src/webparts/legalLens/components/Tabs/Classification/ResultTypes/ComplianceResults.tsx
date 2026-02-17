@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { Stack, Text } from '@fluentui/react';
 import { ConfidenceScore } from '../ConfidenceScore';
-import { statusColor, statusBgColor, findingColor } from '../../../../utils/colorUtils';
+import { statusColor, statusBgColor, findingColor } from '../../../../utilities/colorUtils';
 import styles from '../Classification.module.scss';
 
 export const ComplianceResults: React.FC<{ result: any }> = ({ result }) => {

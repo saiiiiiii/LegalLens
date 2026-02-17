@@ -367,6 +367,71 @@
   font-weight: 500;
 }
 
+// RiskAssessmentResults
+
+.riskPanel {
+  background: rgba(239, 68, 68, 0.04);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.riskScoreRow {
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.riskScoreValue {
+  font-size: 28px;
+  font-weight: 700;
+}
+
+.riskFactorCard {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 6px;
+  padding: 10px;
+}
+
+.riskFactorName {
+  font-size: 10px;
+  color: #e2e8f0;
+  font-weight: 600;
+}
+
+.riskFactorDesc {
+  font-size: 9px;
+  color: #94a3b8;
+}
+
+.complianceIssuesBox {
+  padding: 10px;
+  background: rgba(239, 68, 68, 0.06);
+  border-radius: 6px;
+}
+
+.complianceIssuesTitle {
+  font-size: 9px;
+  color: #ef4444;
+  font-weight: 600;
+}
+
+.complianceIssueItem {
+  font-size: 9px;
+  color: #f87171;
+}
+
+.mitigationTitle {
+  font-size: 9px;
+  color: #10b981;
+  font-weight: 600;
+}
+
+.mitigationStep {
+  font-size: 9px;
+  color: #94a3b8;
+}
+
 // EntityExtractionResults
 
 .entityPanel {
