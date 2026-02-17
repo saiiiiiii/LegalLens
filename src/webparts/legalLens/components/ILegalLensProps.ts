@@ -9,4 +9,6 @@ export interface ILegalLensProps {
   environmentMessage: string;
   hasTeamsContext: boolean;
   userDisplayName: string;
+  documentIntelligenceEndpoint?: string;
+  documentIntelligenceKey?: string;
 }

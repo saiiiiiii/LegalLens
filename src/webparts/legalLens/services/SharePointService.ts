@@ -36,9 +36,6 @@ export class SharePointService implements ISharePointService {
     console.log('[SharePoint] Document Intelligence:', this.diEndpoint ? 'Enabled ✓' : 'Disabled');
   }
 
-  /**
-   * Extract PDF text via Azure Document Intelligence (used by Library/Alerts views)
-   */
   private async extractPDFWithDocumentIntelligence(pdfBlob: Blob, fileName: string): Promise<string> {
     console.log('[DocumentIntelligence] Submitting PDF from library:', fileName);
     const analyzeUrl = `${this.diEndpoint}/documentintelligence/documentModels/prebuilt-read:analyze?api-version=${this.diApiVersion}`;
@@ -150,10 +147,19 @@ export class SharePointService implements ISharePointService {
             console.error('[SharePoint] Document Intelligence failed for', fileName, ':', (diErr as any).message);
           }
         } else {
-          console.warn('[SharePoint] PDF extraction not implemented for:', fileName);
-          console.warn('[SharePoint] Configure Document Intelligence in web part properties to enable PDF text extraction');
+          console.log('[SharePoint] DI not configured, trying native PDF extraction for:', fileName);
         }
-        return `[PDF: ${fileName}] Configure Document Intelligence in web part properties to enable PDF text extraction.`;
+        // Native PDF text extraction fallback (no Azure service required)
+        try {
+          const nativeText = await this.extractTextFromPDFNative(blob, fileName);
+          if (nativeText && nativeText.length > 50) {
+            console.log('[SharePoint] ✓ Native PDF extraction:', nativeText.length, 'characters from', fileName);
+            return nativeText;
+          }
+        } catch (nativeErr: any) {
+          console.warn('[SharePoint] Native PDF extraction failed for', fileName, ':', nativeErr.message);
+        }
+        return `[PDF: ${fileName}] Enable Document Intelligence in web part settings for full PDF support.`;
       }
       
       const text = await blob.text();
@@ -170,6 +176,115 @@ export class SharePointService implements ISharePointService {
   }
 
   
+  private async extractTextFromPDFNative(pdfBlob: Blob, fileName: string): Promise<string> {
+    console.log('[SharePoint] Native PDF extraction:', fileName);
+    const arrayBuffer = await pdfBlob.arrayBuffer();
+    const bytes = new Uint8Array(arrayBuffer);
+    const textDecoder = new TextDecoder('latin1');
+    const pdfText = textDecoder.decode(bytes);
+
+    const streamRegex = /stream\n([\s\S]*?)endstream/g;
+    const streams: Uint8Array[] = [];
+    let streamMatch: RegExpExecArray | null;
+    while ((streamMatch = streamRegex.exec(pdfText)) !== null) {
+      const streamStr = streamMatch[1];
+      const streamBytes = new Uint8Array(streamStr.length);
+      for (let i = 0; i < streamStr.length; i++) {
+        streamBytes[i] = streamStr.charCodeAt(i) & 0xff;
+      }
+      streams.push(streamBytes);
+    }
+
+    const allTextParts: string[] = [];
+    for (const streamBytes of streams) {
+      try {
+        let contentBytes = streamBytes;
+        const startStr = textDecoder.decode(streamBytes.slice(0, 4));
+        if (/^[!-u~]/.test(startStr)) {
+          contentBytes = this.decodeAscii85(streamBytes);
+        }
+        let decompressed: Uint8Array;
+        try {
+          decompressed = await this.zlibDecompress(contentBytes);
+        } catch (e) {
+          decompressed = contentBytes;
+        }
+        const content = new TextDecoder('latin1').decode(decompressed);
+        const btBlocks = content.match(/BT[\s\S]*?ET/g) || [];
+        for (const block of btBlocks) {
+          // Tj operator — exec loop (ES5-compatible, no matchAll)
+          const tjRe = /\(([^)]*)\)\s*(?:Tj|'|")/g;
+          let tjM: RegExpExecArray | null;
+          while ((tjM = tjRe.exec(block)) !== null) {
+            const decoded = this.decodePDFString(tjM[1]);
+            if (decoded.trim()) allTextParts.push(decoded.trim());
+          }
+          // TJ array operator — exec loop
+          const tjArrRe = /\[([^\]]*)\]\s*TJ/g;
+          let tjArrM: RegExpExecArray | null;
+          while ((tjArrM = tjArrRe.exec(block)) !== null) {
+            const innerRe = /\(([^)]*)\)/g;
+            let innerM: RegExpExecArray | null;
+            while ((innerM = innerRe.exec(tjArrM[1])) !== null) {
+              const decoded = this.decodePDFString(innerM[1]);
+              if (decoded.trim()) allTextParts.push(decoded.trim());
+            }
+          }
+        }
+      } catch (e: any) {
+        console.warn('[SharePoint] Stream error:', e.message);
+      }
+    }
+
+    const result = allTextParts.join(' ').replace(/[ \t]{2,}/g, ' ').replace(/\n{3,}/g, '\n\n').trim();
+    console.log('[SharePoint] Native PDF extracted:', result.length, 'characters');
+    return result;
+  }
+
+  private decodeAscii85(input: Uint8Array): Uint8Array {
+    const text = new TextDecoder('ascii').decode(input);
+    const cleaned = text.replace(/\s/g, '').replace(/~>$/, '');
+    const output: number[] = [];
+    let i = 0;
+    while (i < cleaned.length) {
+      if (cleaned[i] === 'z') { output.push(0, 0, 0, 0); i++; continue; }
+      const group = cleaned.slice(i, i + 5).padEnd(5, 'u');
+      let val = 0;
+      for (const ch of group) val = val * 85 + (ch.charCodeAt(0) - 33);
+      const padding = Math.max(0, 5 - (cleaned.length - i));
+      const b = [(val >> 24) & 0xff, (val >> 16) & 0xff, (val >> 8) & 0xff, val & 0xff];
+      output.push(...b.slice(0, 4 - padding));
+      i += 5;
+    }
+    return new Uint8Array(output);
+  }
+
+  private async zlibDecompress(data: Uint8Array): Promise<Uint8Array> {
+    const ds = new (window as any).DecompressionStream('deflate');
+    const writer = ds.writable.getWriter();
+    const reader = ds.readable.getReader();
+    writer.write(data); writer.close();
+    const chunks: Uint8Array[] = [];
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      chunks.push(value);
+    }
+    const totalLen = chunks.reduce((s: number, c: Uint8Array) => s + c.length, 0);
+    const result = new Uint8Array(totalLen);
+    let offset = 0;
+    for (const chunk of chunks) { result.set(chunk, offset); offset += chunk.length; }
+    return result;
+  }
+
+  private decodePDFString(s: string): string {
+    return s
+      .replace(/\\n/g, '\n').replace(/\\r/g, '\r').replace(/\\t/g, '\t')
+      .replace(/\\\(/g, '(').replace(/\\\)/g, ')').replace(/\\\\/g, '\\')
+      .replace(/\\(\d{3})/g, (_: string, oct: string) => String.fromCharCode(parseInt(oct, 8)));
+  }
+
+
   private async extractFromDocx(blob: Blob): Promise<string> {
     try {
       const arrayBuffer = await blob.arrayBuffer();
