@@ -1,6 +1,4 @@
 import * as JSZip from 'jszip';
-import { IContractAnalysis } from '../models/IContractAnalysis';
-import { IClassificationResult } from '../models/IClassificationResult';
 
 export interface IAzureAIFoundryService {
   analyzeContract(fileBlob: Blob, fileName: string): Promise<IContractAnalysis>;
@@ -9,6 +7,47 @@ export interface IAzureAIFoundryService {
   askQuestionMultilingual(question: string, questionLang: string, contract: any, conversationHistory: any[]): Promise<IMultilingualAnswer>;
   extractTextFromFile(file: File | Blob): Promise<string>;
   callAI(prompt: string, maxTokens: number): Promise<string>;
+}
+
+export interface IContractAnalysis {
+  fileName: string;
+  parties: string[];
+  effectiveDate: string;
+  expiryDate: string;
+  jurisdiction: string;
+  contractType: string;
+  clauses: Array<{
+    ref: string;
+    title: string;
+    text: string;
+    riskLevel: 'low' | 'medium' | 'high';
+    riskReason?: string;
+  }>;
+  overallRiskScore: number;
+  riskFactors: Array<{
+    factor: string;
+    severity: 'low' | 'medium' | 'high' | 'critical';
+    description: string;
+    recommendation: string;
+  }>;
+  summary: string;
+  analyzedAt: string;
+}
+
+export interface IClassificationResult {
+  classificationType: string;
+  confidence: number;
+  primaryCategory: string;
+  secondaryCategories: string[];
+  detectedLanguage: string;
+  keyTerms: string[];
+  suggestedTags: string[];
+  complianceFlags: Array<{
+    regulation: string;
+    applicable: boolean;
+    reason: string;
+  }>;
+  classifiedAt: string;
 }
 
 export interface IMultilingualAnswer {
@@ -24,19 +63,69 @@ export class AzureAIFoundryService implements IAzureAIFoundryService {
   private projectEndpoint: string;
   private apiKey: string;
   private deploymentName: string;
+  private diEndpoint: string;
+  private diKey: string;
+  private diApiVersion: string = '2024-11-30';
 
   constructor(
     projectEndpoint: string,
     apiKey: string,
-    deploymentName: string = 'gpt-4o'
+    deploymentName: string = 'gpt-4o',
+    documentIntelligenceEndpoint?: string,
+    documentIntelligenceKey?: string
   ) {
     this.projectEndpoint = projectEndpoint;
     this.apiKey = apiKey;
     this.deploymentName = deploymentName;
+    this.diEndpoint = (documentIntelligenceEndpoint || '').replace(/\/$/, '');
+    this.diKey = documentIntelligenceKey || '';
 
     console.log('[AzureAI] Initialized with:');
     console.log('  Endpoint:', projectEndpoint);
     console.log('  Deployment:', deploymentName);
+    console.log('  Document Intelligence:', this.diEndpoint ? 'Enabled ✓' : 'Disabled');
+  }
+
+  /**
+   * Extract PDF text via Azure Document Intelligence (prebuilt-read)
+   */
+  private async extractPDFWithDocumentIntelligence(pdfBlob: Blob, fileName: string): Promise<string> {
+    console.log('[DocumentIntelligence] Submitting PDF:', fileName, '- Size:', pdfBlob.size, 'bytes');
+    const analyzeUrl = `${this.diEndpoint}/documentintelligence/documentModels/prebuilt-read:analyze?api-version=${this.diApiVersion}`;
+    const submitResponse = await fetch(analyzeUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/pdf',
+        'Ocp-Apim-Subscription-Key': this.diKey
+      },
+      body: pdfBlob
+    });
+    if (!submitResponse.ok) {
+      const errText = await submitResponse.text();
+      throw new Error(`Document Intelligence submit failed: ${submitResponse.status} - ${errText}`);
+    }
+    const operationLocation = submitResponse.headers.get('Operation-Location');
+    if (!operationLocation) throw new Error('No Operation-Location header from Document Intelligence');
+    console.log('[DocumentIntelligence] Step 2: Document submitted, polling for results...');
+    for (let attempt = 1; attempt <= 60; attempt++) {
+      await new Promise(r => setTimeout(r, 2000));
+      const pollResponse = await fetch(operationLocation, {
+        headers: { 'Ocp-Apim-Subscription-Key': this.diKey }
+      });
+      if (!pollResponse.ok) throw new Error(`DI polling failed: ${pollResponse.status}`);
+      const result = await pollResponse.json();
+      console.log('[DocumentIntelligence] Polling attempt', attempt, '/ 60');
+      console.log('[DocumentIntelligence] Status:', result.status);
+      if (result.status === 'succeeded') {
+        const content = result.analyzeResult?.content || '';
+        console.log('[DocumentIntelligence] ✓ Extracted', content.length, 'characters from', fileName);
+        return content;
+      }
+      if (result.status === 'failed') {
+        throw new Error(`DI analysis failed: ${result.error?.message || 'Unknown'}`);
+      }
+    }
+    throw new Error('Document Intelligence timeout after 2 minutes');
   }
 
   /**
@@ -290,10 +379,21 @@ ${contractInfo}`;
         return await this.extractFromDocx(fileBlob);
       }
 
-      // For .pdf files - extract text (basic)
+      // For .pdf files - use Document Intelligence if configured
       if (fileType === 'application/pdf' || fileName.endsWith('.pdf')) {
-        console.log('[AzureAI] PDF extraction not implemented, using placeholder');
-        return '[PDF document - Please use Document Intelligence or convert to .txt/.docx]';
+        if (this.diEndpoint && this.diKey) {
+          console.log('[AzureAI] Using Document Intelligence for PDF extraction...');
+          try {
+            const text = await this.extractPDFWithDocumentIntelligence(fileBlob, fileName);
+            console.log('[AzureAI] ✓ Extracted', text.length, 'characters via Document Intelligence');
+            return text;
+          } catch (diErr: any) {
+            console.error('[AzureAI] Document Intelligence failed:', diErr.message);
+          }
+        } else {
+          console.warn('[AzureAI] Document Intelligence not configured - set endpoint + key in web part properties');
+        }
+        return `[PDF: ${fileName}] Configure Document Intelligence endpoint and key in web part settings.`;
       }
 
       // Default - try text extraction

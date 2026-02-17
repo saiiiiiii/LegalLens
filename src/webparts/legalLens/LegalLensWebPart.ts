@@ -31,18 +31,26 @@ export default class LegalLensWebPart extends BaseClientSideWebPart<ILegalLensWe
 
   protected onInit(): Promise<void> {
     return super.onInit().then(() => {
-      // Initialize SharePoint service
-      const libraryUrl = this.properties.contractLibraryUrl || 'Contracts';
-      this.sharePointService = new SharePointService(this.context, libraryUrl);
+      const diEndpoint = this.properties.enableDocumentAnalysis
+        ? (this.properties.documentIntelligenceEndpoint || '') : '';
+      const diKey = this.properties.enableDocumentAnalysis
+        ? (this.properties.documentIntelligenceKey || '') : '';
 
-      // Initialize Azure AI Foundry service
+      const libraryUrl = this.properties.contractLibraryUrl || 'Contracts';
+      this.sharePointService = new SharePointService(
+        this.context, libraryUrl, diEndpoint, diKey
+      );
+
       this.aiFoundryService = new AzureAIFoundryService(
         this.properties.aiFoundryEndpoint || '',
         this.properties.aiFoundryApiKey || '',
-        this.properties.aiFoundryDeployment || 'gpt-4o'
+        this.properties.aiFoundryDeployment || 'gpt-4o',
+        diEndpoint,
+        diKey
       );
-      
+
       console.log('[WebPart] Services initialized');
+      console.log('[WebPart] Document Intelligence:', diEndpoint ? 'Enabled ✓' : 'Disabled - toggle ON in web part settings');
     });
   }
 
@@ -56,7 +64,11 @@ export default class LegalLensWebPart extends BaseClientSideWebPart<ILegalLensWe
         isDarkTheme: this.context.sdks?.microsoftTeams?.context?.theme === 'dark',
         environmentMessage: this._getEnvironmentMessage(),
         hasTeamsContext: !!this.context.sdks.microsoftTeams,
-        userDisplayName: this.context.pageContext.user.displayName
+        userDisplayName: this.context.pageContext.user.displayName,
+        documentIntelligenceEndpoint: this.properties.enableDocumentAnalysis
+          ? (this.properties.documentIntelligenceEndpoint || '') : '',
+        documentIntelligenceKey: this.properties.enableDocumentAnalysis
+          ? (this.properties.documentIntelligenceKey || '') : ''
       }
     );
 

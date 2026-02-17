@@ -5,9 +5,9 @@ import "@pnp/sp/items";
 import "@pnp/sp/files";
 import "@pnp/sp/folders";
 import { WebPartContext } from "@microsoft/sp-webpart-base";
-import * as JSZip from 'jszip';
 import { IContract } from "../models/IContract";
 import { IClause } from "../models/IClause";
+import * as JSZip from 'jszip';
 
 export interface ISharePointService {
   getContracts(): Promise<IContract[]>;
@@ -18,48 +18,60 @@ export interface ISharePointService {
 export class SharePointService implements ISharePointService {
   private sp: SPFI;
   private libraryUrl: string;
+  private diEndpoint: string;
+  private diKey: string;
+  private diApiVersion: string = '2024-11-30';
 
-  constructor(context: WebPartContext, libraryUrl: string) {
+  constructor(
+    context: WebPartContext,
+    libraryUrl: string,
+    documentIntelligenceEndpoint?: string,
+    documentIntelligenceKey?: string
+  ) {
     this.sp = spfi().using(spSPFx(context));
     this.libraryUrl = libraryUrl;
+    this.diEndpoint = (documentIntelligenceEndpoint || '').replace(/\/$/, '');
+    this.diKey = documentIntelligenceKey || '';
     console.log('[SharePoint] Initialized with library:', libraryUrl);
+    console.log('[SharePoint] Document Intelligence:', this.diEndpoint ? 'Enabled ✓' : 'Disabled');
   }
 
-  private formatDateForSharePoint(dateString: string): string | null {
-    if (!dateString || dateString === 'Not specified' || dateString === 'null') {
-      return null;
+  /**
+   * Extract PDF text via Azure Document Intelligence (used by Library/Alerts views)
+   */
+  private async extractPDFWithDocumentIntelligence(pdfBlob: Blob, fileName: string): Promise<string> {
+    console.log('[DocumentIntelligence] Submitting PDF from library:', fileName);
+    const analyzeUrl = `${this.diEndpoint}/documentintelligence/documentModels/prebuilt-read:analyze?api-version=${this.diApiVersion}`;
+    const submitResponse = await fetch(analyzeUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/pdf',
+        'Ocp-Apim-Subscription-Key': this.diKey
+      },
+      body: pdfBlob
+    });
+    if (!submitResponse.ok) {
+      const errText = await submitResponse.text();
+      throw new Error(`DI submit failed: ${submitResponse.status} - ${errText}`);
     }
-
-    try {
-      // Handle different date formats
-      let date: Date;
-
-      // Check if already ISO format with time
-      if (dateString.includes('T')) {
-        date = new Date(dateString);
+    const operationLocation = submitResponse.headers.get('Operation-Location');
+    if (!operationLocation) throw new Error('No Operation-Location header from Document Intelligence');
+    for (let attempt = 1; attempt <= 60; attempt++) {
+      await new Promise(r => setTimeout(r, 2000));
+      const pollResponse = await fetch(operationLocation, {
+        headers: { 'Ocp-Apim-Subscription-Key': this.diKey }
+      });
+      if (!pollResponse.ok) throw new Error(`DI polling failed: ${pollResponse.status}`);
+      const result = await pollResponse.json();
+      console.log('[DocumentIntelligence] Attempt', attempt, '- Status:', result.status);
+      if (result.status === 'succeeded') {
+        const content = result.analyzeResult?.content || '';
+        console.log('[DocumentIntelligence] ✓ Extracted', content.length, 'characters from', fileName);
+        return content;
       }
-      // Handle YYYY-MM-DD format
-      else if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
-        // Add time component at noon UTC to avoid timezone issues
-        date = new Date(`${dateString}T12:00:00Z`);
-      }
-      // Handle other formats
-      else {
-        date = new Date(dateString);
-      }
-
-      // Validate the date
-      if (isNaN(date.getTime())) {
-        console.warn('[SharePoint] Invalid date:', dateString);
-        return null;
-      }
-
-      // Return ISO string (includes time)
-      return date.toISOString();
-    } catch (error) {
-      console.warn('[SharePoint] Error parsing date:', dateString, error);
-      return null;
+      if (result.status === 'failed') throw new Error(`DI failed: ${result.error?.message || 'Unknown'}`);
     }
+    throw new Error('Document Intelligence timeout');
   }
 
   
@@ -74,8 +86,7 @@ export class SharePointService implements ISharePointService {
         .select(
           'Id', 'Title', 'FileRef', 'FileLeafRef',
           'ContractType', 'Jurisdiction', 'Status',
-          'Parties', 'ExpiryDate', 'Tags', 'RiskScore', 'Created',
-          'EffectiveDate', 'AnalysisDate', 'AIAnalysisComplete'
+          'Parties', 'ExpiryDate', 'Tags', 'RiskScore', 'Created'
         )
         .expand('File')
         .orderBy('Created', false)
@@ -89,7 +100,6 @@ export class SharePointService implements ISharePointService {
         const item = items[i];
         const contract = this.mapItemToContract(item, i);
         
-        // Only extract text if file exists
         if (item.FileRef) {
           try {
             console.log(`[SharePoint] Extracting content from: ${contract.name}`);
@@ -109,15 +119,7 @@ export class SharePointService implements ISharePointService {
 
     } catch (error) {
       console.error('[SharePoint] Error fetching contracts:', error);
-      
-      // More user-friendly error message
-      if (error.message && error.message.includes('does not exist')) {
-        const match = error.message.match(/'([^']+)'/);
-        const fieldName = match ? match[1] : 'Unknown field';
-        throw new Error(`SharePoint column '${fieldName}' not found. Please check library configuration.`);
-      }
-      
-      throw new Error('Failed to load contracts. Please check configuration and try again.');
+      throw new Error('Failed to load contracts from SharePoint library');
     }
   }
 
@@ -140,8 +142,18 @@ export class SharePointService implements ISharePointService {
       }
       
       if (fileType === 'application/pdf' || fileName.endsWith('.pdf')) {
-        console.warn('[SharePoint] PDF extraction not implemented for:', fileName);
-        return `[PDF Document: ${fileName}]\n\nNote: Full text extraction from PDF requires Document Intelligence service to be configured.`;
+        if (this.diEndpoint && this.diKey) {
+          console.log('[SharePoint] Using Document Intelligence for PDF:', fileName);
+          try {
+            return await this.extractPDFWithDocumentIntelligence(blob, fileName);
+          } catch (diErr: any) {
+            console.error('[SharePoint] Document Intelligence failed for', fileName, ':', (diErr as any).message);
+          }
+        } else {
+          console.warn('[SharePoint] PDF extraction not implemented for:', fileName);
+          console.warn('[SharePoint] Configure Document Intelligence in web part properties to enable PDF text extraction');
+        }
+        return `[PDF: ${fileName}] Configure Document Intelligence in web part properties to enable PDF text extraction.`;
       }
       
       const text = await blob.text();
@@ -242,38 +254,21 @@ export class SharePointService implements ISharePointService {
       console.log('[SharePoint] Step 3: List item retrieved');
 
       console.log('[SharePoint] Step 4: Updating metadata...');
-      
-      const expiryDate = this.formatDateForSharePoint(analysisResult.expiryDate);
-      const effectiveDate = this.formatDateForSharePoint(analysisResult.effectiveDate);
-      const analysisDate = new Date().toISOString(); // Current timestamp
-      
-      const metadata: any = {
+      const metadata = {
         Title: analysisResult.fileName || fileName,
         ContractType: analysisResult.contractType || 'General Agreement',
         Jurisdiction: analysisResult.jurisdiction || 'Not specified',
         Status: analysisResult.overallRiskScore >= 70 ? 'Critical' : 
                 analysisResult.overallRiskScore >= 40 ? 'Warning' : 'Compliant',
         Parties: analysisResult.parties ? analysisResult.parties.join(';') : '',
+        ExpiryDate: analysisResult.expiryDate && analysisResult.expiryDate !== 'Not specified' ? 
+                    analysisResult.expiryDate : null,
         Tags: analysisResult.riskFactors && analysisResult.riskFactors.length > 0 ? 
               analysisResult.riskFactors.map((f: any) => f.factor).join(';') : '',
-        RiskScore: analysisResult.overallRiskScore || 0,
-        AIAnalysisComplete: true, 
-        AnalysisDate: analysisDate
+        RiskScore: analysisResult.overallRiskScore || 0
       };
 
-      // Only add date fields if they have valid values
-      if (expiryDate) {
-        metadata.ExpiryDate = expiryDate;
-      }
-      
-      if (effectiveDate) {
-        metadata.EffectiveDate = effectiveDate;
-      }
-
       console.log('[SharePoint] Metadata to update:', metadata);
-      console.log('[SharePoint] ExpiryDate formatted:', expiryDate);
-      console.log('[SharePoint] EffectiveDate formatted:', effectiveDate);
-      console.log('[SharePoint] AIAnalysisComplete: true');
       
       await item.update(metadata);
 
@@ -282,14 +277,6 @@ export class SharePointService implements ISharePointService {
     } catch (error) {
       console.error('[SharePoint] ✗ Error saving contract:', error);
       console.error('[SharePoint] Error details:', JSON.stringify(error, null, 2));
-      
-      // Better error message
-      if (error.message && error.message.includes('does not exist')) {
-        const match = error.message.match(/'([^']+)'/);
-        const fieldName = match ? match[1] : 'Unknown field';
-        throw new Error(`SharePoint column '${fieldName}' not found. Internal name might be different from display name.`);
-      }
-      
       throw new Error(`Failed to save contract: ${error.message || error}`);
     }
   }
