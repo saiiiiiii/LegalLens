@@ -1,10 +1,12 @@
 import * as React from 'react';
+import { Stack, Text } from '@fluentui/react';
 import { IContract } from "../../../models/IContract";
 import { LANGS } from '../../../constants';
 import { LocalLanguage24Regular } from '@fluentui/react-icons';
 import { TranslatedDocument } from './TranslatedDocument';
 import { MultilingualQA } from './MultilingualQA';
 import { IAzureAIFoundryService } from '../../../services/AzureAIFoundryService';
+import styles from './Translate.module.scss';
 
 export interface ITranslateViewProps {
   contracts: IContract[];
@@ -105,7 +107,11 @@ export const TranslateView: React.FC<ITranslateViewProps> = ({ contracts, aiFoun
     };
 
     if (contracts.length === 0) {
-      return <div style={{ padding: '40px', textAlign: 'center', color: '#64748b' }}>No contracts available</div>;
+      return (
+        <Stack horizontalAlign="center" className={styles.viewHeader}>
+          <Text className={styles.viewSubtitle}>No contracts available</Text>
+        </Stack>
+      );
     }
 
     const cacheKey = `${selectedContract}-${selectedLang}`;
@@ -113,120 +119,98 @@ export const TranslateView: React.FC<ITranslateViewProps> = ({ contracts, aiFoun
     const contract = contracts[selectedContract];
 
     return (
-      <div style={{ animation: 'fadeIn 0.35s ease' }}>
-        <div style={{ marginBottom: '20px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
-            <h2 style={{ fontFamily: "'Cinzel', Georgia, serif", fontSize: '24px', fontWeight: 600, background: 'linear-gradient(135deg, #fff 0%, #a5b4fc 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text', letterSpacing: '0.5px', margin: 0 }}>
-              TranslatePro
-            </h2>
-            <span style={{ fontSize: '8px', fontWeight: 700, letterSpacing: '1px', background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a78bfa 100%)', boxShadow: '0 4px 20px rgba(99,102,241,0.4), 0 0 40px rgba(139,92,246,0.2)', color: '#fff', borderRadius: '4px', padding: '2px 7px' }}>
-              AI POWERED
-            </span>
-          </div>
-          <p style={{ margin: 0, fontSize: '11px', color: '#64748b' }}>
+      <Stack className={styles.viewWrap}>
+        <Stack className={styles.viewHeader}>
+          <Stack horizontal verticalAlign="center" tokens={{ childrenGap: 10 }} className={styles.viewTitleRow}>
+            <Text className={styles.viewTitle}>TranslatePro</Text>
+            <Text className={styles.aiBadge}>AI POWERED</Text>
+          </Stack>
+          <Text className={styles.viewSubtitle}>
             Live legal translation via Azure AI Foundry · Multilingual Q&A · Preserves clause references
-          </p>
-        </div>
+          </Text>
+        </Stack>
 
-        <div style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '20px', marginBottom: '18px' }}>
-          <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-end', flexWrap: 'wrap' }}>
-            <div style={{ flex: '1 1 260px' }}>
-              <label style={{ fontSize: '9px', color: '#64748b', letterSpacing: '1px', textTransform: 'uppercase', fontWeight: 600, display: 'block', marginBottom: '6px' }}>
-                Select Contract
-              </label>
+        <Stack className={styles.controlPanel}>
+          <Stack horizontal tokens={{ childrenGap: 12 }} className={styles.controlRow}>
+            <Stack className={styles.contractSelectWrap}>
+              <Text className={styles.controlLabel}>Select Contract</Text>
               <select
                 value={selectedContract}
                 onChange={e => setSelectedContract(Number(e.target.value))}
-                style={{ width: '100%', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', padding: '9px 34px 9px 12px', color: '#e2e8f0', fontSize: '12px', outline: 'none', cursor: 'pointer' }}
+                className={styles.contractSelect}
               >
                 {contracts.map((c, i) => (
                   <option key={i} value={i} style={{ background: '#1e293b', color: '#e2e8f0' }}>{c.name}</option>
                 ))}
               </select>
-            </div>
+            </Stack>
 
-            <div style={{ width: '230px' }}>
-              <label style={{ fontSize: '9px', color: '#64748b', letterSpacing: '1px', textTransform: 'uppercase', fontWeight: 600, display: 'block', marginBottom: '6px' }}>
-                Translation Language
-              </label>
-              <div style={{ display: 'flex', gap: '6px' }}>
+            <Stack className={styles.langSelectWrap}>
+              <Text className={styles.controlLabel}>Translation Language</Text>
+              <div className={styles.langButtonRow}>
                 {LANGS.map(l => (
                   <button
                     key={l.code}
                     onClick={() => setSelectedLang(l.code)}
+                    className={styles.langBtn}
                     style={{
-                      flex: 1,
                       background: selectedLang === l.code ? 'rgba(99,102,241,0.15)' : 'rgba(255,255,255,0.06)',
-                      border: `1px solid ${selectedLang === l.code ? 'rgba(99,102,241,0.4)' : 'rgba(255,255,255,0.1)'}`,
-                      borderRadius: '8px',
-                      padding: '8px 6px',
-                      cursor: 'pointer',
-                      outline: 'none',
-                      textAlign: 'center',
-                      transition: 'all 0.2s'
+                      border: `1px solid ${selectedLang === l.code ? 'rgba(99,102,241,0.4)' : 'rgba(255,255,255,0.1)'}`
                     }}
                   >
-                    <div style={{ fontSize: '16px', marginBottom: '2px', color: '#ffffff' }}>{l.flag}</div>
-                    <div style={{ fontSize: '8.5px', color: selectedLang === l.code ? '#fff' : '#94a3b8', fontWeight: 600 }}>{l.label}</div>
+                    <div className={styles.langBtnFlag}>{l.flag}</div>
+                    <div className={styles.langBtnLabel} style={{ color: selectedLang === l.code ? '#fff' : '#94a3b8' }}>{l.label}</div>
                   </button>
                 ))}
               </div>
-            </div>
+            </Stack>
 
             <button
               onClick={runTranslation}
               disabled={translating || !!cached}
+              className={styles.translateBtn}
               style={{
                 background: cached ? 'rgba(16,185,129,0.1)' : translating ? 'rgba(99,102,241,0.15)' : 'linear-gradient(135deg,#6366f1,#8b5cf6)',
                 border: cached ? '1px solid rgba(16,185,129,0.3)' : translating ? '1px solid rgba(99,102,241,0.3)' : 'none',
                 color: cached ? '#10b981' : translating ? '#818cf8' : '#fff',
-                borderRadius: '8px',
-                padding: '9px 20px',
-                cursor: translating || cached ? 'default' : 'pointer',
-                fontSize: '12px',
-                fontWeight: 600,
-                outline: 'none',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                whiteSpace: 'nowrap'
+                cursor: translating || cached ? 'default' : 'pointer'
               }}
             >
               {translating ? <>⏳ Translating...</> : cached ? <>✓ Cached</> : <>🌐 Translate</>}
             </button>
-          </div>
+          </Stack>
 
           {translateError && (
-            <div style={{ marginTop: '10px', fontSize: '11px', color: '#ef4444', background: 'rgba(239,68,68,0.08)', borderRadius: '6px', padding: '8px 12px' }}>
-              ⚠ {translateError}
-            </div>
+            <Stack className={styles.translateError}>
+              <Text className={styles.translateErrorText}>⚠ {translateError}</Text>
+            </Stack>
           )}
-        </div>
+        </Stack>
 
         {translating && (
-          <div style={{ background: 'rgba(99,102,241,0.04)', border: '1px solid rgba(99,102,241,0.2)', borderRadius: '10px', padding: '14px 18px', marginBottom: '16px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-              <span style={{ fontSize: '10.5px', color: '#818cf8', fontWeight: 600 }}>Translating contract...</span>
-              <span style={{ fontSize: '9px', color: '#64748b' }}>{Math.round((translateProgress / 3) * 100)}%</span>
+          <Stack className={styles.progressPanel}>
+            <Stack horizontal horizontalAlign="space-between" className={styles.progressHeader}>
+              <Text className={styles.progressLabel}>Translating contract...</Text>
+              <Text className={styles.progressPct}>{Math.round((translateProgress / 3) * 100)}%</Text>
+            </Stack>
+            <div className={styles.progressTrack}>
+              <div className={styles.progressFill} style={{ width: `${(translateProgress / 3) * 100}%` }} />
             </div>
-            <div style={{ background: 'rgba(255,255,255,0.06)', borderRadius: '3px', height: '3px', overflow: 'hidden' }}>
-              <div style={{ height: '100%', borderRadius: '3px', background: 'linear-gradient(90deg,#6366f1,#8b5cf6)', width: `${(translateProgress / 3) * 100}%`, transition: 'width 0.4s ease' }} />
-            </div>
-          </div>
+          </Stack>
         )}
 
         {cached ? (
-          <div>
+          <Stack>
             <TranslatedDocument contract={contract} cached={cached} selectedLanguage={selectedLang} />
             <MultilingualQA contract={contract} aiFoundryService={aiFoundryService} />
-          </div>
+          </Stack>
         ) : !translating && (
-          <div style={{ background: 'rgba(255,255,255,0.03)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px', boxShadow: '0 8px 32px rgba(0,0,0,0.3)', padding: '44px 24px', textAlign: 'center' }}>
-            <LocalLanguage24Regular style={{ fontSize: '32px', marginBottom: '12px', opacity: 0.2, color: '#94a3b8' }} />
-            <div style={{ fontSize: '13px', color: '#94a3b8', marginBottom: '5px' }}>Select a contract and language above</div>
-            <div style={{ fontSize: '10.5px', color: '#64748b' }}>AI will translate the summary and all key clauses in real-time.</div>
-          </div>
+          <Stack horizontalAlign="center" className={styles.emptyDoc}>
+            <LocalLanguage24Regular className={styles.emptyDocIcon} />
+            <Text className={styles.emptyDocTitle}>Select a contract and language above</Text>
+            <Text className={styles.emptyDocHint}>AI will translate the summary and all key clauses in real-time.</Text>
+          </Stack>
         )}
-      </div>
+      </Stack>
     );
 }
