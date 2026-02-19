@@ -23,6 +23,7 @@ import { CLASSIFY_STEPS, buildContractTypePrompt, buildRiskAssessmentPrompt, bui
 import { AlertsView } from './Tabs/Alerts/AlertsView';
 import { TranslateView } from './Tabs/Translate/TranslateView';
 import { ClassificationView } from './Tabs/Classification/ClassificationView';
+import { ESignatureView } from './Tabs/ESignature/ESignatureView';
 
 export default class LegalLens extends React.Component<ILegalLensProps, ILegalLensState> {
   private pulseInterval: any;
@@ -409,7 +410,8 @@ export default class LegalLens extends React.Component<ILegalLensProps, ILegalLe
               { key: 'upload', label: 'Upload & Analyze', highlight: true },
               { key: 'classify', label: 'Classification', highlight: false },
               { key: 'translate', label: 'TranslatePro', highlight: false },
-              { key: 'alerts', label: 'Alerts', highlight: false }
+              { key: 'alerts', label: 'Alerts', highlight: false },
+              { key: 'esignature', label: 'E-Signature', highlight: true }
             ].map(tab => (
               <button
                 key={tab.key}
@@ -462,6 +464,13 @@ export default class LegalLens extends React.Component<ILegalLensProps, ILegalLe
       case 'classify': return <ClassificationView contracts={this.state.contracts} sharePointService={this.props.sharePointService} aiFoundryService={this.props.aiFoundryService} uploadedFile={this.state.uploadedFile} fullAnalysis={this.state.fullAnalysis} />;
       case 'translate': return <TranslateView contracts={this.state.contracts} aiFoundryService={this.props.aiFoundryService} />
       case 'alerts': return <AlertsView contracts={this.state.contracts} />;
+      case 'esignature': return (
+        <ESignatureView
+          contracts={this.state.contracts}
+          sharePointService={this.props.sharePointService}
+          userDisplayName={this.props.userDisplayName}
+        />
+      );
       default: return <LibraryView sharePointService={this.props.sharePointService} />;
     }
   }

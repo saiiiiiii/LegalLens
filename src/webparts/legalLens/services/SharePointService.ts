@@ -13,6 +13,14 @@ export interface ISharePointService {
   getContracts(): Promise<IContract[]>;
   getContractFile(fileUrl: string): Promise<File>;
   saveAnalyzedContract(fileName: string, fileBlob: Blob, analysisResult: any): Promise<void>;
+  saveSignedDocument(fileName: string, pdfBlob: Blob, metadata: ISignedDocMetadata): Promise<void>;
+  getSignedDocuments(): Promise<Array<{ contractName: string; signedAt: string; signerNames: string }>>;
+}
+
+export interface ISignedDocMetadata {
+  contractName: string;
+  signerNames:  string;
+  signedAt:     string;
 }
 
 export class SharePointService implements ISharePointService {
@@ -466,5 +474,78 @@ export class SharePointService implements ISharePointService {
     return templates[contractType] || [
       { ref: '§1', title: 'General Terms', text: 'Standard terms and conditions apply.' }
     ];
+  }
+
+  public async saveSignedDocument(
+    fileName: string,
+    pdfBlob: Blob,
+    metadata: ISignedDocMetadata
+  ): Promise<void> {
+    try {
+      const signedLibrary = 'Signed Documents';
+      console.log('[SharePoint] Saving signed PDF to:', signedLibrary);
+      console.log('[SharePoint] File:', fileName);
+
+      // Upload PDF file
+      await this.sp.web.lists
+        .getByTitle(signedLibrary)
+        .rootFolder
+        .files
+        .addUsingPath(fileName, pdfBlob, { Overwrite: true });
+
+      // Get file and update metadata
+      const file = await this.sp.web.lists
+        .getByTitle(signedLibrary)
+        .rootFolder
+        .files
+        .getByUrl(fileName);
+
+      const item = await file.getItem();
+      await item.update({
+        Title:        'Signed – ' + metadata.contractName,
+        ContractType: 'Signed Document',
+        Parties:      metadata.signerNames,
+        Status:       'Completed',
+        Tags:         'Signed;E-Signature;Completed',
+        RiskScore:    0,
+      });
+
+      console.log('[SharePoint] ✓ Signed PDF saved:', fileName);
+    } catch (error: any) {
+      console.error('[SharePoint] ✗ Signed document save error:', error);
+      if (error.message && error.message.includes('does not exist')) {
+        throw new Error('Signed Documents library not found. Create it in SharePoint with columns: Title, ContractType, Parties, Status, Tags, RiskScore');
+      }
+      throw new Error(`Failed to save signed document: ${error.message || error}`);
+    }
+  }
+  public async getSignedDocuments(): Promise<Array<{ contractName: string; signedAt: string; signerNames: string }>> {
+    try {
+      const signedLibrary = 'Signed Documents';
+      console.log('[SharePoint] Fetching signed documents from:', signedLibrary);
+
+      const items = await this.sp.web.lists
+        .getByTitle(signedLibrary)
+        .items
+        .select('Title', 'Parties', 'Created')
+        .orderBy('Created', false)
+        .top(100)();
+
+      console.log('[SharePoint] Found', items.length, 'signed documents');
+
+      return items.map(item => ({
+        contractName: (item.Title || '').replace('Signed – ', ''), // Remove prefix
+        signedAt: item.Created || '',
+        signerNames: item.Parties || '',
+      }));
+    } catch (error: any) {
+      console.error('[SharePoint] Error fetching signed documents:', error);
+      // Return empty array if library doesn't exist yet
+      if (error.message && error.message.includes('does not exist')) {
+        console.warn('[SharePoint] Signed Documents library not found - assuming no signed docs');
+        return [];
+      }
+      throw new Error(`Failed to fetch signed documents: ${error.message || error}`);
+    }
   }
 }

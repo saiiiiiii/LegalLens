@@ -3,7 +3,7 @@ import { IContract } from '../models/IContract';
 import { IContractAnalysis } from '../models/IContractAnalysis';
 
 export interface ILegalLensState {
-  view: 'library' | 'upload' | 'classify' | 'translate' | 'alerts';
+  view: 'library' | 'upload' | 'classify' | 'translate' | 'alerts' | 'esignature';
   contracts: IContract[];
   loading: boolean;
   error: string | null;
