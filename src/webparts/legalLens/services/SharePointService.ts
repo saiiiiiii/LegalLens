@@ -15,12 +15,13 @@ export interface ISharePointService {
   saveAnalyzedContract(fileName: string, fileBlob: Blob, analysisResult: any): Promise<void>;
   saveSignedDocument(fileName: string, pdfBlob: Blob, metadata: ISignedDocMetadata): Promise<void>;
   getSignedDocuments(): Promise<Array<{ contractName: string; signedAt: string; signerNames: string }>>;
+  getSignedDocumentFile(contractName: string): Promise<Blob>;
 }
 
 export interface ISignedDocMetadata {
   contractName: string;
-  signerNames:  string;
-  signedAt:     string;
+  signerNames: string;
+  signedAt: string;
 }
 
 export class SharePointService implements ISharePointService {
@@ -79,12 +80,12 @@ export class SharePointService implements ISharePointService {
     throw new Error('Document Intelligence timeout');
   }
 
-  
+
   public async getContracts(): Promise<IContract[]> {
     try {
       const listTitle = this.getListTitleFromUrl(this.libraryUrl);
       console.log('[SharePoint] Fetching contracts from:', listTitle);
-      
+
       const items = await this.sp.web.lists
         .getByTitle(listTitle)
         .items
@@ -98,13 +99,13 @@ export class SharePointService implements ISharePointService {
         .top(100)();
 
       console.log('[SharePoint] Found', items.length, 'contracts');
-      
+
       const contracts: IContract[] = [];
-      
+
       for (let i = 0; i < items.length; i++) {
         const item = items[i];
         const contract = this.mapItemToContract(item, i);
-        
+
         if (item.FileRef) {
           try {
             console.log(`[SharePoint] Extracting content from: ${contract.name}`);
@@ -116,7 +117,7 @@ export class SharePointService implements ISharePointService {
             (contract as any).fullText = '';
           }
         }
-        
+
         contracts.push(contract);
       }
 
@@ -128,24 +129,24 @@ export class SharePointService implements ISharePointService {
     }
   }
 
-  
+
   private async extractDocumentContent(fileUrl: string): Promise<string> {
     try {
       const file = this.sp.web.getFileByServerRelativePath(fileUrl);
       const blob = await file.getBlob();
       const fileName = fileUrl.split('/').pop() || '';
-      
+
       const fileType = blob.type;
-      
+
       if (fileType === 'text/plain' || fileName.endsWith('.txt')) {
         return await blob.text();
       }
-      
-      if (fileType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || 
-          fileName.endsWith('.docx')) {
+
+      if (fileType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+        fileName.endsWith('.docx')) {
         return await this.extractFromDocx(blob);
       }
-      
+
       if (fileType === 'application/pdf' || fileName.endsWith('.pdf')) {
         if (this.diEndpoint && this.diKey) {
           console.log('[SharePoint] Using Document Intelligence for PDF:', fileName);
@@ -169,21 +170,21 @@ export class SharePointService implements ISharePointService {
         }
         return `[PDF: ${fileName}] Enable Document Intelligence in web part settings for full PDF support.`;
       }
-      
+
       const text = await blob.text();
       if (text && text.length > 50 && !text.startsWith('PK')) {
         return text;
       }
-      
+
       return `[Document: ${fileName}]\n\nUnable to extract text. Supported formats: .txt, .docx`;
-      
+
     } catch (error) {
       console.error('[SharePoint] Document content extraction error:', error);
       return '[Document content unavailable]';
     }
   }
 
-  
+
   private async extractTextFromPDFNative(pdfBlob: Blob, fileName: string): Promise<string> {
     console.log('[SharePoint] Native PDF extraction:', fileName);
     const arrayBuffer = await pdfBlob.arrayBuffer();
@@ -298,43 +299,47 @@ export class SharePointService implements ISharePointService {
       const arrayBuffer = await blob.arrayBuffer();
       const zip = await JSZip.loadAsync(arrayBuffer);
       const documentXml = await zip.file('word/document.xml')?.async('text');
-      
+
       if (!documentXml) {
         throw new Error('Invalid .docx format - missing document.xml');
       }
 
-      const textContent = documentXml
+
+      let textContent = documentXml
+        .replace(/<w:p[^>]*>/g, '\n\n')
+        .replace(/<w:br[^>]*\/>/g, '\n')
         .replace(/<w:t[^>]*>/g, '')
-        .replace(/<\/w:t>/g, ' ')
+        .replace(/<\/w:t>/g, '')
         .replace(/<[^>]+>/g, '')
-        .replace(/\s+/g, ' ')
+        .replace(/[ \t]+/g, ' ')
+        .replace(/\n{3,}/g, '\n\n')
         .trim();
 
       return textContent || '[No text found in document]';
-      
+
     } catch (error) {
       console.error('[SharePoint] .docx extraction error:', error);
       throw error;
     }
   }
 
-  
+
   public async getContractFile(fileUrl: string): Promise<File> {
     try {
       console.log('[SharePoint] Fetching file from:', fileUrl);
-      
+
       const file = this.sp.web.getFileByServerRelativePath(fileUrl);
       const blob = await file.getBlob();
-      
+
       const fileName = fileUrl.split('/').pop() || 'contract.docx';
-      
+
       console.log('[SharePoint] Downloaded file:', fileName, 'Size:', blob.size);
-      
-      const fileObject = new File([blob], fileName, { 
+
+      const fileObject = new File([blob], fileName, {
         type: blob.type,
         lastModified: Date.now()
       });
-      
+
       return fileObject;
     } catch (error) {
       console.error('[SharePoint] Error downloading file:', error);
@@ -342,7 +347,7 @@ export class SharePointService implements ISharePointService {
     }
   }
 
-  
+
   public async saveAnalyzedContract(
     fileName: string,
     fileBlob: Blob,
@@ -353,14 +358,14 @@ export class SharePointService implements ISharePointService {
       console.log('[SharePoint] Uploading to library:', listTitle);
       console.log('[SharePoint] File:', fileName);
       console.log('[SharePoint] Analysis result:', analysisResult);
-      
+
       console.log('[SharePoint] Step 1: Uploading file...');
       await this.sp.web.lists
         .getByTitle(listTitle)
         .rootFolder
         .files
         .addUsingPath(fileName, fileBlob, { Overwrite: true });
-      
+
       console.log('[SharePoint] Step 1: File uploaded successfully');
 
       console.log('[SharePoint] Step 2: Getting uploaded file...');
@@ -369,7 +374,7 @@ export class SharePointService implements ISharePointService {
         .rootFolder
         .files
         .getByUrl(fileName);
-      
+
       console.log('[SharePoint] Step 2: File retrieved');
 
       console.log('[SharePoint] Step 3: Getting list item...');
@@ -381,18 +386,18 @@ export class SharePointService implements ISharePointService {
         Title: analysisResult.fileName || fileName,
         ContractType: analysisResult.contractType || 'General Agreement',
         Jurisdiction: analysisResult.jurisdiction || 'Not specified',
-        Status: analysisResult.overallRiskScore >= 70 ? 'Critical' : 
-                analysisResult.overallRiskScore >= 40 ? 'Warning' : 'Compliant',
+        Status: analysisResult.overallRiskScore >= 70 ? 'Critical' :
+          analysisResult.overallRiskScore >= 40 ? 'Warning' : 'Compliant',
         Parties: analysisResult.parties ? analysisResult.parties.join(';') : '',
-        ExpiryDate: analysisResult.expiryDate && analysisResult.expiryDate !== 'Not specified' ? 
-                    analysisResult.expiryDate : null,
-        Tags: analysisResult.riskFactors && analysisResult.riskFactors.length > 0 ? 
-              analysisResult.riskFactors.map((f: any) => f.factor).join(';') : '',
+        ExpiryDate: analysisResult.expiryDate && analysisResult.expiryDate !== 'Not specified' ?
+          analysisResult.expiryDate : null,
+        Tags: analysisResult.riskFactors && analysisResult.riskFactors.length > 0 ?
+          analysisResult.riskFactors.map((f: any) => f.factor).join(';') : '',
         RiskScore: analysisResult.overallRiskScore || 0
       };
 
       console.log('[SharePoint] Metadata to update:', metadata);
-      
+
       await item.update(metadata);
 
       console.log('[SharePoint] ✓ Contract saved successfully:', fileName);
@@ -404,13 +409,13 @@ export class SharePointService implements ISharePointService {
     }
   }
 
-  
+
   private getListTitleFromUrl(url: string): string {
     const segments = url.split('/').filter(s => s.length > 0);
     return segments[segments.length - 1];
   }
 
-  
+
   private mapItemToContract(item: any, index: number): IContract {
     const parties = this.parseMultiValue(item.Parties);
     const tags = this.parseMultiValue(item.Tags);
@@ -502,12 +507,12 @@ export class SharePointService implements ISharePointService {
 
       const item = await file.getItem();
       await item.update({
-        Title:        'Signed – ' + metadata.contractName,
+        Title: 'Signed – ' + metadata.contractName,
         ContractType: 'Signed Document',
-        Parties:      metadata.signerNames,
-        Status:       'Completed',
-        Tags:         'Signed;E-Signature;Completed',
-        RiskScore:    0,
+        Parties: metadata.signerNames,
+        Status: 'Completed',
+        Tags: 'Signed;E-Signature;Completed',
+        RiskScore: 0,
       });
 
       console.log('[SharePoint] ✓ Signed PDF saved:', fileName);
@@ -546,6 +551,40 @@ export class SharePointService implements ISharePointService {
         return [];
       }
       throw new Error(`Failed to fetch signed documents: ${error.message || error}`);
+    }
+  }
+
+  public async getSignedDocumentFile(contractName: string): Promise<Blob> {
+    try {
+      const signedLibrary = 'Signed Documents';
+      console.log('[SharePoint] Downloading signed document:', contractName);
+
+      // Find files that start with the contract name (they have _signed_timestamp suffix)
+      const items = await this.sp.web.lists
+        .getByTitle(signedLibrary)
+        .items
+        .select('Title', 'FileRef', 'FileLeafRef')
+        .filter(`substringof('${contractName.replace(/\.[^.]+$/, '')}', FileLeafRef)`)
+        .top(10)();
+
+      if (items.length === 0) {
+        throw new Error(`No signed version found for "${contractName}"`);
+      }
+
+      // Get the most recent signed version
+      const latestItem = items[items.length - 1];
+      const fileUrl = latestItem.FileRef;
+
+      console.log('[SharePoint] Found signed file:', fileUrl);
+
+      const file = this.sp.web.getFileByServerRelativePath(fileUrl);
+      const blob = await file.getBlob();
+
+      console.log('[SharePoint] ✓ Downloaded signed PDF:', blob.size, 'bytes');
+      return blob;
+    } catch (error: any) {
+      console.error('[SharePoint] Error downloading signed document:', error);
+      throw new Error(`Failed to download signed document: ${error.message || error}`);
     }
   }
 }

@@ -3,6 +3,7 @@ import { IContract } from '../../../models/IContract';
 import { ISharePointService } from '../../../services/SharePointService';
 import { jsPDF } from 'jspdf';
 
+// ─── Types ────────────────────────────────────────────────────────────────────
 type Step = 'select' | 'author' | 'place' | 'sign';
 type SignMode = 'draw' | 'type' | 'upload';
 
@@ -199,6 +200,31 @@ export const ESignatureView: React.FC<IESignatureViewProps> = ({
     const signedContracts = contracts.filter(c => signedContractNames.has(c.name));
     const displayContracts = viewMode === 'unsigned' ? unsignedContracts : signedContracts;
 
+    // Function to handle viewing/downloading signed document
+    const handleViewSigned = async (contractName: string) => {
+      try {
+        console.log('[ESignature] Downloading signed document:', contractName);
+        
+        // Fetch signed PDF from SharePoint
+        const blob = await sharePointService.getSignedDocumentFile(contractName);
+        
+        // Create download link
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `Signed_${contractName.replace(/\.[^.]+$/, '')}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        
+        console.log('[ESignature] ✓ Download initiated');
+      } catch (err: any) {
+        console.error('[ESignature] Download failed:', err);
+        alert(`Download failed: ${err.message}\n\nPlease ensure the document exists in the "Signed Documents" library.`);
+      }
+    };
+
     return (
       <div style={{ animation: 'fadeIn 0.3s ease' }}>
         <StepHeader 
@@ -262,7 +288,7 @@ export const ESignatureView: React.FC<IESignatureViewProps> = ({
                     : '1px solid rgba(255,255,255,0.08)',
                   display: 'flex', alignItems: 'center', gap: 14, 
                   transition: 'all 0.2s',
-                  opacity: isSigned ? 0.7 : 1,
+                  opacity: isSigned ? 0.9 : 1,
                 }}
                 onMouseEnter={e => !isSigned && (e.currentTarget.style.background = 'rgba(99,102,241,0.08)')}
                 onMouseLeave={e => !isSigned && (e.currentTarget.style.background = 'rgba(255,255,255,0.02)')}
@@ -283,11 +309,25 @@ export const ESignatureView: React.FC<IESignatureViewProps> = ({
                     {c.type} · {c.parties.slice(0, 2).join(', ')}
                   </div>
                 </div>
-                {!isSigned && (
+                {!isSigned ? (
                   <div style={{
                     padding: '5px 12px', borderRadius: 6, fontSize: 9, fontWeight: 700,
                     background: 'rgba(99,102,241,0.12)', color: '#818cf8',
                   }}>SELECT →</div>
+                ) : (
+                  <button 
+                    onClick={(e) => { 
+                      e.stopPropagation(); 
+                      handleViewSigned(c.name); 
+                    }}
+                    style={{
+                      padding: '6px 14px', borderRadius: 6, border: 'none', cursor: 'pointer',
+                      background: 'linear-gradient(135deg,#0891b2,#0e7490)', color: '#fff',
+                      fontSize: 9, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 5,
+                    }}
+                  >
+                    <span>⬇</span> Download
+                  </button>
                 )}
               </div>
             );
@@ -473,10 +513,9 @@ export const ESignatureView: React.FC<IESignatureViewProps> = ({
   // STEP 4: SIGN DOCUMENT / SUCCESS
   // ══════════════════════════════════════════════════════════════════════════
   if (step === 'sign' && contract) {
-    const allSigned = fields.filter(f => f.type === 'signature').every(f => f.value);
-
     const handleSign = async () => {
-      if (!allSigned) return;
+      const allSignatures = fields.filter(f => f.type === 'signature').every(f => f.value);
+      if (!allSignatures) return;
       setSaving(true);
       try {
         // Generate PDF
@@ -878,13 +917,18 @@ function SignaturePad({ fieldLabel, mode, onMode, penColor, onPenColor, canvasRe
     if (!canvasRef.current || mode !== 'draw') return;
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d')!;
-    canvas.width = canvas.offsetWidth * 2;
-    canvas.height = canvas.offsetHeight * 2;
-    ctx.scale(2, 2);
+    
+    // Set canvas size (larger for better quality)
+    canvas.width = canvas.offsetWidth * 2.5;
+    canvas.height = canvas.offsetHeight * 2.5;
+    ctx.scale(2.5, 2.5);
+    
+    // Drawing settings
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
-    ctx.lineWidth = 2.5;
+    ctx.lineWidth = 3; // Thicker line for visibility
     ctx.strokeStyle = penColor;
+    
     setCanvasEmpty(true);
   }, [canvasRef, mode, penColor, setCanvasEmpty]);
 
@@ -1081,66 +1125,233 @@ async function generateSignedPDF(contract: IContract, fields: ISignatureField[],
 
   const pageWidth = 210;
   const pageHeight = 297;
-  const margin = 20;
-  const lineHeight = 6;
+  const margin = 25;
+  const contentWidth = pageWidth - 2 * margin;
   let yPos = margin;
 
-  // Title
+  // ─── DOCUMENT TITLE ───
   pdf.setFontSize(16);
   pdf.setFont('helvetica', 'bold');
-  pdf.text(contract.name, margin, yPos);
-  yPos += 10;
-
-  // Contract text
-  pdf.setFontSize(10);
-  pdf.setFont('helvetica', 'normal');
-  const contractText = (contract as any).fullText || contract.summary || '';
-  const lines = pdf.splitTextToSize(contractText.slice(0, 3000), pageWidth - 2 * margin);
   
-  for (const line of lines) {
-    if (yPos > pageHeight - margin - 80) break;
-    pdf.text(line, margin, yPos);
-    yPos += lineHeight;
+  // Extract title from contract name (remove .docx extension)
+  const docTitle = contract.name.replace(/\.(docx|pdf|txt)$/i, '').toUpperCase();
+  pdf.text(docTitle, margin, yPos);
+  yPos += 12;
+
+  // ─── DOCUMENT CONTENT ───
+  pdf.setFontSize(11);
+  pdf.setFont('helvetica', 'normal');
+  
+  const contractText = (contract as any).fullText || contract.summary || '';
+  
+  // Split into lines while preserving structure
+  const allLines = contractText.split('\n');
+  
+  for (let i = 0; i < allLines.length; i++) {
+    const line = allLines[i];
+    
+    // Check for page break
+    if (yPos > pageHeight - 40) {
+      pdf.addPage();
+      yPos = margin;
+    }
+    
+    // Handle empty lines (paragraph breaks)
+    if (line.trim() === '') {
+      yPos += 5;
+      continue;
+    }
+    
+    // Check if line is a section header (starts with §, all caps, or "AND", "BY:")
+    const isHeader = /^(§\d|AND$|BY:|TITLE:|DATE:)/i.test(line.trim()) || 
+                     (line.trim().length > 0 && line.trim() === line.trim().toUpperCase() && line.trim().length < 60);
+    
+    if (isHeader) {
+      // Section headers
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(11);
+      
+      // Wrap header if needed
+      const headerLines = pdf.splitTextToSize(line.trim(), contentWidth);
+      for (const headerLine of headerLines) {
+        if (yPos > pageHeight - 40) {
+          pdf.addPage();
+          yPos = margin;
+        }
+        pdf.text(headerLine, margin, yPos);
+        yPos += 6;
+      }
+      
+      yPos += 2; // Extra space after headers
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(11);
+    } else {
+      // Regular content - wrap to page width
+      const wrappedLines = pdf.splitTextToSize(line.trim(), contentWidth);
+      
+      for (const wrappedLine of wrappedLines) {
+        if (yPos > pageHeight - 40) {
+          pdf.addPage();
+          yPos = margin;
+        }
+        pdf.text(wrappedLine, margin, yPos);
+        yPos += 6;
+      }
+    }
   }
 
-  // Signature page
-  yPos = pageHeight - 70;
-  pdf.setDrawColor(99, 102, 241);
-  pdf.line(margin, yPos, pageWidth - margin, yPos);
-  yPos += 10;
+  // ─── SIGNATURE PAGE (NEW PAGE) ───
+  pdf.addPage();
+  yPos = 40;
 
-  pdf.setFontSize(12);
+  // Draw header box
+  pdf.setFillColor(99, 102, 241);
+  pdf.rect(0, 0, pageWidth, 25, 'F');
+  
+  pdf.setFontSize(18);
   pdf.setFont('helvetica', 'bold');
-  pdf.text('SIGNATURE PAGE', pageWidth / 2, yPos, { align: 'center' });
-  yPos += 10;
+  pdf.setTextColor(255, 255, 255);
+  pdf.text('SIGNATURE PAGE', pageWidth / 2, 15, { align: 'center' });
+  
+  pdf.setTextColor(0, 0, 0);
 
-  // Signatures
-  const sigFields = fields.filter(f => f.type === 'signature' && f.value);
-  pdf.setFontSize(10);
-  for (const sigField of sigFields) {
-    const signer = signers.find(s => s.id === sigField.signer);
-    if (!signer) continue;
-
-    if (sigField.value) {
-      pdf.addImage(sigField.value, 'PNG', margin, yPos, 60, 15);
-    }
-    yPos += 18;
-
-    pdf.line(margin, yPos, margin + 70, yPos);
-    yPos += 5;
-
-    pdf.text(signer.name, margin, yPos);
-    if (signer.title) {
-      pdf.setFontSize(9);
-      pdf.text(signer.title, margin, yPos + 4);
+  // ─── SIGNATURES ───
+  const signatureFields = fields.filter(f => f.type === 'signature' && f.value);
+  
+  if (signers.length === 2 && signatureFields.length === 2) {
+    // Two-column layout for 2 signers
+    const colWidth = (contentWidth - 15) / 2;
+    let maxHeight = 0;
+    
+    signatureFields.forEach((sigField, index) => {
+      const signer = signers.find(s => s.id === sigField.signer);
+      if (!signer) return;
+      
+      const xOffset = margin + (index * (colWidth + 15));
+      let sigYPos = yPos;
+      
+      // Signature image - LARGER SIZE
+      if (sigField.value) {
+        try {
+          // Increased from 20 to 30mm height for better visibility
+          pdf.addImage(sigField.value, 'PNG', xOffset, sigYPos, colWidth * 0.85, 30);
+        } catch (e) {
+          console.warn('Signature image error:', e);
+        }
+      }
+      sigYPos += 35; // Increased spacing
+      
+      // Signature line
+      pdf.setLineWidth(0.5);
+      pdf.setDrawColor(0, 0, 0);
+      pdf.line(xOffset, sigYPos, xOffset + colWidth, sigYPos);
+      sigYPos += 7;
+      
+      // Name
+      pdf.setFontSize(12);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(signer.name, xOffset, sigYPos);
+      sigYPos += 6;
+      
+      // Title
+      if (signer.title) {
+        pdf.setFontSize(10);
+        pdf.setFont('helvetica', 'normal');
+        pdf.setTextColor(60, 60, 60);
+        pdf.text(signer.title, xOffset, sigYPos);
+        sigYPos += 6;
+      }
+      
+      // Date
       pdf.setFontSize(10);
+      pdf.setTextColor(80, 80, 80);
+      const dateStr = new Date().toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric' 
+      });
+      pdf.text(`Date: ${dateStr}`, xOffset, sigYPos);
+      
+      pdf.setTextColor(0, 0, 0);
+      maxHeight = Math.max(maxHeight, sigYPos - yPos);
+    });
+    
+    yPos += maxHeight + 20;
+  } else {
+    // Stacked layout for 1 or 3+ signers
+    for (const sigField of signatureFields) {
+      const signer = signers.find(s => s.id === sigField.signer);
+      if (!signer) continue;
+      
+      if (yPos > pageHeight - 60) {
+        pdf.addPage();
+        yPos = margin;
+      }
+      
+      // Signature image - LARGER SIZE
+      if (sigField.value) {
+        try {
+          // Increased from 70x20 to 90x30 for better visibility
+          pdf.addImage(sigField.value, 'PNG', margin, yPos, 90, 30);
+        } catch (e) {
+          console.warn('Signature image error:', e);
+        }
+      }
+      yPos += 35; // Increased spacing
+      
+      // Signature line
+      pdf.setLineWidth(0.5);
+      pdf.setDrawColor(0, 0, 0);
+      pdf.line(margin, yPos, margin + 90, yPos);
+      yPos += 7;
+      
+      // Name
+      pdf.setFontSize(12);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(signer.name, margin, yPos);
+      yPos += 6;
+      
+      // Title
+      if (signer.title) {
+        pdf.setFontSize(10);
+        pdf.setFont('helvetica', 'normal');
+        pdf.setTextColor(60, 60, 60);
+        pdf.text(signer.title, margin, yPos);
+        yPos += 6;
+      }
+      
+      // Date
+      pdf.setFontSize(10);
+      pdf.setTextColor(80, 80, 80);
+      const dateStr = new Date().toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric' 
+      });
+      pdf.text(`Date: ${dateStr}`, margin, yPos);
+      
+      yPos += 25;
+      pdf.setTextColor(0, 0, 0);
     }
-    yPos += 12;
-
-    pdf.setFontSize(9);
-    pdf.text(`Date: ${new Date().toLocaleDateString()}`, margin, yPos);
-    yPos += 10;
   }
+
+  // ─── FOOTER ───
+  const footerY = pageHeight - 20;
+  pdf.setFontSize(9);
+  pdf.setFont('helvetica', 'italic');
+  pdf.setTextColor(100, 100, 100);
+  pdf.text('This document has been electronically signed. The signatures above are legally binding.', 
+           pageWidth / 2, footerY, { align: 'center' });
+  
+  pdf.setFontSize(8);
+  const timestamp = new Date().toLocaleString('en-US', {
+    year: 'numeric',
+    month: 'long', 
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+  pdf.text(`Signed on: ${timestamp}`, pageWidth / 2, footerY + 5, { align: 'center' });
 
   return pdf;
 }
