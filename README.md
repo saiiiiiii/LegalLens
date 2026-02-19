@@ -45,9 +45,10 @@ AI-powered contract management web part for SharePoint Online with auto-classifi
 | Column Name | Type | Description |
 |------------|------|-------------|
 | Title | Single line of text | Contract name (default) |
-| ContractType | Single line of text | Contract Type from Contracts Library |
+| ContractType | Single line of text | Contract Type |
 | Status | Single line of text | Completed or In-Progress of Contract E-Signature |
-| Tags | Single lines of text | Tag of E-Signature |
+| Parties | Single line of text | Parties involved in Documents E-Signatures |
+| Tags | Single lines of text | Tags of E-Signature |
 | RiskScore | Number | Risk score from 0-100 |
 
 ## Version History
