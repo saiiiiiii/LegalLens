@@ -34,6 +34,22 @@ AI-powered contract management web part for SharePoint Online with auto-classifi
 | Analysis Date | Date | Analysis date |
 | Effective Date | Date | Effective Date date |
 
+### 2. Create "Signed Documents" Documents Library
+
+1. Navigate to your SharePoint site
+2. Create a new Document Library named "Signed Documents"
+3. Add the following columns to the library:
+
+### Required Columns
+
+| Column Name | Type | Description |
+|------------|------|-------------|
+| Title | Single line of text | Contract name (default) |
+| ContractType | Single line of text | Contract Type from Contracts Library |
+| Status | Single line of text | Completed or In-Progress of Contract E-Signature |
+| Tags | Single lines of text | Tag of E-Signature |
+| RiskScore | Number | Risk score from 0-100 |
+
 ## Version History
 
 | Version | Date | Changes |
@@ -45,3 +61,4 @@ AI-powered contract management web part for SharePoint Online with auto-classifi
 | Solution | Author(s) |
 |----------|-----------|
 | LegalLens| [Sai Siva Ram Bandaru](https://github.com/saiiiiiii)
+| LegalLens| [Antanina Druzhkina](https://github.com/Ateina)
