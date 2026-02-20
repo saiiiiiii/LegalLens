@@ -32,18 +32,6 @@ export default class LegalLens extends React.Component<ILegalLensProps, ILegalLe
       uploadedFile: null,
       fullAnalysis: null,
 
-      selContract: 0,
-      selLang: 'en',
-      translating: false,
-      translateProgress: 0,
-      cache: {},
-      translateError: null,
-
-      qaLanguage: 'en',
-      qaHistory: [],
-      qaInput: '',
-      qaLoading: false,
-
       pulseAlert: false
     };
 
@@ -78,17 +66,6 @@ export default class LegalLens extends React.Component<ILegalLensProps, ILegalLe
 
       if (this._isMounted) {
         this.setState({ contracts, loading: false });
-
-        // Auto-populate English cache
-        const cache: any = {};
-        contracts.forEach((contract, idx) => {
-          const key = `${idx}-en`;
-          cache[key] = {
-            summary: contract.summary,
-            clauses: contract.clauses.map(c => ({ ref: c.ref, translated: `${c.title}: ${c.text}` }))
-          };
-        });
-        this.setState({ cache });
       }
     } catch (error) {
       console.error('Error loading contracts:', error);

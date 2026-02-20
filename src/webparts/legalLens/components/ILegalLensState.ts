@@ -15,19 +15,5 @@ export interface ILegalLensState {
     entities?: any;
   } | null;
 
-  // Translation state
-  selContract: number;
-  selLang: string;
-  translating: boolean;
-  translateProgress: number;
-  cache: { [key: string]: { summary: string; clauses: any[] } };
-  translateError: string | null;
-
-  // Q&A state (multilingual)
-  qaLanguage: string;
-  qaHistory: Array<{ role: string; text: string; language: string; citedClauses?: string[] }>;
-  qaInput: string;
-  qaLoading: boolean;
-
   pulseAlert: boolean;
 }
