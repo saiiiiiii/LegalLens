@@ -6,6 +6,7 @@ import { jsPDF } from 'jspdf';
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Step = 'select' | 'author' | 'place' | 'sign';
 type SignMode = 'draw' | 'type' | 'upload';
+type ViewMode = 'unsigned' | 'inprogress' | 'signed';
 
 interface ISigner {
   id:    string;
@@ -23,6 +24,14 @@ interface ISignatureField {
   height:  number;
   signer:  string;
   value?:  string;
+}
+
+interface IDraftDocument {
+  contractId: number;
+  contractName: string;
+  signers: ISigner[];
+  fields: ISignatureField[];
+  savedAt: string;
 }
 
 export interface IESignatureViewProps {
@@ -71,7 +80,22 @@ export const ESignatureView: React.FC<IESignatureViewProps> = ({
   const [signedContractNames, setSignedContractNames] = React.useState<Set<string>>(new Set());
   const [loadingSignedDocs, setLoadingSignedDocs] = React.useState(true);
 
-  const [viewMode, setViewMode] = React.useState<'unsigned' | 'signed'>('unsigned');
+  // Track draft/in-progress documents in localStorage
+  const [draftDocs, setDraftDocs] = React.useState<IDraftDocument[]>(() => {
+    try {
+      const stored = localStorage.getItem('ll_draft_signatures');
+      return stored ? JSON.parse(stored) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  const [viewMode, setViewMode] = React.useState<ViewMode>('unsigned');
+
+  // Compute in-progress contracts from drafts
+  const inProgressContractNames = React.useMemo(() => {
+    return new Set(draftDocs.map(d => d.contractName));
+  }, [draftDocs]);
 
   // Load signed documents from SharePoint on mount
   React.useEffect(() => {
@@ -131,33 +155,40 @@ export const ESignatureView: React.FC<IESignatureViewProps> = ({
   }, []);
 
   // Helper to transition to place step with auto-generated signature blocks
+  // Helper to transition to place step with auto-generated signature blocks
   const goToPlaceStep = () => {
-    // Auto-generate signature fields for each signer
+    // Create signature table at TOP of document
     const newFields: ISignatureField[] = [];
     
+    // Table header starts at y=50 (top of document)
+    const tableStartY = 60;
+    const rowHeight = 80;
+    const nameColumnX = 50;
+    const signatureColumnX = 200;
+    
     signers.forEach((signer, index) => {
-      const yOffset = 150 + (index * 150); // Space them vertically
+      const yPos = tableStartY + (index * rowHeight);
       
-      // Signature field
+      // Signature field (in "Signature" column)
       newFields.push({
         id: makeId(),
         type: 'signature',
         signer: signer.id,
-        x: 50,
-        y: yOffset,
-        width: 200,
-        height: 60,
+        x: signatureColumnX,
+        y: yPos,
+        width: 180,
+        height: 50,
       });
       
-      // Date field
+      // Date field (below signature in same cell)
       newFields.push({
         id: makeId(),
         type: 'date',
         signer: signer.id,
-        x: 270,
-        y: yOffset + 20,
-        width: 120,
-        height: 40,
+        x: signatureColumnX,
+        y: yPos + 55,
+        width: 180,
+        height: 30,
       });
     });
     
@@ -195,10 +226,38 @@ export const ESignatureView: React.FC<IESignatureViewProps> = ({
       );
     }
 
-    // Filter contracts based on whether they've been signed (by contract name)
-    const unsignedContracts = contracts.filter(c => !signedContractNames.has(c.name));
+    // Get in-progress contract IDs
+    const inProgressIds = new Set(draftDocs.map(d => d.contractId));
+    
+    // Filter contracts based on whether they've been signed or in-progress
+    const unsignedContracts = contracts.filter(c => 
+      !signedContractNames.has(c.name) && !inProgressIds.has(c.id)
+    );
+    const inProgressContracts = contracts.filter(c => inProgressIds.has(c.id));
     const signedContracts = contracts.filter(c => signedContractNames.has(c.name));
-    const displayContracts = viewMode === 'unsigned' ? unsignedContracts : signedContracts;
+    
+    const displayContracts = viewMode === 'unsigned' 
+      ? unsignedContracts 
+      : viewMode === 'inprogress'
+        ? inProgressContracts
+        : signedContracts;
+
+    // Function to resume in-progress document
+    const handleResumeInProgress = (contractId: number) => {
+      const draft = draftDocs.find(d => d.contractId === contractId);
+      const contractData = contracts.find(c => c.id === contractId);
+      
+      if (!draft || !contractData) {
+        alert('Draft data not found');
+        return;
+      }
+
+      // Restore state from draft
+      setContract(contractData);
+      setSigners(draft.signers);
+      setFields(draft.fields);
+      setStep('sign'); // Go directly to signing step
+    };
 
     // Function to handle viewing/downloading signed document
     const handleViewSigned = async (contractName: string) => {
@@ -229,10 +288,10 @@ export const ESignatureView: React.FC<IESignatureViewProps> = ({
       <div style={{ animation: 'fadeIn 0.3s ease' }}>
         <StepHeader 
           title="Select Document" 
-          subtitle={`Choose a contract to sign from your library (${unsignedContracts.length} unsigned, ${signedContracts.length} signed)`} 
+          subtitle={`Choose a contract to sign (${unsignedContracts.length} unsigned, ${inProgressContracts.length} in progress, ${signedContracts.length} signed)`} 
         />
 
-        {/* View mode toggle */}
+        {/* Three-way view mode toggle */}
         <div style={{ 
           display: 'flex', gap: 8, marginBottom: 16, padding: '4px', borderRadius: 10,
           background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
@@ -245,6 +304,14 @@ export const ESignatureView: React.FC<IESignatureViewProps> = ({
             fontSize: 11, fontWeight: 600, transition: 'all 0.2s',
           }}>
             📄 Unsigned ({unsignedContracts.length})
+          </button>
+          <button onClick={() => setViewMode('inprogress')} style={{
+            padding: '8px 16px', borderRadius: 7, border: 'none', cursor: 'pointer',
+            background: viewMode === 'inprogress' ? 'linear-gradient(135deg,#f59e0b,#d97706)' : 'transparent',
+            color: viewMode === 'inprogress' ? '#fff' : '#94a3b8',
+            fontSize: 11, fontWeight: 600, transition: 'all 0.2s',
+          }}>
+            ⏳ In Progress ({inProgressContracts.length})
           </button>
           <button onClick={() => setViewMode('signed')} style={{
             padding: '8px 16px', borderRadius: 7, border: 'none', cursor: 'pointer',
@@ -264,17 +331,26 @@ export const ESignatureView: React.FC<IESignatureViewProps> = ({
               border: '1px dashed rgba(255,255,255,0.1)',
             }}>
               {viewMode === 'unsigned' 
-                ? '🎉 All documents have been signed!' 
-                : '📝 No signed documents yet. Start signing from the "Unsigned" tab.'}
+                ? '🎉 All documents have been signed or are in progress!' 
+                : viewMode === 'inprogress'
+                  ? '✨ No documents in progress. Start signing from the "Unsigned" tab.'
+                  : '📝 No signed documents yet. Complete signing from the "In Progress" tab.'}
             </div>
           )}
           {displayContracts.map(c => {
             const isSigned = signedContractNames.has(c.name);
+            const isInProgress = inProgressIds.has(c.id);
+            const draft = draftDocs.find(d => d.contractId === c.id);
+            const signedCount = draft ? draft.fields.filter(f => f.type === 'signature' && f.value).length : 0;
+            const totalCount = draft ? draft.fields.filter(f => f.type === 'signature').length : 0;
+            
             return (
               <div 
                 key={c.id} 
                 onClick={() => {
-                  if (!isSigned) {
+                  if (isInProgress) {
+                    handleResumeInProgress(c.id);
+                  } else if (!isSigned) {
                     setContract(c); 
                     setStep('author');
                   }
@@ -285,15 +361,19 @@ export const ESignatureView: React.FC<IESignatureViewProps> = ({
                   background: 'rgba(255,255,255,0.02)', 
                   border: isSigned 
                     ? '1px solid rgba(16,185,129,0.2)' 
-                    : '1px solid rgba(255,255,255,0.08)',
+                    : isInProgress
+                      ? '1px solid rgba(245,158,11,0.3)'
+                      : '1px solid rgba(255,255,255,0.08)',
                   display: 'flex', alignItems: 'center', gap: 14, 
                   transition: 'all 0.2s',
                   opacity: isSigned ? 0.9 : 1,
                 }}
-                onMouseEnter={e => !isSigned && (e.currentTarget.style.background = 'rgba(99,102,241,0.08)')}
+                onMouseEnter={e => !isSigned && (e.currentTarget.style.background = isInProgress ? 'rgba(245,158,11,0.08)' : 'rgba(99,102,241,0.08)')}
                 onMouseLeave={e => !isSigned && (e.currentTarget.style.background = 'rgba(255,255,255,0.02)')}
               >
-                <span style={{ fontSize: 32 }}>{isSigned ? '✅' : '📄'}</span>
+                <span style={{ fontSize: 32 }}>
+                  {isSigned ? '✅' : isInProgress ? '⏳' : '📄'}
+                </span>
                 <div style={{ flex: 1 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3 }}>
                     <div style={{ fontSize: 13, color: '#e2e8f0', fontWeight: 600 }}>{c.name}</div>
@@ -304,16 +384,42 @@ export const ESignatureView: React.FC<IESignatureViewProps> = ({
                         border: '1px solid rgba(16,185,129,0.3)',
                       }}>SIGNED</span>
                     )}
+                    {isInProgress && (
+                      <span style={{
+                        padding: '2px 8px', borderRadius: 4, fontSize: 9, fontWeight: 700,
+                        background: 'rgba(245,158,11,0.15)', color: '#f59e0b',
+                        border: '1px solid rgba(245,158,11,0.3)',
+                      }}>IN PROGRESS ({signedCount}/{totalCount})</span>
+                    )}
                   </div>
                   <div style={{ fontSize: 10, color: '#64748b' }}>
                     {c.type} · {c.parties.slice(0, 2).join(', ')}
+                    {isInProgress && draft && (
+                      <span style={{ marginLeft: 8, color: '#f59e0b' }}>
+                        · Last saved: {new Date(draft.savedAt).toLocaleDateString()}
+                      </span>
+                    )}
                   </div>
                 </div>
-                {!isSigned ? (
+                {!isSigned && !isInProgress ? (
                   <div style={{
                     padding: '5px 12px', borderRadius: 6, fontSize: 9, fontWeight: 700,
                     background: 'rgba(99,102,241,0.12)', color: '#818cf8',
                   }}>SELECT →</div>
+                ) : isInProgress ? (
+                  <button 
+                    onClick={(e) => { 
+                      e.stopPropagation(); 
+                      handleResumeInProgress(c.id);
+                    }}
+                    style={{
+                      padding: '6px 14px', borderRadius: 6, border: 'none', cursor: 'pointer',
+                      background: 'linear-gradient(135deg,#f59e0b,#d97706)', color: '#fff',
+                      fontSize: 9, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 5,
+                    }}
+                  >
+                    <span>▶</span> Continue Signing
+                  </button>
                 ) : (
                   <button 
                     onClick={(e) => { 
@@ -467,7 +573,7 @@ export const ESignatureView: React.FC<IESignatureViewProps> = ({
           </span>
         </div>
 
-        {/* Document preview with draggable fields */}
+        {/* Document preview with signature table */}
         <div
           ref={docRef}
           style={{
@@ -476,27 +582,129 @@ export const ESignatureView: React.FC<IESignatureViewProps> = ({
             border: '1px solid rgba(255,255,255,0.08)', overflow: 'hidden',
           }}
         >
-          {/* Contract text */}
+          {/* Signature Table Structure - at top with drop zones */}
+          <div style={{
+            position: 'absolute', top: 30, left: 35, right: 35,
+            border: '2px solid rgba(99,102,241,0.4)', borderRadius: 8,
+            background: 'rgba(99,102,241,0.05)',
+            zIndex: 1,
+          }}>
+            {/* Table Header */}
+            <div style={{
+              display: 'grid', gridTemplateColumns: '150px 1fr',
+              borderBottom: '2px solid rgba(99,102,241,0.4)',
+              background: 'rgba(99,102,241,0.12)',
+            }}>
+              <div style={{
+                padding: '10px 15px', fontWeight: 700, fontSize: 11,
+                color: '#c7d2fe', borderRight: '2px solid rgba(99,102,241,0.4)',
+              }}>NAME</div>
+              <div style={{
+                padding: '10px 15px', fontWeight: 700, fontSize: 11,
+                color: '#c7d2fe',
+              }}>SIGNATURE & DATE</div>
+            </div>
+            
+            {/* Table Rows (one per signer) */}
+            {signers.map((signer, index) => (
+              <div key={signer.id} style={{
+                display: 'grid', gridTemplateColumns: '150px 1fr',
+                minHeight: 105,
+                borderBottom: index < signers.length - 1 ? '1px solid rgba(99,102,241,0.25)' : 'none',
+              }}>
+                {/* Name Column */}
+                <div style={{
+                  padding: '15px', borderRight: '2px solid rgba(99,102,241,0.4)',
+                  display: 'flex', flexDirection: 'column', justifyContent: 'center',
+                }}>
+                  <div style={{ fontSize: 11, color: '#e2e8f0', fontWeight: 600 }}>
+                    {signer.name}
+                  </div>
+                  {signer.title && (
+                    <div style={{ fontSize: 9, color: '#94a3b8', marginTop: 2 }}>
+                      {signer.title}
+                    </div>
+                  )}
+                  {signer.email && (
+                    <div style={{ fontSize: 8, color: '#64748b', marginTop: 2 }}>
+                      {signer.email}
+                    </div>
+                  )}
+                </div>
+                
+                {/* Signature Column - shows drop zones */}
+                <div style={{
+                  padding: '10px 15px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 8,
+                  justifyContent: 'center',
+                }}>
+                  {/* Signature drop zone */}
+                  <div style={{
+                    height: 55,
+                    border: '2px dashed rgba(99,102,241,0.5)',
+                    borderRadius: 6,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#818cf8',
+                    fontSize: 10,
+                    fontWeight: 500,
+                    background: 'rgba(99,102,241,0.08)',
+                  }}>
+                    ✍️ Drop signature field here
+                  </div>
+                  
+                  {/* Date drop zone */}
+                  <div style={{
+                    height: 32,
+                    border: '2px dashed rgba(8,145,178,0.5)',
+                    borderRadius: 6,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#0891b2',
+                    fontSize: 9,
+                    fontWeight: 500,
+                    background: 'rgba(8,145,178,0.08)',
+                  }}>
+                    📅 Drop date field here
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Draggable fields - z-index 2 so they appear OVER table */}
+          <div style={{ position: 'relative', zIndex: 2, pointerEvents: 'auto' }}>
+            {fields.map(f => (
+              <DraggableField
+                key={f.id}
+                field={f}
+                signers={signers}
+                isDragging={dragField === f.id}
+                onMouseDown={e => handleMouseDown(e, f.id)}
+                onRemove={() => setFields(p => p.filter(x => x.id !== f.id))}
+              />
+            ))}
+          </div>
+
+          {/* Contract text (moved down with more space) */}
           <div style={{
             fontSize: 10.5, color: '#94a3b8', lineHeight: 1.9, whiteSpace: 'pre-wrap',
             wordBreak: 'break-word', pointerEvents: 'none', userSelect: 'none',
+            marginTop: (signers.length * 105) + 110, // More space for table with drop zones
+            paddingTop: 25,
+            borderTop: '1px solid rgba(255,255,255,0.15)',
           }}>
+            <div style={{ fontSize: 12, color: '#64748b', fontWeight: 600, marginBottom: 15 }}>
+              DOCUMENT CONTENT
+            </div>
             {(contract as any).fullText
               ? (contract as any).fullText.slice(0, 2500) + '\n\n[Document continues…]'
               : contract.summary || '(No document text)'}
           </div>
-
-          {/* Draggable fields */}
-          {fields.map(f => (
-            <DraggableField
-              key={f.id}
-              field={f}
-              signers={signers}
-              isDragging={dragField === f.id}
-              onMouseDown={e => handleMouseDown(e, f.id)}
-              onRemove={() => setFields(p => p.filter(x => x.id !== f.id))}
-            />
-          ))}
         </div>
 
         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
@@ -515,29 +723,68 @@ export const ESignatureView: React.FC<IESignatureViewProps> = ({
   if (step === 'sign' && contract) {
     const handleSign = async () => {
       const allSignatures = fields.filter(f => f.type === 'signature').every(f => f.value);
-      if (!allSignatures) return;
+      const anySignature = fields.filter(f => f.type === 'signature').some(f => f.value);
+      
+      if (!anySignature) {
+        alert('Please sign at least one signature field before saving.');
+        return;
+      }
+      
       setSaving(true);
       try {
-        // Generate PDF
-        const pdf = await generateSignedPDF(contract, fields, signers);
-        const pdfBlob = pdf.output('blob');
-        const fileName = `${contract.name.replace(/\.[^.]+$/, '')}_signed_${Date.now()}.pdf`;
+        if (allSignatures) {
+          // ALL SIGNATURES COMPLETE → Save to SharePoint as completed
+          const pdf = await generateSignedPDF(contract, fields, signers);
+          const pdfBlob = pdf.output('blob');
+          const fileName = `${contract.name.replace(/\.[^.]+$/, '')}_signed_${Date.now()}.pdf`;
 
-        // Save to SharePoint only
-        await sharePointService.saveSignedDocument(fileName, pdfBlob, {
-          contractName: contract.name,
-          signerNames:  signers.map(s => s.name).join('; '),
-          signedAt:     new Date().toISOString(),
-        });
+          await sharePointService.saveSignedDocument(fileName, pdfBlob, {
+            contractName: contract.name,
+            signerNames:  signers.map(s => s.name).join('; '),
+            signedAt:     new Date().toISOString(),
+          });
 
-        // Refresh signed documents list from SharePoint
-        const signedDocs = await sharePointService.getSignedDocuments();
-        const names = new Set(signedDocs.map(d => d.contractName));
-        setSignedContractNames(names);
+          // Refresh signed documents list
+          const signedDocs = await sharePointService.getSignedDocuments();
+          const names = new Set(signedDocs.map(d => d.contractName));
+          setSignedContractNames(names);
 
-        // Store PDF for download and show success
-        setSignedPdf(pdf);
-        setCompleted(true);
+          // Remove from drafts if it was there
+          const newDrafts = draftDocs.filter(d => d.contractId !== contract.id);
+          setDraftDocs(newDrafts);
+          localStorage.setItem('ll_draft_signatures', JSON.stringify(newDrafts));
+
+          // Store PDF and show success
+          setSignedPdf(pdf);
+          setCompleted(true);
+        } else {
+          // PARTIAL SIGNATURES → Save as draft/in-progress
+          const draftDoc: IDraftDocument = {
+            contractId: contract.id,
+            contractName: contract.name,
+            signers: signers,
+            fields: fields,
+            savedAt: new Date().toISOString(),
+          };
+
+          // Update or add draft
+          const existingIndex = draftDocs.findIndex(d => d.contractId === contract.id);
+          const newDrafts = existingIndex >= 0
+            ? draftDocs.map((d, i) => i === existingIndex ? draftDoc : d)
+            : [...draftDocs, draftDoc];
+
+          setDraftDocs(newDrafts);
+          localStorage.setItem('ll_draft_signatures', JSON.stringify(newDrafts));
+
+          alert('✓ Progress saved!\n\nYour signature has been saved. The document is now in "In Progress" and waiting for other signers.\n\nYou can find it in the "In Progress" tab.');
+
+          // Reset to selection view
+          setStep('select');
+          setContract(null);
+          setSigners([{ id: makeId(), name: userDisplayName, title: '', email: '' }]);
+          setFields([]);
+          setViewMode('inprogress'); // Switch to in-progress tab
+        }
       } catch (err: any) {
         console.error('[ESignature] Save failed:', err);
         alert('Error: ' + (err.message || String(err)));
@@ -673,12 +920,118 @@ export const ESignatureView: React.FC<IESignatureViewProps> = ({
           onBack={() => setStep('place')}
         />
 
-        {/* Document preview */}
+        {/* Document preview with signature table */}
         <div style={{
           position: 'relative', minHeight: 520, marginBottom: 16,
           background: 'rgba(15,23,42,0.95)', borderRadius: 12, padding: '30px 35px',
           border: '1px solid rgba(255,255,255,0.08)', overflow: 'auto',
         }}>
+          {/* Signature Table Structure */}
+          <div style={{
+            border: '2px solid rgba(99,102,241,0.5)', borderRadius: 8,
+            background: 'rgba(99,102,241,0.08)', marginBottom: 20,
+          }}>
+            {/* Table Header */}
+            <div style={{
+              display: 'grid', gridTemplateColumns: '150px 1fr',
+              borderBottom: '2px solid rgba(99,102,241,0.5)',
+              background: 'rgba(99,102,241,0.15)',
+            }}>
+              <div style={{
+                padding: '10px 15px', fontWeight: 700, fontSize: 11,
+                color: '#c7d2fe', borderRight: '2px solid rgba(99,102,241,0.5)',
+              }}>NAME</div>
+              <div style={{
+                padding: '10px 15px', fontWeight: 700, fontSize: 11,
+                color: '#c7d2fe',
+              }}>SIGNATURE & DATE</div>
+            </div>
+            
+            {/* Table Rows (one per signer) */}
+            {signers.map((signer, index) => {
+              const sigField = fields.find(f => f.type === 'signature' && f.signer === signer.id);
+              const isCurrentUser = signer.name === userDisplayName;
+              
+              return (
+                <div key={signer.id} style={{
+                  display: 'grid', gridTemplateColumns: '150px 1fr',
+                  minHeight: 90,
+                  borderBottom: index < signers.length - 1 ? '1px solid rgba(99,102,241,0.3)' : 'none',
+                  position: 'relative',
+                }}>
+                  {/* Name Column */}
+                  <div style={{
+                    padding: '15px', borderRight: '2px solid rgba(99,102,241,0.5)',
+                    display: 'flex', flexDirection: 'column', justifyContent: 'center',
+                  }}>
+                    <div style={{ fontSize: 11, color: '#e2e8f0', fontWeight: 600 }}>
+                      {signer.name}
+                      {isCurrentUser && (
+                        <span style={{ 
+                          marginLeft: 6, fontSize: 8, padding: '2px 6px', 
+                          background: 'rgba(99,102,241,0.3)', borderRadius: 4,
+                          color: '#c7d2fe'
+                        }}>YOU</span>
+                      )}
+                    </div>
+                    {signer.title && (
+                      <div style={{ fontSize: 9, color: '#94a3b8', marginTop: 2 }}>
+                        {signer.title}
+                      </div>
+                    )}
+                    {signer.email && (
+                      <div style={{ fontSize: 8, color: '#64748b', marginTop: 2 }}>
+                        {signer.email}
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Signature Column - Clickable overlay */}
+                  <div
+                    onClick={() => sigField && !sigField.value && isCurrentUser && setPadField(sigField)}
+                    style={{
+                      padding: '15px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'center',
+                      cursor: sigField && !sigField.value && isCurrentUser ? 'pointer' : 'default',
+                      position: 'relative',
+                    }}
+                  >
+                    {sigField?.value ? (
+                      <>
+                        <img src={sigField.value} alt="signature" style={{ 
+                          maxWidth: '180px', 
+                          maxHeight: '40px', 
+                          marginBottom: 5 
+                        }} />
+                        <div style={{ fontSize: 9, color: '#10b981', fontWeight: 600 }}>
+                          ✓ Signed: {new Date().toLocaleDateString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </div>
+                      </>
+                    ) : (
+                      <div style={{
+                        color: isCurrentUser ? '#818cf8' : '#64748b',
+                        fontSize: 10,
+                        fontWeight: isCurrentUser ? 600 : 400,
+                        fontStyle: isCurrentUser ? 'normal' : 'italic',
+                      }}>
+                        {isCurrentUser ? '✍️ Click here to sign' : '⏳ Awaiting signature'}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          
+          {/* Contract text */}
           <div style={{
             fontSize: 10.5, color: '#94a3b8', lineHeight: 1.9, whiteSpace: 'pre-wrap',
             wordBreak: 'break-word',
@@ -687,20 +1040,9 @@ export const ESignatureView: React.FC<IESignatureViewProps> = ({
               ? (contract as any).fullText.slice(0, 2500) + '\n\n[Document continues…]'
               : contract.summary}
           </div>
-
-          {/* Field overlays */}
-          {fields.map(f => (
-            <FieldOverlay
-              key={f.id}
-              field={f}
-              signers={signers}
-              currentUser={userDisplayName}
-              onClick={() => f.type === 'signature' && !f.value && setPadField(f)}
-            />
-          ))}
         </div>
 
-        {/* Complete button */}
+        {/* Complete/Save button */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 10 }}>
           {/* Multi-signer info */}
           {signers.length > 1 && !allSigned && (
@@ -712,21 +1054,27 @@ export const ESignatureView: React.FC<IESignatureViewProps> = ({
               <span>ℹ️</span>
               <div>
                 {currentUserSigned 
-                  ? 'Document requires all signers to complete. Share this link with other signers.'
-                  : 'You can only sign fields assigned to you. Other signers must sign their own fields.'}
+                  ? 'Click "Save Progress" to save your signature. The document will move to "In Progress" for other signers.'
+                  : 'You can save your signature even if others haven\'t signed yet. The document will be saved in "In Progress".'}
               </div>
             </div>
           )}
 
-          <button onClick={handleSign} disabled={!allSigned || saving} style={{
+          <button onClick={handleSign} disabled={!currentUserSigned || saving} style={{
             padding: '12px 32px', borderRadius: 10, border: 'none',
-            cursor: allSigned && !saving ? 'pointer' : 'not-allowed',
-            background: !allSigned || saving ? 'rgba(255,255,255,0.05)' : 'linear-gradient(135deg,#10b981,#059669)',
-            color: !allSigned || saving ? '#475569' : '#fff',
-            fontSize: 13, fontWeight: 700, opacity: !allSigned || saving ? 0.55 : 1,
-            boxShadow: allSigned && !saving ? '0 4px 20px rgba(16,185,129,0.4)' : 'none',
+            cursor: currentUserSigned && !saving ? 'pointer' : 'not-allowed',
+            background: !currentUserSigned || saving ? 'rgba(255,255,255,0.05)' : allSigned ? 'linear-gradient(135deg,#10b981,#059669)' : 'linear-gradient(135deg,#f59e0b,#d97706)',
+            color: !currentUserSigned || saving ? '#475569' : '#fff',
+            fontSize: 13, fontWeight: 700, opacity: !currentUserSigned || saving ? 0.55 : 1,
+            boxShadow: currentUserSigned && !saving ? (allSigned ? '0 4px 20px rgba(16,185,129,0.4)' : '0 4px 20px rgba(245,158,11,0.4)') : 'none',
           }}>
-            {saving ? '⏳ Saving...' : allSigned ? '✓ Complete & Save to SharePoint' : currentUserSigned ? '⏳ Waiting for Other Signers' : '✓ Complete & Save to SharePoint'}
+            {saving 
+              ? '⏳ Saving...' 
+              : allSigned 
+                ? '✓ Complete & Save to SharePoint' 
+                : currentUserSigned 
+                  ? '💾 Save Progress (In Progress)' 
+                  : '⏳ Please Sign Your Fields First'}
           </button>
         </div>
 
@@ -1125,15 +1473,104 @@ async function generateSignedPDF(contract: IContract, fields: ISignatureField[],
 
   const pageWidth = 210;
   const pageHeight = 297;
-  const margin = 25;
+  const margin = 20;
   const contentWidth = pageWidth - 2 * margin;
   let yPos = margin;
+
+  // ─── SIGNATURE TABLE AT TOP ───
+  const tableStartY = yPos;
+  const nameColWidth = 60;
+  const sigColWidth = contentWidth - nameColWidth;
+  const rowHeight = 35;
+  const headerHeight = 10;
+
+  // Table border
+  pdf.setDrawColor(99, 102, 241);
+  pdf.setLineWidth(0.5);
+  const tableHeight = headerHeight + (signers.length * rowHeight);
+  pdf.rect(margin, tableStartY, contentWidth, tableHeight);
+
+  // Header row background
+  pdf.setFillColor(99, 102, 241);
+  pdf.rect(margin, tableStartY, contentWidth, headerHeight, 'F');
+
+  // Header text
+  pdf.setTextColor(255, 255, 255);
+  pdf.setFontSize(10);
+  pdf.setFont('helvetica', 'bold');
+  pdf.text('NAME', margin + 3, tableStartY + 7);
+  pdf.text('SIGNATURE & DATE', margin + nameColWidth + 3, tableStartY + 7);
+
+  // Vertical line between columns
+  pdf.line(margin + nameColWidth, tableStartY, margin + nameColWidth, tableStartY + tableHeight);
+
+  pdf.setTextColor(0, 0, 0);
+
+  // Data rows
+  const signatureFields = fields.filter(f => f.type === 'signature' && f.value);
+  
+  signers.forEach((signer, index) => {
+    const rowY = tableStartY + headerHeight + (index * rowHeight);
+    const sigField = signatureFields.find(f => f.signer === signer.id);
+    
+    // Row separator (except for last row)
+    if (index < signers.length - 1) {
+      pdf.setDrawColor(200, 200, 200);
+      pdf.setLineWidth(0.3);
+      pdf.line(margin, rowY + rowHeight, margin + contentWidth, rowY + rowHeight);
+    }
+    
+    // NAME COLUMN
+    pdf.setFontSize(11);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text(signer.name, margin + 3, rowY + 8);
+    
+    if (signer.title) {
+      pdf.setFontSize(9);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(80, 80, 80);
+      pdf.text(signer.title, margin + 3, rowY + 13);
+    }
+    
+    if (signer.email) {
+      pdf.setFontSize(8);
+      pdf.setTextColor(100, 100, 100);
+      pdf.text(signer.email, margin + 3, rowY + 18);
+    }
+    
+    pdf.setTextColor(0, 0, 0);
+    
+    // SIGNATURE COLUMN
+    if (sigField && sigField.value) {
+      try {
+        // Signature image
+        pdf.addImage(sigField.value, 'PNG', margin + nameColWidth + 5, rowY + 3, 50, 15);
+        
+        // Date below signature
+        pdf.setFontSize(9);
+        pdf.setFont('helvetica', 'normal');
+        pdf.setTextColor(80, 80, 80);
+        const signDate = new Date().toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: true
+        });
+        pdf.text(`Signed: ${signDate}`, margin + nameColWidth + 5, rowY + 22);
+        pdf.setTextColor(0, 0, 0);
+      } catch (e) {
+        console.warn('Signature image error:', e);
+      }
+    }
+  });
+
+  yPos = tableStartY + tableHeight + 15;
 
   // ─── DOCUMENT TITLE ───
   pdf.setFontSize(16);
   pdf.setFont('helvetica', 'bold');
-  
-  // Extract title from contract name (remove .docx extension)
   const docTitle = contract.name.replace(/\.(docx|pdf|txt)$/i, '').toUpperCase();
   pdf.text(docTitle, margin, yPos);
   yPos += 12;
@@ -1143,38 +1580,34 @@ async function generateSignedPDF(contract: IContract, fields: ISignatureField[],
   pdf.setFont('helvetica', 'normal');
   
   const contractText = (contract as any).fullText || contract.summary || '';
-  
-  // Split into lines while preserving structure
   const allLines = contractText.split('\n');
   
   for (let i = 0; i < allLines.length; i++) {
     const line = allLines[i];
     
     // Check for page break
-    if (yPos > pageHeight - 40) {
+    if (yPos > pageHeight - 25) {
       pdf.addPage();
       yPos = margin;
     }
     
-    // Handle empty lines (paragraph breaks)
+    // Handle empty lines
     if (line.trim() === '') {
       yPos += 5;
       continue;
     }
     
-    // Check if line is a section header (starts with §, all caps, or "AND", "BY:")
+    // Check if line is a header
     const isHeader = /^(§\d|AND$|BY:|TITLE:|DATE:)/i.test(line.trim()) || 
                      (line.trim().length > 0 && line.trim() === line.trim().toUpperCase() && line.trim().length < 60);
     
     if (isHeader) {
-      // Section headers
       pdf.setFont('helvetica', 'bold');
       pdf.setFontSize(11);
       
-      // Wrap header if needed
       const headerLines = pdf.splitTextToSize(line.trim(), contentWidth);
       for (const headerLine of headerLines) {
-        if (yPos > pageHeight - 40) {
+        if (yPos > pageHeight - 25) {
           pdf.addPage();
           yPos = margin;
         }
@@ -1182,15 +1615,14 @@ async function generateSignedPDF(contract: IContract, fields: ISignatureField[],
         yPos += 6;
       }
       
-      yPos += 2; // Extra space after headers
+      yPos += 2;
       pdf.setFont('helvetica', 'normal');
       pdf.setFontSize(11);
     } else {
-      // Regular content - wrap to page width
       const wrappedLines = pdf.splitTextToSize(line.trim(), contentWidth);
       
       for (const wrappedLine of wrappedLines) {
-        if (yPos > pageHeight - 40) {
+        if (yPos > pageHeight - 25) {
           pdf.addPage();
           yPos = margin;
         }
@@ -1200,158 +1632,19 @@ async function generateSignedPDF(contract: IContract, fields: ISignatureField[],
     }
   }
 
-  // ─── SIGNATURE PAGE (NEW PAGE) ───
-  pdf.addPage();
-  yPos = 40;
-
-  // Draw header box
-  pdf.setFillColor(99, 102, 241);
-  pdf.rect(0, 0, pageWidth, 25, 'F');
-  
-  pdf.setFontSize(18);
-  pdf.setFont('helvetica', 'bold');
-  pdf.setTextColor(255, 255, 255);
-  pdf.text('SIGNATURE PAGE', pageWidth / 2, 15, { align: 'center' });
-  
-  pdf.setTextColor(0, 0, 0);
-
-  // ─── SIGNATURES ───
-  const signatureFields = fields.filter(f => f.type === 'signature' && f.value);
-  
-  if (signers.length === 2 && signatureFields.length === 2) {
-    // Two-column layout for 2 signers
-    const colWidth = (contentWidth - 15) / 2;
-    let maxHeight = 0;
-    
-    signatureFields.forEach((sigField, index) => {
-      const signer = signers.find(s => s.id === sigField.signer);
-      if (!signer) return;
-      
-      const xOffset = margin + (index * (colWidth + 15));
-      let sigYPos = yPos;
-      
-      // Signature image - LARGER SIZE
-      if (sigField.value) {
-        try {
-          // Increased from 20 to 30mm height for better visibility
-          pdf.addImage(sigField.value, 'PNG', xOffset, sigYPos, colWidth * 0.85, 30);
-        } catch (e) {
-          console.warn('Signature image error:', e);
-        }
-      }
-      sigYPos += 35; // Increased spacing
-      
-      // Signature line
-      pdf.setLineWidth(0.5);
-      pdf.setDrawColor(0, 0, 0);
-      pdf.line(xOffset, sigYPos, xOffset + colWidth, sigYPos);
-      sigYPos += 7;
-      
-      // Name
-      pdf.setFontSize(12);
-      pdf.setFont('helvetica', 'bold');
-      pdf.text(signer.name, xOffset, sigYPos);
-      sigYPos += 6;
-      
-      // Title
-      if (signer.title) {
-        pdf.setFontSize(10);
-        pdf.setFont('helvetica', 'normal');
-        pdf.setTextColor(60, 60, 60);
-        pdf.text(signer.title, xOffset, sigYPos);
-        sigYPos += 6;
-      }
-      
-      // Date
-      pdf.setFontSize(10);
-      pdf.setTextColor(80, 80, 80);
-      const dateStr = new Date().toLocaleDateString('en-US', { 
-        year: 'numeric', 
-        month: 'long', 
-        day: 'numeric' 
-      });
-      pdf.text(`Date: ${dateStr}`, xOffset, sigYPos);
-      
-      pdf.setTextColor(0, 0, 0);
-      maxHeight = Math.max(maxHeight, sigYPos - yPos);
-    });
-    
-    yPos += maxHeight + 20;
-  } else {
-    // Stacked layout for 1 or 3+ signers
-    for (const sigField of signatureFields) {
-      const signer = signers.find(s => s.id === sigField.signer);
-      if (!signer) continue;
-      
-      if (yPos > pageHeight - 60) {
-        pdf.addPage();
-        yPos = margin;
-      }
-      
-      // Signature image - LARGER SIZE
-      if (sigField.value) {
-        try {
-          // Increased from 70x20 to 90x30 for better visibility
-          pdf.addImage(sigField.value, 'PNG', margin, yPos, 90, 30);
-        } catch (e) {
-          console.warn('Signature image error:', e);
-        }
-      }
-      yPos += 35; // Increased spacing
-      
-      // Signature line
-      pdf.setLineWidth(0.5);
-      pdf.setDrawColor(0, 0, 0);
-      pdf.line(margin, yPos, margin + 90, yPos);
-      yPos += 7;
-      
-      // Name
-      pdf.setFontSize(12);
-      pdf.setFont('helvetica', 'bold');
-      pdf.text(signer.name, margin, yPos);
-      yPos += 6;
-      
-      // Title
-      if (signer.title) {
-        pdf.setFontSize(10);
-        pdf.setFont('helvetica', 'normal');
-        pdf.setTextColor(60, 60, 60);
-        pdf.text(signer.title, margin, yPos);
-        yPos += 6;
-      }
-      
-      // Date
-      pdf.setFontSize(10);
-      pdf.setTextColor(80, 80, 80);
-      const dateStr = new Date().toLocaleDateString('en-US', { 
-        year: 'numeric', 
-        month: 'long', 
-        day: 'numeric' 
-      });
-      pdf.text(`Date: ${dateStr}`, margin, yPos);
-      
-      yPos += 25;
-      pdf.setTextColor(0, 0, 0);
-    }
-  }
-
   // ─── FOOTER ───
-  const footerY = pageHeight - 20;
-  pdf.setFontSize(9);
-  pdf.setFont('helvetica', 'italic');
-  pdf.setTextColor(100, 100, 100);
-  pdf.text('This document has been electronically signed. The signatures above are legally binding.', 
-           pageWidth / 2, footerY, { align: 'center' });
-  
-  pdf.setFontSize(8);
-  const timestamp = new Date().toLocaleString('en-US', {
-    year: 'numeric',
-    month: 'long', 
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  });
-  pdf.text(`Signed on: ${timestamp}`, pageWidth / 2, footerY + 5, { align: 'center' });
+  const currentPage = (pdf as any).internal.getNumberOfPages();
+  for (let i = 1; i <= currentPage; i++) {
+    pdf.setPage(i);
+    const footerY = pageHeight - 15;
+    pdf.setFontSize(8);
+    pdf.setFont('helvetica', 'italic');
+    pdf.setTextColor(120, 120, 120);
+    pdf.text('This document has been electronically signed. All signatures are legally binding.', 
+             pageWidth / 2, footerY, { align: 'center' });
+    pdf.setFontSize(7);
+    pdf.text(`Page ${i} of ${currentPage}`, pageWidth / 2, footerY + 4, { align: 'center' });
+  }
 
   return pdf;
 }
