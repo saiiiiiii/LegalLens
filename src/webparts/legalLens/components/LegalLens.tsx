@@ -122,11 +122,6 @@ export default class LegalLens extends React.Component<ILegalLensProps, ILegalLe
           @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.6;transform:scale(0.95)}}
           @keyframes spin{to{transform:rotate(360deg)}}
           @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
-          .legallens-wp .nav-btn:hover{
-            background:linear-gradient(135deg, rgba(99,102,241,0.15), rgba(139,92,246,0.15));
-            color:#fff;
-            transform:translateY(-2px);
-          }
           .legallens-wp .card-row:hover{
             background:rgba(255,255,255,0.05);
             transform:translateX(4px);
@@ -153,7 +148,7 @@ export default class LegalLens extends React.Component<ILegalLensProps, ILegalLe
             ].map(tab => (
               <button
                 key={tab.key}
-                className={`nav-btn ${styles.navBtn}`}
+                className={styles.navBtn}
                 onClick={() => this.setState({ view: tab.key as any })}
                 style={{
                   background: view === tab.key ? (tab.highlight ? 'rgba(99,102,241,0.12)' : 'rgba(16,185,129,0.1)') : 'transparent',
