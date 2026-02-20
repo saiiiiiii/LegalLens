@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { Stack, Text } from '@fluentui/react';
 import {
   DocumentRegular,
   ErrorCircleFilled,
@@ -13,6 +14,7 @@ import { IContractAnalysis } from '../../../models/IContractAnalysis';
 import { IContract } from '../../../models/IContract';
 import { ISharePointService } from '../../../services/SharePointService';
 import styles from './Upload.module.scss';
+import { clauseRiskBgColor, clauseRiskTextColor, riskScoreBgColor, riskScoreTextColor } from '../../../utilities/colorUtils';
 
 interface IUploadViewProps {
   uploadView: 'select' | 'analyzing' | 'results';
@@ -37,35 +39,6 @@ function getSeverityIcon(severity: string): React.ReactElement {
   }
 }
 
-function getClauseRiskColor(level: string): string {
-  switch (level) {
-    case 'high': return 'rgba(239,68,68,0.15)';
-    case 'medium': return 'rgba(245,158,11,0.15)';
-    case 'low': return 'rgba(16,185,129,0.15)';
-    default: return 'rgba(255,255,255,0.05)';
-  }
-}
-
-function getClauseRiskTextColor(level: string): string {
-  switch (level) {
-    case 'high': return '#ef4444';
-    case 'medium': return '#f59e0b';
-    default: return '#10b981';
-  }
-}
-
-function getRiskScoreColor(score: number): string {
-  if (score >= 70) return 'rgba(239,68,68,0.2)';
-  if (score >= 40) return 'rgba(245,158,11,0.2)';
-  return 'rgba(16,185,129,0.2)';
-}
-
-function getRiskScoreTextColor(score: number): string {
-  if (score >= 70) return '#ef4444';
-  if (score >= 40) return '#f59e0b';
-  return '#10b981';
-}
-
 export const UploadView: React.FC<IUploadViewProps> = ({
   uploadView,
   uploadedFileName,
@@ -80,24 +53,24 @@ export const UploadView: React.FC<IUploadViewProps> = ({
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   return (
-    <div className={styles.viewWrap}>
+    <Stack className={styles.viewWrap} tokens={{ childrenGap: 0 }}>
 
-      <div className={styles.viewHeader}>
-        <div className={styles.viewTitleRow}>
-          <h2 className={styles.viewTitle}>Upload & Analyze Contract</h2>
-          <span className={styles.aiBadge}>AI POWERED</span>
-        </div>
-        <p className={styles.viewSubtitle}>
+      <Stack className={styles.viewHeader}>
+        <Stack horizontal verticalAlign="center" className={styles.viewTitleRow}>
+          <Text block className={styles.viewTitle}>Upload & Analyze Contract</Text>
+          <Text className={styles.aiBadge}>AI POWERED</Text>
+        </Stack>
+        <Text block className={styles.viewSubtitle}>
           Upload contract for instant risk & clause analysis · Powered by Azure AI Foundry
-        </p>
-      </div>
+        </Text>
+      </Stack>
 
       {analyzeError && (
-        <div className={styles.errorBanner}>⚠ {analyzeError}</div>
+        <Text block className={styles.errorBanner}>⚠ {analyzeError}</Text>
       )}
 
       {uploadView === 'select' && (
-        <div>
+        <Stack tokens={{ childrenGap: 0 }}>
           <div
             className={styles.dropZone}
             onDrop={e => { e.preventDefault(); const file = e.dataTransfer.files[0]; if (file) onFileUpload(file); }}
@@ -105,9 +78,9 @@ export const UploadView: React.FC<IUploadViewProps> = ({
             onClick={() => fileInputRef.current?.click()}
           >
             <DocumentRegular className={styles.dropZoneIcon} />
-            <div className={styles.dropZoneTitle}>Drag & drop contract file here</div>
-            <div className={styles.dropZoneHint}>or click to browse</div>
-            <div className={styles.dropZoneNote}>Supported: PDF, DOCX · Max size: 10MB</div>
+            <Text block className={styles.dropZoneTitle}>Drag & drop contract file here</Text>
+            <Text block className={styles.dropZoneHint}>or click to browse</Text>
+            <Text block className={styles.dropZoneNote}>Supported: PDF, DOCX · Max size: 10MB</Text>
             <input
               ref={fileInputRef}
               type="file"
@@ -117,9 +90,9 @@ export const UploadView: React.FC<IUploadViewProps> = ({
             />
           </div>
 
-          <div className={styles.orDivider}>— OR —</div>
+          <Text block className={styles.orDivider}>— OR —</Text>
 
-          <div>
+          <Stack>
             <label className={styles.libraryLabel}>Select from Library</label>
             <select
               className={styles.librarySelect}
@@ -140,32 +113,32 @@ export const UploadView: React.FC<IUploadViewProps> = ({
                 <option key={i} value={i} style={{ background: '#1e293b', color: '#e2e8f0' }}>{c.name}</option>
               ))}
             </select>
-          </div>
-        </div>
+          </Stack>
+        </Stack>
       )}
 
       {uploadView === 'analyzing' && (
-        <div className={styles.analyzingCard}>
-          <div className={styles.analyzingTitle}>Analyzing: {uploadedFileName}</div>
+        <Stack className={styles.analyzingCard} tokens={{ childrenGap: 0 }}>
+          <Text block className={styles.analyzingTitle}>Analyzing: {uploadedFileName}</Text>
 
-          <div className={styles.progressWrap}>
-            <div className={styles.progressHeader}>
-              <span className={styles.progressLabel}>Processing...</span>
-              <span className={styles.progressPercent}>{analyzingProgress}%</span>
-            </div>
+          <Stack className={styles.progressWrap}>
+            <Stack horizontal horizontalAlign="space-between" className={styles.progressHeader}>
+              <Text className={styles.progressLabel}>Processing...</Text>
+              <Text className={styles.progressPercent}>{analyzingProgress}%</Text>
+            </Stack>
             <div className={styles.progressTrack}>
               <div className={styles.progressFill} style={{ width: `${analyzingProgress}%` }} />
             </div>
-          </div>
+          </Stack>
 
-          <div className={styles.stepList}>
+          <Stack className={styles.stepList} tokens={{ childrenGap: 8 }}>
             {[
               { step: 'Extracting text', done: analyzingProgress > 20 },
               { step: 'Identifying entities', done: analyzingProgress > 40 },
               { step: 'Analyzing clauses', done: analyzingProgress > 60 },
               { step: 'Calculating risk score', done: analyzingProgress > 80 },
             ].map((item, i) => (
-              <div key={i} className={styles.stepRow}>
+              <Stack key={i} horizontal verticalAlign="center" className={styles.stepRow} tokens={{ childrenGap: 8 }}>
                 <div
                   className={styles.stepDot}
                   style={{
@@ -173,106 +146,104 @@ export const UploadView: React.FC<IUploadViewProps> = ({
                     background: item.done ? '#10b981' : 'transparent',
                   }}
                 >
-                  {item.done && <span className={styles.stepCheck}>✓</span>}
+                  {item.done && <Text className={styles.stepCheck}>✓</Text>}
                 </div>
-                <span style={{ fontSize: '11px', color: item.done ? '#e2e8f0' : '#64748b' }}>
+                <Text style={{ fontSize: '11px', color: item.done ? '#e2e8f0' : '#64748b' }}>
                   {item.step}
-                </span>
-              </div>
+                </Text>
+              </Stack>
             ))}
-          </div>
-        </div>
+          </Stack>
+        </Stack>
       )}
 
       {uploadView === 'results' && analysisResult && (
-        <div>
-          <div className={styles.successBanner}>
-            <div>
-              <div className={styles.successTitle}>Analysis Complete & Saved to SharePoint</div>
-              <div className={styles.successHint}>
-                Document uploaded to library with metadata · Refresh library view to see it
-              </div>
-            </div>
-          </div>
+        <Stack tokens={{ childrenGap: 0 }}>
+          <Stack className={styles.successBanner}>
+            <Text block className={styles.successTitle}>Analysis Complete & Saved to SharePoint</Text>
+            <Text block className={styles.successHint}>
+              Document uploaded to library with metadata · Refresh library view to see it
+            </Text>
+          </Stack>
 
           <div
             className={styles.riskScoreCard}
-            style={{ background: `linear-gradient(135deg, ${getRiskScoreColor(analysisResult.overallRiskScore)}, rgba(0,0,0,0.1))` }}
+            style={{ background: `linear-gradient(135deg, ${riskScoreBgColor(analysisResult.overallRiskScore)}, rgba(0,0,0,0.1))` }}
           >
-            <div className={styles.riskScoreLabel}>Overall Risk Score</div>
-            <div className={styles.riskScoreNumber} style={{ color: getRiskScoreTextColor(analysisResult.overallRiskScore) }}>
+            <Text block className={styles.riskScoreLabel}>Overall Risk Score</Text>
+            <Text block className={styles.riskScoreNumber} style={{ color: riskScoreTextColor(analysisResult.overallRiskScore) }}>
               {analysisResult.overallRiskScore}
-            </div>
-            <div className={styles.riskScoreTotal}>/ 100</div>
-            <div className={styles.riskScoreStatus}>
+            </Text>
+            <Text block className={styles.riskScoreTotal}>/ 100</Text>
+            <Stack horizontal verticalAlign="center" horizontalAlign="center" className={styles.riskScoreStatus} tokens={{ childrenGap: 6 }}>
               {analysisResult.overallRiskScore >= 70 ? (
-                <><ErrorCircleFilled style={{ fontSize: '14px', color: '#ef4444' }} /> High Risk</>
+                <><ErrorCircleFilled style={{ fontSize: '14px', color: '#ef4444' }} /><Text>High Risk</Text></>
               ) : analysisResult.overallRiskScore >= 40 ? (
-                <><WarningFilled style={{ fontSize: '14px', color: '#f59e0b' }} /> Medium Risk</>
+                <><WarningFilled style={{ fontSize: '14px', color: '#f59e0b' }} /><Text>Medium Risk</Text></>
               ) : (
-                <><CheckmarkCircleFilled style={{ fontSize: '14px', color: '#10b981' }} /> Low Risk</>
+                <><CheckmarkCircleFilled style={{ fontSize: '14px', color: '#10b981' }} /><Text>Low Risk</Text></>
               )}
-            </div>
+            </Stack>
           </div>
 
           {analysisResult.riskFactors && analysisResult.riskFactors.length > 0 && (
-            <div style={{ marginBottom: '20px' }}>
-              <h3 className={styles.sectionTitle}>
-                <ChartMultipleFilled style={{ fontSize: '14px', marginRight: '6px' }} />
-                Risk Factors ({analysisResult.riskFactors.length})
-              </h3>
+            <Stack style={{ marginBottom: '20px' }}>
+              <Stack horizontal verticalAlign="center" tokens={{ childrenGap: 6 }}>
+                <ChartMultipleFilled style={{ fontSize: '14px' }} />
+                <Text block className={styles.sectionTitle}>Risk Factors ({analysisResult.riskFactors.length})</Text>
+              </Stack>
               {analysisResult.riskFactors.map((factor, i) => (
                 <div key={i} className={styles.riskFactorCard}>
-                  <div className={styles.riskFactorContent}>
+                  <Stack horizontal className={styles.riskFactorContent} tokens={{ childrenGap: 12 }}>
                     <div className={styles.riskFactorIconWrap}>{getSeverityIcon(factor.severity)}</div>
-                    <div className={styles.riskFactorBody}>
-                      <div className={styles.riskFactorSeverity}>{factor.severity} - {factor.factor}</div>
-                      <div className={styles.riskFactorDesc}>{factor.description}</div>
+                    <Stack className={styles.riskFactorBody} tokens={{ childrenGap: 4 }}>
+                      <Text block className={styles.riskFactorSeverity}>{factor.severity} - {factor.factor}</Text>
+                      <Text block className={styles.riskFactorDesc}>{factor.description}</Text>
                       <div className={styles.riskFactorRec}>
                         <span>→</span>
                         <span>{factor.recommendation}</span>
                       </div>
-                    </div>
-                  </div>
+                    </Stack>
+                  </Stack>
                 </div>
               ))}
-            </div>
+            </Stack>
           )}
 
-          <div>
-            <h3 className={styles.sectionTitle}>
-              <DocumentBulletListRegular style={{ fontSize: '14px', marginRight: '6px' }} />
-              Clauses ({analysisResult.clauses.length})
-            </h3>
+          <Stack>
+            <Stack horizontal verticalAlign="center" tokens={{ childrenGap: 6 }}>
+              <DocumentBulletListRegular style={{ fontSize: '14px' }} />
+              <Text block className={styles.sectionTitle}>Clauses ({analysisResult.clauses.length})</Text>
+            </Stack>
             {analysisResult.clauses.map((clause, i) => (
-              <div key={i} className={styles.clauseRow}>
-                <div className={styles.clauseInfo}>
-                  <div className={styles.clauseTitle}>{clause.ref} — {clause.title}</div>
+              <Stack key={i} horizontal verticalAlign="center" className={styles.clauseRow} tokens={{ childrenGap: 0 }}>
+                <Stack className={styles.clauseInfo}>
+                  <Text block className={styles.clauseTitle}>{clause.ref} — {clause.title}</Text>
                   {clause.riskReason && (
-                    <div className={styles.clauseRiskReason}>⚠ {clause.riskReason}</div>
+                    <Text block className={styles.clauseRiskReason}>⚠ {clause.riskReason}</Text>
                   )}
-                </div>
+                </Stack>
                 <div
                   className={styles.clauseBadge}
                   style={{
-                    background: getClauseRiskColor(clause.riskLevel),
-                    color: getClauseRiskTextColor(clause.riskLevel),
+                    background: clauseRiskBgColor(clause.riskLevel),
+                    color: clauseRiskTextColor(clause.riskLevel),
                   }}
                 >
                   {clause.riskLevel}
                 </div>
-              </div>
+              </Stack>
             ))}
-          </div>
+          </Stack>
 
-          <div className={styles.resetActions}>
+          <Stack className={styles.resetActions}>
             <button className={styles.resetButton} onClick={onReset}>
               Analyze Another Contract
             </button>
-          </div>
-        </div>
+          </Stack>
+        </Stack>
       )}
 
-    </div>
+    </Stack>
   );
 };
