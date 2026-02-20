@@ -1,12 +1,12 @@
 <#
 .SYNOPSIS
-    Creates the SharePoint document library, columns, and views for LegalLens.
+    Creates the SharePoint document libraries, columns, and views for LegalLens.
 
 .PARAMETER SiteUrl
-    The SharePoint site URL where the library will be created.
+    The SharePoint site URL where the libraries will be created.
 
 .PARAMETER LibraryName
-    The name of the document library. Defaults to "Contracts".
+    The name of the contracts document library. Defaults to "Contracts".
 
 .PARAMETER ClientId
     The Azure AD app client ID for authentication.
@@ -30,6 +30,8 @@ param(
 )
 
 $LibraryDescription = "Contract repository for LegalLens AI analysis"
+$SignedLibraryName = "Signed Documents"
+$SignedLibraryDescription = "E-signature document repository for LegalLens"
 
 
 # STEP 1: Connect to SharePoint
@@ -110,6 +112,7 @@ Write-Host ""
 # Function to add field safely (skip if exists)
 function Add-CustomField {
     param(
+        [string]$ListName,
         [string]$FieldName,
         [string]$DisplayName,
         [string]$FieldType,
@@ -117,17 +120,17 @@ function Add-CustomField {
         [hashtable]$FieldProperties = @{}
     )
 
-    $existingField = Get-PnPField -List $LibraryName -Identity $FieldName -ErrorAction SilentlyContinue
+    $existingField = Get-PnPField -List $ListName -Identity $FieldName -ErrorAction SilentlyContinue
 
     if ($existingField) {
         Write-Host "  ⏭️  Field '$DisplayName' already exists - skipping" -ForegroundColor Gray
     } else {
         Write-Host "  Creating field: $DisplayName" -ForegroundColor Yellow
         try {
-            Add-PnPField -List $LibraryName -DisplayName $DisplayName -InternalName $FieldName -Type $FieldType -AddToDefaultView @AdditionalParams
+            Add-PnPField -List $ListName -DisplayName $DisplayName -InternalName $FieldName -Type $FieldType -AddToDefaultView @AdditionalParams
             # Set additional properties that Add-PnPField doesn't support directly
             if ($FieldProperties.Count -gt 0) {
-                Set-PnPField -List $LibraryName -Identity $FieldName -Values $FieldProperties
+                Set-PnPField -List $ListName -Identity $FieldName -Values $FieldProperties
             }
             Write-Host "  Created: $DisplayName" -ForegroundColor Green
         } catch {
@@ -140,7 +143,7 @@ function Add-CustomField {
 # Contract Type (Choice field)
 Write-Host ""
 Write-Host "1. Contract Type" -ForegroundColor Cyan
-Add-CustomField -FieldName "ContractType" -DisplayName "Contract Type" -FieldType "Choice" -AdditionalParams @{
+Add-CustomField -ListName $LibraryName -FieldName "ContractType" -DisplayName "Contract Type" -FieldType "Choice" -AdditionalParams @{
     Choices = @(
         "Vendor Agreement",
         "Service Agreement",
@@ -162,12 +165,12 @@ Add-CustomField -FieldName "ContractType" -DisplayName "Contract Type" -FieldTyp
 # Jurisdiction (Single line of text)
 Write-Host ""
 Write-Host "2. Jurisdiction" -ForegroundColor Cyan
-Add-CustomField -FieldName "Jurisdiction" -DisplayName "Jurisdiction" -FieldType "Text"
+Add-CustomField -ListName $LibraryName -FieldName "Jurisdiction" -DisplayName "Jurisdiction" -FieldType "Text"
 
 # Status (Choice field)
 Write-Host ""
 Write-Host "3. Status" -ForegroundColor Cyan
-Add-CustomField -FieldName "Status" -DisplayName "Status" -FieldType "Choice" -AdditionalParams @{
+Add-CustomField -ListName $LibraryName -FieldName "Status" -DisplayName "Status" -FieldType "Choice" -AdditionalParams @{
     Choices = @("Compliant", "Warning", "Critical")
 } -FieldProperties @{
     DefaultValue = "Compliant"
@@ -176,28 +179,28 @@ Add-CustomField -FieldName "Status" -DisplayName "Status" -FieldType "Choice" -A
 # Parties (Multiple lines of text - semicolon separated)
 Write-Host ""
 Write-Host "4. Parties" -ForegroundColor Cyan
-Add-CustomField -FieldName "Parties" -DisplayName "Parties" -FieldType "Note" -FieldProperties @{
+Add-CustomField -ListName $LibraryName -FieldName "Parties" -DisplayName "Parties" -FieldType "Note" -FieldProperties @{
     NumberOfLines = 2
 }
 
 # Expiry Date (Date field)
 Write-Host ""
 Write-Host "5. Expiry Date" -ForegroundColor Cyan
-Add-CustomField -FieldName "ExpiryDate" -DisplayName "Expiry Date" -FieldType "DateTime" -FieldProperties @{
+Add-CustomField -ListName $LibraryName -FieldName "ExpiryDate" -DisplayName "Expiry Date" -FieldType "DateTime" -FieldProperties @{
     DisplayFormat = [Microsoft.SharePoint.Client.DateTimeFieldFormatType]::DateOnly
 }
 
 # Tags (Multiple lines of text - semicolon separated)
 Write-Host ""
 Write-Host "6. Tags" -ForegroundColor Cyan
-Add-CustomField -FieldName "Tags" -DisplayName "Tags" -FieldType "Note" -FieldProperties @{
+Add-CustomField -ListName $LibraryName -FieldName "Tags" -DisplayName "Tags" -FieldType "Note" -FieldProperties @{
     NumberOfLines = 3
 }
 
 # Risk Score (Number field)
 Write-Host ""
 Write-Host "7. Risk Score" -ForegroundColor Cyan
-Add-CustomField -FieldName "RiskScore" -DisplayName "Risk Score" -FieldType "Number" -FieldProperties @{
+Add-CustomField -ListName $LibraryName -FieldName "RiskScore" -DisplayName "Risk Score" -FieldType "Number" -FieldProperties @{
     MinimumValue = 0
     MaximumValue = 100
     DefaultValue = "0"
@@ -206,21 +209,21 @@ Add-CustomField -FieldName "RiskScore" -DisplayName "Risk Score" -FieldType "Num
 # AI Analysis Complete (Yes/No field)
 Write-Host ""
 Write-Host "8. AI Analysis Complete" -ForegroundColor Cyan
-Add-CustomField -FieldName "AIAnalysisComplete" -DisplayName "AI Analysis Complete" -FieldType "Boolean" -FieldProperties @{
+Add-CustomField -ListName $LibraryName -FieldName "AIAnalysisComplete" -DisplayName "AI Analysis Complete" -FieldType "Boolean" -FieldProperties @{
     DefaultValue = "0"
 }
 
 # Analysis Date (Date field)
 Write-Host ""
 Write-Host "9. Analysis Date" -ForegroundColor Cyan
-Add-CustomField -FieldName "AnalysisDate" -DisplayName "Analysis Date" -FieldType "DateTime" -FieldProperties @{
+Add-CustomField -ListName $LibraryName -FieldName "AnalysisDate" -DisplayName "Analysis Date" -FieldType "DateTime" -FieldProperties @{
     DisplayFormat = [Microsoft.SharePoint.Client.DateTimeFieldFormatType]::DateOnly
 }
 
 # Effective Date (Date field)
 Write-Host ""
 Write-Host "10. Effective Date" -ForegroundColor Cyan
-Add-CustomField -FieldName "EffectiveDate" -DisplayName "Effective Date" -FieldType "DateTime" -FieldProperties @{
+Add-CustomField -ListName $LibraryName -FieldName "EffectiveDate" -DisplayName "Effective Date" -FieldType "DateTime" -FieldProperties @{
     DisplayFormat = [Microsoft.SharePoint.Client.DateTimeFieldFormatType]::DateOnly
 }
 
@@ -282,7 +285,75 @@ try {
 }
 
 
-# STEP 5: Configure Library Settings
+# STEP 5: Create Signed Documents Library
+Write-Host ""
+Write-Host "============================================" -ForegroundColor Cyan
+Write-Host "Creating Signed Documents Library" -ForegroundColor Cyan
+Write-Host "============================================" -ForegroundColor Cyan
+Write-Host ""
+
+$existingSignedLibrary = Get-PnPList -Identity $SignedLibraryName -ErrorAction SilentlyContinue
+
+if ($existingSignedLibrary) {
+    Write-Host "Library '$SignedLibraryName' already exists!" -ForegroundColor Yellow
+    $response = Read-Host "Do you want to add missing columns to existing library? (Y/N)"
+
+    if ($response -ne "Y" -and $response -ne "y") {
+        Write-Host "Skipping '$SignedLibraryName' setup" -ForegroundColor Yellow
+    } else {
+        Write-Host "Using existing library" -ForegroundColor Green
+        Write-Host ""
+    }
+} else {
+    Write-Host "Creating library: $SignedLibraryName" -ForegroundColor Yellow
+
+    try {
+        New-PnPList -Title $SignedLibraryName -Template DocumentLibrary -OnQuickLaunch
+        Set-PnPList -Identity $SignedLibraryName -Description $SignedLibraryDescription
+        Write-Host "Library created successfully!" -ForegroundColor Green
+        Write-Host ""
+    } catch {
+        Write-Host "Failed to create '$SignedLibraryName' library!" -ForegroundColor Red
+        Write-Host "Error: $_" -ForegroundColor Red
+    }
+}
+
+# Signed Documents Columns
+Write-Host "============================================" -ForegroundColor Cyan
+Write-Host "Creating Signed Documents Columns" -ForegroundColor Cyan
+Write-Host "============================================" -ForegroundColor Cyan
+
+# ContractType (Single line of text)
+Write-Host ""
+Write-Host "1. Contract Type" -ForegroundColor Cyan
+Add-CustomField -ListName $SignedLibraryName -FieldName "ContractType" -DisplayName "Contract Type" -FieldType "Text"
+
+# Status (Single line of text)
+Write-Host ""
+Write-Host "2. Status" -ForegroundColor Cyan
+Add-CustomField -ListName $SignedLibraryName -FieldName "Status" -DisplayName "Status" -FieldType "Text"
+
+# Parties (Single line of text)
+Write-Host ""
+Write-Host "3. Parties" -ForegroundColor Cyan
+Add-CustomField -ListName $SignedLibraryName -FieldName "Parties" -DisplayName "Parties" -FieldType "Text"
+
+# Tags (Single line of text)
+Write-Host ""
+Write-Host "4. Tags" -ForegroundColor Cyan
+Add-CustomField -ListName $SignedLibraryName -FieldName "Tags" -DisplayName "Tags" -FieldType "Text"
+
+# Risk Score (Number field)
+Write-Host ""
+Write-Host "5. Risk Score" -ForegroundColor Cyan
+Add-CustomField -ListName $SignedLibraryName -FieldName "RiskScore" -DisplayName "Risk Score" -FieldType "Number" -FieldProperties @{
+    MinimumValue = 0
+    MaximumValue = 100
+    DefaultValue = "0"
+}
+
+
+# STEP 6: Configure Library Settings
 Write-Host ""
 Write-Host "============================================" -ForegroundColor Cyan
 Write-Host "Configuring Library Settings" -ForegroundColor Cyan
@@ -306,21 +377,22 @@ try {
 }
 
 
-# STEP 6: Summary
+# STEP 7: Summary
 Write-Host ""
 Write-Host "============================================" -ForegroundColor Cyan
 Write-Host "Setup Complete!" -ForegroundColor Green
 Write-Host "============================================" -ForegroundColor Cyan
 Write-Host ""
 
-Write-Host "Library Created/Updated: $LibraryName" -ForegroundColor Green
-Write-Host "Custom Columns: 10 fields added" -ForegroundColor Green
-Write-Host "Custom Views: 3 views created" -ForegroundColor Green
+Write-Host "Libraries Created/Updated: $LibraryName, $SignedLibraryName" -ForegroundColor Green
+Write-Host "Contracts Columns: 10 fields" -ForegroundColor Green
+Write-Host "Signed Documents Columns: 5 fields" -ForegroundColor Green
+Write-Host "Custom Views: 3 views created (Contracts)" -ForegroundColor Green
 Write-Host "Library Settings: Configured" -ForegroundColor Green
 Write-Host ""
 
 Write-Host "============================================" -ForegroundColor Cyan
-Write-Host "Column Summary" -ForegroundColor Cyan
+Write-Host "$LibraryName - Column Summary" -ForegroundColor Cyan
 Write-Host "============================================" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "  1. Contract Type       (Choice)" -ForegroundColor White
@@ -336,17 +408,30 @@ Write-Host " 10. Effective Date     (Date)" -ForegroundColor White
 Write-Host ""
 
 Write-Host "============================================" -ForegroundColor Cyan
+Write-Host "$SignedLibraryName - Column Summary" -ForegroundColor Cyan
+Write-Host "============================================" -ForegroundColor Cyan
+Write-Host ""
+Write-Host "  1. Contract Type       (Text)" -ForegroundColor White
+Write-Host "  2. Status             (Text: E-Signature status)" -ForegroundColor White
+Write-Host "  3. Parties            (Text)" -ForegroundColor White
+Write-Host "  4. Tags               (Text)" -ForegroundColor White
+Write-Host "  5. Risk Score         (Number: 0-100)" -ForegroundColor White
+Write-Host ""
+
+Write-Host "============================================" -ForegroundColor Cyan
 Write-Host "Next Steps" -ForegroundColor Cyan
 Write-Host "============================================" -ForegroundColor Cyan
 Write-Host ""
-Write-Host "1. Upload sample contracts to the library" -ForegroundColor Yellow
-Write-Host "2. Update web part properties with library name: '$LibraryName'" -ForegroundColor Yellow
-Write-Host "3. Deploy LegalLens web part to your site" -ForegroundColor Yellow
-Write-Host "4. Test the AI analysis features" -ForegroundColor Yellow
+Write-Host "1. Upload sample contracts to the '$LibraryName' library" -ForegroundColor Yellow
+Write-Host "2. Upload signed documents to the '$SignedLibraryName' library" -ForegroundColor Yellow
+Write-Host "3. Update web part properties with library name: '$LibraryName'" -ForegroundColor Yellow
+Write-Host "4. Deploy LegalLens web part to your site" -ForegroundColor Yellow
+Write-Host "5. Test the AI analysis features" -ForegroundColor Yellow
 Write-Host ""
 
-Write-Host "Library URL:" -ForegroundColor Cyan
-Write-Host "$SiteUrl/$LibraryName" -ForegroundColor White
+Write-Host "Library URLs:" -ForegroundColor Cyan
+Write-Host "  $SiteUrl/$LibraryName" -ForegroundColor White
+Write-Host "  $SiteUrl/Signed%20Documents" -ForegroundColor White
 Write-Host ""
 
 Write-Host " Setup complete! You can now use LegalLens." -ForegroundColor Green
