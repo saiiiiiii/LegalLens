@@ -6,8 +6,8 @@ import { IMultilingualAnswer } from '../models/IMultilingualAnswer';
 export interface IAzureAIFoundryService {
   analyzeContract(fileBlob: Blob, fileName: string): Promise<IContractAnalysis>;
   classifyDocument(fileBlob: Blob, fileName: string, classificationType: string): Promise<IClassificationResult>;
-  translate(text: string, targetLang: string, contractName: string): Promise<string>;
-  askQuestionMultilingual(question: string, questionLang: string, contract: any, conversationHistory: any[]): Promise<IMultilingualAnswer>;
+  translate(text: string, targetLangName: string, contractName: string): Promise<string>;
+  askQuestionMultilingual(question: string, questionLangName: string, contract: any, conversationHistory: any[]): Promise<IMultilingualAnswer>;
   extractTextFromFile(file: File | Blob): Promise<string>;
   callAI(prompt: string, maxTokens: number): Promise<string>;
 }
@@ -201,13 +201,8 @@ Respond with JSON only:
     }
   }
 
-  public async translate(text: string, targetLang: string, contractName: string): Promise<string> {
-    const langNames: { [key: string]: string } = {
-      de: 'German',
-      es: 'Spanish'
-    };
-
-    const prompt = `Translate this legal contract text to ${langNames[targetLang]}.
+  public async translate(text: string, targetLangName: string, contractName: string): Promise<string> {
+    const prompt = `Translate this legal contract text to ${targetLangName}.
 
 Keep clause references (§) unchanged.
 Maintain formal legal language.
@@ -221,17 +216,11 @@ Output ONLY the translation, no explanations.`;
 
   public async askQuestionMultilingual(
     question: string,
-    questionLang: string,
+    questionLangName: string,
     contract: any,
     conversationHistory: any[]
   ): Promise<IMultilingualAnswer> {
-    console.log('[AzureAI] Q&A in', questionLang, ':', question);
-
-    const langNames: { [key: string]: string } = {
-      en: 'English',
-      de: 'German',
-      es: 'Spanish'
-    };
+    console.log('[AzureAI] Q&A in', questionLangName, ':', question);
 
     // Build contract info - prefer full text if available
     let contractInfo = '';
@@ -262,9 +251,9 @@ Clauses:
 ${contract.clauses.map((c: any) => `${c.ref} ${c.title}: ${c.text}`).join('\n')}`;
     }
 
-    const systemPrompt = `You are a legal contract assistant. Answer questions about this contract in ${langNames[questionLang]}.
+    const systemPrompt = `You are a legal contract assistant. Answer questions about this contract in ${questionLangName}.
 
-CRITICAL: Respond in ${langNames[questionLang]} (same language as question).
+CRITICAL: Respond in ${questionLangName} (same language as question).
 Use information from the contract only.
 Cite clause references (§) when applicable.
 Be specific and reference actual contract terms.
@@ -287,9 +276,9 @@ ${contractInfo}`;
 
     return {
       question,
-      questionLanguage: questionLang,
+      questionLanguage: questionLangName,
       answer,
-      answerLanguage: questionLang,
+      answerLanguage: questionLangName,
       citedClauses,
       confidence: 0.9
     };

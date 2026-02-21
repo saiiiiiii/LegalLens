@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { Stack, Text } from '@fluentui/react';
 import { IContract } from "../../../models/IContract";
-import { LANGS } from '../../../constants';
+import { ILang } from '../../../constants/languages';
 import { LocalLanguage24Regular } from '@fluentui/react-icons';
 import { TranslatedDocument } from './TranslatedDocument';
 import { MultilingualQA } from './MultilingualQA';
@@ -11,13 +11,14 @@ import styles from './Translate.module.scss';
 export interface ITranslateViewProps {
   contracts: IContract[];
   aiFoundryService: IAzureAIFoundryService;
+  langs: ILang[];
 }
 
 interface ITranslationCache {
   [key: string]: { summary: string; clauses: any[] };
 }
 
-export const TranslateView: React.FC<ITranslateViewProps> = ({ contracts, aiFoundryService }) => {
+export const TranslateView: React.FC<ITranslateViewProps> = ({ contracts, aiFoundryService, langs }) => {
     const [selectedContract, setSelectedContract] = React.useState(0);
     const [selectedLang, setSelectedLang] = React.useState('en');
     const [translating, setTranslating] = React.useState(false);
@@ -53,6 +54,7 @@ export const TranslateView: React.FC<ITranslateViewProps> = ({ contracts, aiFoun
         if (cache[cacheKey]) return;
 
         const contract = contracts[selectedContract];
+        const selectedLangObj = langs.find(l => l.code === selectedLang) ?? langs[0];
 
         if (selectedLang === 'en') {
             setCache(prev => ({
@@ -71,7 +73,7 @@ export const TranslateView: React.FC<ITranslateViewProps> = ({ contracts, aiFoun
 
         try {
             const transSummary = await aiFoundryService.translate(
-                contract.summary, selectedLang, contract.name
+                contract.summary, selectedLangObj.name, contract.name
             );
 
             if (mountedRef.current) setTranslateProgress(1);
@@ -80,7 +82,7 @@ export const TranslateView: React.FC<ITranslateViewProps> = ({ contracts, aiFoun
             for (let i = 0; i < contract.clauses.length; i++) {
                 const c = contract.clauses[i];
                 const translated = await aiFoundryService.translate(
-                    `${c.title}: ${c.text}`, selectedLang, contract.name
+                    `${c.title}: ${c.text}`, selectedLangObj.name, contract.name
                 );
                 transClauses.push({ ref: c.ref, translated });
 
@@ -148,7 +150,7 @@ export const TranslateView: React.FC<ITranslateViewProps> = ({ contracts, aiFoun
             <Stack className={styles.langSelectWrap}>
               <Text className={styles.controlLabel}>Translation Language</Text>
               <div className={styles.langButtonRow}>
-                {LANGS.map(l => (
+                {langs.map(l => (
                   <button
                     key={l.code}
                     onClick={() => setSelectedLang(l.code)}
@@ -158,7 +160,6 @@ export const TranslateView: React.FC<ITranslateViewProps> = ({ contracts, aiFoun
                       border: `1px solid ${selectedLang === l.code ? 'rgba(99,102,241,0.4)' : 'rgba(255,255,255,0.1)'}`
                     }}
                   >
-                    <div className={styles.langBtnFlag}>{l.flag}</div>
                     <div className={styles.langBtnLabel} style={{ color: selectedLang === l.code ? '#fff' : '#94a3b8' }}>{l.label}</div>
                   </button>
                 ))}
@@ -201,8 +202,8 @@ export const TranslateView: React.FC<ITranslateViewProps> = ({ contracts, aiFoun
 
         {cached ? (
           <Stack>
-            <TranslatedDocument contract={contract} cached={cached} selectedLanguage={selectedLang} />
-            <MultilingualQA contract={contract} aiFoundryService={aiFoundryService} />
+            <TranslatedDocument contract={contract} cached={cached} selectedLanguage={selectedLang} langs={langs} />
+            <MultilingualQA contract={contract} aiFoundryService={aiFoundryService} langs={langs} />
           </Stack>
         ) : !translating && (
           <Stack horizontalAlign="center" className={styles.emptyDoc}>

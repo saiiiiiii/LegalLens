@@ -1,18 +1,19 @@
 import * as React from 'react';
 import { Stack, Text } from '@fluentui/react';
 import { IContract } from '../../../models/IContract';
-import { LANGS } from '../../../constants/languages';
+import { ILang } from '../../../constants/languages';
 import styles from './Translate.module.scss';
 
 export interface ITranslatedDocumentProps {
   contract: IContract;
   cached: any;
   selectedLanguage: string;
+  langs: ILang[];
 }
 
-export const TranslatedDocument: React.FC<ITranslatedDocumentProps> = ({ contract, cached, selectedLanguage }) => {
+export const TranslatedDocument: React.FC<ITranslatedDocumentProps> = ({ contract, cached, selectedLanguage, langs }) => {
     const isTranslated = selectedLanguage !== 'en';
-    const langData = isTranslated ? LANGS.find(l => l.code === selectedLanguage) : undefined;
+    const langData = isTranslated ? langs.find(l => l.code === selectedLanguage) : undefined;
 
     return (
       <Stack className={styles.docWrap}>
@@ -20,17 +21,14 @@ export const TranslatedDocument: React.FC<ITranslatedDocumentProps> = ({ contrac
         {isTranslated ? (
           <div className={styles.langGrid}>
             <Stack horizontal verticalAlign="center" className={styles.langBar}>
-              <Text className={styles.langFlag}>🇬🇧</Text>
               <Text className={styles.langName}>English</Text>
             </Stack>
             <Stack horizontal verticalAlign="center" className={`${styles.langBar} ${styles.langBarActive}`}>
-              <Text className={styles.langFlag}>{langData?.flag}</Text>
               <Text className={`${styles.langName} ${styles.langNameActive}`}>{langData?.name}</Text>
             </Stack>
           </div>
         ) : (
           <Stack horizontal verticalAlign="center" className={`${styles.langBar} ${styles.langBarMargin}`}>
-            <Text className={styles.langFlag}>🇬🇧</Text>
             <Text className={styles.langName}>English — Original Document</Text>
           </Stack>
         )}

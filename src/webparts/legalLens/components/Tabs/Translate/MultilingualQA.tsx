@@ -2,7 +2,7 @@ import * as React from 'react';
 import { Stack, Text } from '@fluentui/react';
 import { IContract } from '../../../models/IContract';
 import { IAzureAIFoundryService } from '../../../services/AzureAIFoundryService';
-import { LANGS } from '../../../constants/languages';
+import { ILang } from '../../../constants/languages';
 import { BotRegular, InfoRegular, PeopleFilled } from '@fluentui/react-icons';
 import styles from './Translate.module.scss';
 
@@ -16,42 +16,18 @@ export interface IQAMessage {
 export interface IMultilingualQAProps {
   contract: IContract;
   aiFoundryService: IAzureAIFoundryService;
+  langs: ILang[];
 }
-
-const EXAMPLE_QUESTIONS: { [key: string]: string[] } = {
-    en: [
-        "What is the liability cap?",
-        "When does this contract expire?",
-        "What are the termination conditions?"
-    ],
-    de: [
-        "Was ist die Haftungsgrenze?",
-        "Wann läuft dieser Vertrag ab?",
-        "Was sind die Kündigungsbedingungen?"
-    ],
-    es: [
-        "¿Cuál es el límite de responsabilidad?",
-        "¿Cuándo expira este contrato?",
-        "¿Cuáles son las condiciones de terminación?"
-    ]
-};
-
-const getLanguageName = (code: string): string => {
-    switch (code) {
-        case 'de': return 'German';
-        case 'es': return 'Spanish';
-        default: return 'English';
-    }
-};
 
 const getLangCode = (lang: string): string => lang.toUpperCase();
 
-export const MultilingualQA: React.FC<IMultilingualQAProps> = ({ contract, aiFoundryService }) => {
+export const MultilingualQA: React.FC<IMultilingualQAProps> = ({ contract, aiFoundryService, langs }) => {
     const [qaLanguage, setQaLanguage] = React.useState('en');
     const [qaHistory, setQaHistory] = React.useState<IQAMessage[]>([]);
     const [qaInput, setQaInput] = React.useState('');
     const [qaLoading, setQaLoading] = React.useState(false);
     const mountedRef = React.useRef(true);
+    const currentLang = langs.find(l => l.code === qaLanguage) ?? langs[0];
 
     React.useEffect(() => {
         return () => { mountedRef.current = false; };
@@ -77,7 +53,7 @@ export const MultilingualQA: React.FC<IMultilingualQAProps> = ({ contract, aiFou
 
         try {
             const answer = await aiFoundryService.askQuestionMultilingual(
-                question, qaLanguage, contract, qaHistory
+                question, currentLang.name, contract, qaHistory
             );
 
             if (mountedRef.current) {
@@ -135,7 +111,7 @@ export const MultilingualQA: React.FC<IMultilingualQAProps> = ({ contract, aiFou
         <Stack className={styles.qaLangSection}>
           <Text className={styles.qaLangLabel}>Ask in Your Language</Text>
           <div className={styles.qaLangButtonRow}>
-            {LANGS.map(l => (
+            {langs.map(l => (
               <button
                 key={l.code}
                 onClick={() => handleLanguageChange(l.code)}
@@ -145,7 +121,6 @@ export const MultilingualQA: React.FC<IMultilingualQAProps> = ({ contract, aiFou
                   border: `1px solid ${qaLanguage === l.code ? 'rgba(99,102,241,0.4)' : 'rgba(255,255,255,0.1)'}`
                 }}
               >
-                <div className={styles.qaLangBtnFlag}>{l.flag}</div>
                 <div
                   className={styles.qaLangBtnLabel}
                   style={{ color: qaLanguage === l.code ? '#fff' : '#94a3b8' }}
@@ -164,7 +139,7 @@ export const MultilingualQA: React.FC<IMultilingualQAProps> = ({ contract, aiFou
                 No questions yet about {contract.name}
               </Text>
               <Text className={styles.qaEmptyHint}>
-                Ask anything in {getLanguageName(qaLanguage)} —<br />
+                Ask anything in {currentLang.name} —<br />
                 liability caps, termination, jurisdiction, parties, obligations
               </Text>
             </Stack>
@@ -220,7 +195,7 @@ export const MultilingualQA: React.FC<IMultilingualQAProps> = ({ contract, aiFou
         {/* Input bar */}
         <Stack className={styles.qaInputBar}>
           <Stack horizontal horizontalAlign='center' tokens={{ childrenGap: 12 }} className={styles.qaExamples}>
-            {(EXAMPLE_QUESTIONS[qaLanguage] || EXAMPLE_QUESTIONS.en).map((q, i) => (
+            {currentLang.examples.map((q, i) => (
               <button
                 key={i}
                 className={styles.qaExampleBtn}
@@ -238,11 +213,7 @@ export const MultilingualQA: React.FC<IMultilingualQAProps> = ({ contract, aiFou
                 value={qaInput}
                 onChange={e => setQaInput(e.target.value)}
                 onKeyPress={e => e.key === 'Enter' && handleSubmit()}
-                placeholder={
-                  qaLanguage === 'de' ? 'Stellen Sie Ihre Frage...' :
-                    qaLanguage === 'es' ? 'Haz tu pregunta...' :
-                      'Type your question...'
-                }
+                placeholder={currentLang.inputPlaceholder}
                 disabled={qaLoading}
                 className={styles.qaTextInput}
               />

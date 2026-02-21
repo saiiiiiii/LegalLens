@@ -189,7 +189,7 @@ export default class LegalLens extends React.Component<ILegalLensProps, ILegalLe
         />
       );
       case 'classify': return <ClassificationView contracts={this.state.contracts} sharePointService={this.props.sharePointService} aiFoundryService={this.props.aiFoundryService} uploadedFile={this.state.uploadedFile} fullAnalysis={this.state.fullAnalysis} />;
-      case 'translate': return <TranslateView contracts={this.state.contracts} aiFoundryService={this.props.aiFoundryService} />
+      case 'translate': return <TranslateView contracts={this.state.contracts} aiFoundryService={this.props.aiFoundryService} langs={this.props.langs} />
       case 'alerts': return <AlertsView contracts={this.state.contracts} />;
       case 'esignature': return (
         <ESignatureView

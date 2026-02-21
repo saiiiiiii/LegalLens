@@ -6,6 +6,9 @@ import {
   PropertyPaneTextField,
   PropertyPaneToggle
 } from '@microsoft/sp-property-pane';
+import * as spPropertyPane from '@microsoft/sp-property-pane';
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const PropertyPaneCustomField: any = (spPropertyPane as any)['PropertyPaneCustomField'];
 import { BaseClientSideWebPart } from '@microsoft/sp-webpart-base';
 
 import * as strings from 'LegalLensWebPartStrings';
@@ -13,6 +16,8 @@ import LegalLens from './components/LegalLens';
 import { ILegalLensProps } from './components/ILegalLensProps';
 import { SharePointService } from './services/SharePointService';
 import { AzureAIFoundryService } from './services/AzureAIFoundryService';
+import { ILang, LANGS } from './constants/languages';
+import { LanguagesPropertyPaneField } from './components/PropertyPane/LanguagesField/LanguagesPropertyPaneField';
 
 export interface ILegalLensWebPartProps {
   description: string;
@@ -23,11 +28,16 @@ export interface ILegalLensWebPartProps {
   documentIntelligenceEndpoint: string;
   documentIntelligenceKey: string;
   enableDocumentAnalysis: boolean;
+  translationLanguages: ILang[];
 }
 
 export default class LegalLensWebPart extends BaseClientSideWebPart<ILegalLensWebPartProps> {
   private sharePointService: SharePointService;
   private aiFoundryService: AzureAIFoundryService;
+
+  private get effectiveLangs(): ILang[] {
+    return this.properties.translationLanguages || LANGS;
+  }
 
   protected onInit(): Promise<void> {
     return super.onInit().then(() => {
@@ -61,6 +71,7 @@ export default class LegalLensWebPart extends BaseClientSideWebPart<ILegalLensWe
         description: this.properties.description,
         sharePointService: this.sharePointService,
         aiFoundryService: this.aiFoundryService,
+        langs: this.effectiveLangs,
         isDarkTheme: this.context.sdks?.microsoftTeams?.context?.theme === 'dark',
         environmentMessage: this._getEnvironmentMessage(),
         hasTeamsContext: !!this.context.sdks.microsoftTeams,
@@ -150,6 +161,29 @@ export default class LegalLensWebPart extends BaseClientSideWebPart<ILegalLensWe
                   description: 'Document Intelligence API key',
                   multiline: false,
                   disabled: !this.properties.enableDocumentAnalysis
+                })
+              ]
+            },
+            {
+              groupName: 'Translation Languages',
+              groupFields: [
+                PropertyPaneCustomField({
+                  key: 'translationLanguages',
+                  onRender: (elem: HTMLElement) => {
+                    ReactDom.render(
+                      React.createElement(LanguagesPropertyPaneField, {
+                        langs: this.effectiveLangs,
+                        onChange: (newLangs: ILang[]) => {
+                          this.properties.translationLanguages = newLangs;
+                          this.render();
+                        }
+                      }),
+                      elem
+                    );
+                  },
+                  onDispose: (elem: HTMLElement) => {
+                    ReactDom.unmountComponentAtNode(elem);
+                  }
                 })
               ]
             }

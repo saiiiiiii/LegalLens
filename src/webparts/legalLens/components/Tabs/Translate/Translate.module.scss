@@ -30,11 +30,6 @@
   margin-bottom: 10px;
 }
 
-.langFlag {
-  font-size: 16px;
-  color: #e2e8f0;
-}
-
 .langName {
   font-size: 11px;
   color: #e2e8f0;
@@ -420,6 +415,7 @@
   cursor: pointer;
   outline: none;
   text-align: center;
+  height: 36px;
 }
 
 .qaLangBtnFlag {
@@ -429,7 +425,7 @@
 }
 
 .qaLangBtnLabel {
-  font-size: 7.5px;
+  font-size: 9px;
   font-weight: 600;
 }
 
@@ -655,6 +651,7 @@
   outline: none;
   text-align: center;
   transition: all 0.2s;
+  height: 36px;
 }
 
 .langBtnFlag {
