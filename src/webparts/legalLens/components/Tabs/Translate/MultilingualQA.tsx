@@ -67,11 +67,9 @@ export const MultilingualQA: React.FC<IMultilingualQAProps> = ({ contract, aiFou
         setQaHistory([]);
     };
 
-    const handleSubmit = async (): Promise<void> => {
-        if (!qaInput.trim() || qaLoading) return;
+    const submitMessage = async (question: string): Promise<void> => {
+        if (!question || qaLoading) return;
 
-        const question = qaInput.trim();
-        setQaInput('');
         setQaLoading(true);
 
         const newHistory = [...qaHistory, { role: 'user', text: question, language: qaLanguage }];
@@ -108,6 +106,13 @@ export const MultilingualQA: React.FC<IMultilingualQAProps> = ({ contract, aiFou
         }
     };
 
+    const handleSubmit = async (): Promise<void> => {
+        const question = qaInput.trim();
+        if (!question) return;
+        setQaInput('');
+        await submitMessage(question);
+    };
+
     return (
       <Stack className={styles.qaPanel}>
         {/* Header */}
@@ -120,7 +125,7 @@ export const MultilingualQA: React.FC<IMultilingualQAProps> = ({ contract, aiFou
             </Stack>
           </Stack>
           {qaHistory.length > 0 && (
-            <button onClick={() => setQaHistory([])} style={{ background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.25)', color: '#818cf8', borderRadius: '6px', padding: '4px 10px', cursor: 'pointer', fontSize: '9px', fontWeight: 600, outline: 'none' }}>
+            <button onClick={() => setQaHistory([])} className={styles.qaClearBtn}>
               Clear Chat
             </button>
           )}
@@ -129,24 +134,22 @@ export const MultilingualQA: React.FC<IMultilingualQAProps> = ({ contract, aiFou
         {/* Language selector */}
         <Stack className={styles.qaLangSection}>
           <Text className={styles.qaLangLabel}>Ask in Your Language</Text>
-          <div style={{ display: 'flex', gap: '6px' }}>
+          <div className={styles.qaLangButtonRow}>
             {LANGS.map(l => (
               <button
                 key={l.code}
                 onClick={() => handleLanguageChange(l.code)}
+                className={styles.qaLangBtnQA}
                 style={{
-                  flex: 1,
                   background: qaLanguage === l.code ? 'rgba(99,102,241,0.15)' : 'rgba(255,255,255,0.04)',
-                  border: `1px solid ${qaLanguage === l.code ? 'rgba(99,102,241,0.4)' : 'rgba(255,255,255,0.1)'}`,
-                  borderRadius: '6px',
-                  padding: '6px',
-                  cursor: 'pointer',
-                  outline: 'none',
-                  textAlign: 'center'
+                  border: `1px solid ${qaLanguage === l.code ? 'rgba(99,102,241,0.4)' : 'rgba(255,255,255,0.1)'}`
                 }}
               >
-                <div style={{ fontSize: '14px', marginBottom: '1px', color: '#ffffff' }}>{l.flag}</div>
-                <div style={{ fontSize: '7.5px', color: qaLanguage === l.code ? '#fff' : '#94a3b8', fontWeight: 600 }}>{l.label}</div>
+                <div className={styles.qaLangBtnFlag}>{l.flag}</div>
+                <div
+                  className={styles.qaLangBtnLabel}
+                  style={{ color: qaLanguage === l.code ? '#fff' : '#94a3b8' }}
+                >{l.label}</div>
               </button>
             ))}
           </div>
@@ -173,8 +176,8 @@ export const MultilingualQA: React.FC<IMultilingualQAProps> = ({ contract, aiFou
                   <div key={i} className={styles.qaMsgRow}>
                     <div className={isUser ? styles.qaMsgAvatarUser : styles.qaMsgAvatarBot}>
                       {isUser
-                        ? <PeopleFilled style={{ fontSize: '14px', color: '#67e8f9' }} />
-                        : <BotRegular style={{ fontSize: '14px', color: '#818cf8' }} />
+                        ? <PeopleFilled className={styles.qaMsgIconUser} />
+                        : <BotRegular className={styles.qaMsgIconBot} />
                       }
                     </div>
                     <Stack grow={1}>
@@ -203,8 +206,8 @@ export const MultilingualQA: React.FC<IMultilingualQAProps> = ({ contract, aiFou
                   <Stack grow={1} className={styles.qaMsgBubbleBot}>
                     <Stack horizontal verticalAlign="center" tokens={{ childrenGap: 4 }}>
                       <div className={styles.qaLoadingDot} />
-                      <div className={styles.qaLoadingDot} style={{ animationDelay: '0.2s' }} />
-                      <div className={styles.qaLoadingDot} style={{ animationDelay: '0.4s' }} />
+                      <div className={`${styles.qaLoadingDot} ${styles.qaLoadingDotTwo}`} />
+                      <div className={`${styles.qaLoadingDot} ${styles.qaLoadingDotThree}`} />
                       <Text className={styles.qaLoadingText}>Agent is thinking...</Text>
                     </Stack>
                   </Stack>
@@ -216,8 +219,20 @@ export const MultilingualQA: React.FC<IMultilingualQAProps> = ({ contract, aiFou
 
         {/* Input bar */}
         <Stack className={styles.qaInputBar}>
-          <div style={{ display: 'flex', gap: '25px', alignItems: 'flex-end' }}>
-            <div style={{ flex: 1 }}>
+          <Stack horizontal horizontalAlign='center' tokens={{ childrenGap: 12 }} className={styles.qaExamples}>
+            {(EXAMPLE_QUESTIONS[qaLanguage] || EXAMPLE_QUESTIONS.en).map((q, i) => (
+              <button
+                key={i}
+                className={styles.qaExampleBtn}
+                onClick={() => submitMessage(q)}
+                disabled={qaLoading}
+              >
+                {q}
+              </button>
+            ))}
+          </Stack>
+          <div className={styles.qaInputRow}>
+            <div className={styles.qaInputWrap}>
               <input
                 type="text"
                 value={qaInput}
@@ -229,42 +244,22 @@ export const MultilingualQA: React.FC<IMultilingualQAProps> = ({ contract, aiFou
                       'Type your question...'
                 }
                 disabled={qaLoading}
-                style={{
-                  width: '100%',
-                  background: 'rgba(255,255,255,0.04)',
-                  border: '1px solid rgba(255,255,255,0.1)',
-                  borderRadius: '8px',
-                  padding: '10px 10px',
-                  color: '#e2e8f0',
-                  fontSize: '11px',
-                  outline: 'none'
-                }}
+                className={styles.qaTextInput}
               />
             </div>
             <button
               onClick={handleSubmit}
               disabled={!qaInput.trim() || qaLoading}
+              className={styles.qaSubmitBtn}
               style={{
                 background: qaInput.trim() && !qaLoading ? 'linear-gradient(135deg,#6366f1,#8b5cf6)' : 'rgba(255,255,255,0.05)',
-                border: 'none',
                 color: qaInput.trim() && !qaLoading ? '#fff' : '#64748b',
-                borderRadius: '8px',
-                padding: '10px 5px',
                 cursor: qaInput.trim() && !qaLoading ? 'pointer' : 'not-allowed',
-                fontSize: '11px',
-                fontWeight: 600,
-                outline: 'none',
-                whiteSpace: 'nowrap',
-                flexShrink: 0,
-                minWidth: '70px'
               }}
             >
               {qaLoading ? 'Asking...' : 'Ask'}
             </button>
           </div>
-          <Text className={styles.qaExamples}>
-            💡 {(EXAMPLE_QUESTIONS[qaLanguage] || EXAMPLE_QUESTIONS.en).join(' • ')}
-          </Text>
         </Stack>
       </Stack>
     );

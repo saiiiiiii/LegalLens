@@ -348,6 +348,14 @@
   animation: pulse 1.5s ease infinite;
 }
 
+.qaLoadingDotTwo {
+  animation-delay: 0.2s;
+}
+
+.qaLoadingDotThree {
+  animation-delay: 0.4s;
+}
+
 .qaLoadingText {
   font-size: 9px;
   color: #64748b;
@@ -361,9 +369,111 @@
 }
 
 .qaExamples {
-  margin-top: 8px;
-  font-size: 8.5px;
-  color: #64748b;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.qaExampleBtn {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 9px;
+  color: rgb(148, 163, 184);
+  cursor: pointer;
+  outline: none;
+  text-align: left;
+
+  &:hover {
+    background: rgba(99, 102, 241, 0.1);
+    border-color: rgba(99, 102, 241, 0.3);
+    color: #a5b4fc;
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+}
+
+.qaClearBtn {
+  background: rgba(99, 102, 241, 0.1);
+  border: 1px solid rgba(99, 102, 241, 0.25);
+  color: #818cf8;
+  border-radius: 6px;
+  padding: 4px 10px;
+  cursor: pointer;
+  font-size: 9px;
+  font-weight: 600;
+  outline: none;
+}
+
+.qaLangButtonRow {
+  display: flex;
+  gap: 6px;
+}
+
+.qaLangBtnQA {
+  flex: 1;
+  border-radius: 6px;
+  padding: 6px;
+  cursor: pointer;
+  outline: none;
+  text-align: center;
+}
+
+.qaLangBtnFlag {
+  font-size: 14px;
+  margin-bottom: 1px;
+  color: #ffffff;
+}
+
+.qaLangBtnLabel {
+  font-size: 7.5px;
+  font-weight: 600;
+}
+
+.qaMsgIconUser {
+  font-size: 14px;
+  color: #67e8f9;
+}
+
+.qaMsgIconBot {
+  font-size: 14px;
+  color: #818cf8;
+}
+
+.qaInputRow {
+  display: flex;
+  gap: 25px;
+  align-items: flex-end;
+}
+
+.qaInputWrap {
+  flex: 1;
+}
+
+.qaTextInput {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 10px;
+  color: #e2e8f0;
+  font-size: 11px;
+  outline: none;
+}
+
+.qaSubmitBtn {
+  border: none;
+  border-radius: 8px;
+  padding: 10px 5px;
+  font-size: 11px;
+  font-weight: 600;
+  outline: none;
+  white-space: nowrap;
+  flex-shrink: 0;
+  min-width: 70px;
 }
 
 @keyframes pulse {
