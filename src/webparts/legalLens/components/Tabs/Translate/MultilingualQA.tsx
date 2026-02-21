@@ -67,11 +67,9 @@ export const MultilingualQA: React.FC<IMultilingualQAProps> = ({ contract, aiFou
         setQaHistory([]);
     };
 
-    const handleSubmit = async (): Promise<void> => {
-        if (!qaInput.trim() || qaLoading) return;
+    const submitMessage = async (question: string): Promise<void> => {
+        if (!question || qaLoading) return;
 
-        const question = qaInput.trim();
-        setQaInput('');
         setQaLoading(true);
 
         const newHistory = [...qaHistory, { role: 'user', text: question, language: qaLanguage }];
@@ -106,6 +104,13 @@ export const MultilingualQA: React.FC<IMultilingualQAProps> = ({ contract, aiFou
                 setQaLoading(false);
             }
         }
+    };
+
+    const handleSubmit = async (): Promise<void> => {
+        const question = qaInput.trim();
+        if (!question) return;
+        setQaInput('');
+        await submitMessage(question);
     };
 
     return (
@@ -214,6 +219,18 @@ export const MultilingualQA: React.FC<IMultilingualQAProps> = ({ contract, aiFou
 
         {/* Input bar */}
         <Stack className={styles.qaInputBar}>
+          <Stack horizontal horizontalAlign='center' tokens={{ childrenGap: 12 }} className={styles.qaExamples}>
+            {(EXAMPLE_QUESTIONS[qaLanguage] || EXAMPLE_QUESTIONS.en).map((q, i) => (
+              <button
+                key={i}
+                className={styles.qaExampleBtn}
+                onClick={() => submitMessage(q)}
+                disabled={qaLoading}
+              >
+                {q}
+              </button>
+            ))}
+          </Stack>
           <div className={styles.qaInputRow}>
             <div className={styles.qaInputWrap}>
               <input
@@ -243,9 +260,6 @@ export const MultilingualQA: React.FC<IMultilingualQAProps> = ({ contract, aiFou
               {qaLoading ? 'Asking...' : 'Ask'}
             </button>
           </div>
-          <Text className={styles.qaExamples}>
-            💡 {(EXAMPLE_QUESTIONS[qaLanguage] || EXAMPLE_QUESTIONS.en).join(' • ')}
-          </Text>
         </Stack>
       </Stack>
     );

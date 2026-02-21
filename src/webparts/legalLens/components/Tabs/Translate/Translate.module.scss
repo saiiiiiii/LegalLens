@@ -369,9 +369,31 @@
 }
 
 .qaExamples {
-  margin-top: 8px;
-  font-size: 8.5px;
-  color: #64748b;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.qaExampleBtn {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 9px;
+  color: rgb(148, 163, 184);
+  cursor: pointer;
+  outline: none;
+  text-align: left;
+
+  &:hover {
+    background: rgba(99, 102, 241, 0.1);
+    border-color: rgba(99, 102, 241, 0.3);
+    color: #a5b4fc;
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
 }
 
 .qaClearBtn {
