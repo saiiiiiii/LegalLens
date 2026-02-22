@@ -187,10 +187,16 @@
     padding-bottom: 0;
   }
 }
-.columnOne{
+.mainColumn {
   flex: 2;
   min-width: 200px;
-  margin-right: 20px;
+  .riskAnalysis {
+    background: hsla(0, 0%, 100%, .03);
+    border: 1px solid hsla(0, 0%, 100%, .08);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 20px;
+  }
   .documentInfo {
     background: hsla(0, 0%, 100%, .03);
     border: 1px solid hsla(0, 0%, 100%, .08);
@@ -199,7 +205,7 @@
   }
 }
 
-.columnTwo {
+.detailsColumn {
   flex: 1;
   min-width: 0;
   .documentOverview {
@@ -212,7 +218,8 @@
 
 
 .documentWrap {
-  padding: 20px;
+  margin-top: 0 !important;
+  padding: 0 0 20px;
 }
 
 .overviewField {
@@ -232,6 +239,16 @@
   font-size: 12px;
   color: #e2e8f0;
   font-weight: 500;
+}
+
+.expiredBadge {
+  font-size: 9px;
+  font-weight: 600;
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  border-radius: 4px;
+  padding: 1px 6px;
 }
 
 .overviewTag {
@@ -273,4 +290,24 @@
   color: #94a3b8;
   line-height: 1.7;
   margin-top: 4px;
+}
+
+.clauseValue {
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.riskFactorDesc {
+  font-size: 11px;
+  color: #94a3b8;
+  margin-bottom: 0px;
+  line-height: 1.6;
+}
+
+.riskFactorRec {
+  font-size: 10px;
+  color: #10b981;
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }

@@ -29,65 +29,66 @@ function getSeverityIcon(severity: string): React.ReactElement {
   }
 }
 
-export const UploadResults: React.FC<IUploadResultsProps> = ({ analysisResult, onReset }) => (
-  <Stack tokens={{ childrenGap: 0 }}>
-    <Stack className={styles.successBanner}>
-      <Text block className={styles.successTitle}>Analysis Complete & Saved to SharePoint</Text>
-      <Text block className={styles.successHint}>
-        Document uploaded to library with metadata · Refresh library view to see it
-      </Text>
-    </Stack>
-
+function RiskScoreCard({ score }: { score: number }): React.ReactElement {
+  return (
     <div
       className={styles.riskScoreCard}
-      style={{ background: `linear-gradient(135deg, ${riskScoreBgColor(analysisResult.overallRiskScore)}, rgba(0,0,0,0.1))` }}
+      style={{ background: `linear-gradient(135deg, ${riskScoreBgColor(score)}, rgba(0,0,0,0.1))` }}
     >
       <Text block className={styles.riskScoreLabel}>Overall Risk Score</Text>
-      <Text block className={styles.riskScoreNumber} style={{ color: riskScoreTextColor(analysisResult.overallRiskScore) }}>
-        {analysisResult.overallRiskScore}
+      <Text block className={styles.riskScoreNumber} style={{ color: riskScoreTextColor(score) }}>
+        {score}
       </Text>
       <Text block className={styles.riskScoreTotal}>/ 100</Text>
       <Stack horizontal verticalAlign="center" horizontalAlign="center" className={styles.riskScoreStatus} tokens={{ childrenGap: 6 }}>
-        {analysisResult.overallRiskScore >= 70 ? (
+        {score >= 70 ? (
           <><ErrorCircleFilled style={{ fontSize: '14px', color: '#ef4444' }} /><Text>High Risk</Text></>
-        ) : analysisResult.overallRiskScore >= 40 ? (
+        ) : score >= 40 ? (
           <><WarningFilled style={{ fontSize: '14px', color: '#f59e0b' }} /><Text>Medium Risk</Text></>
         ) : (
           <><CheckmarkCircleFilled style={{ fontSize: '14px', color: '#10b981' }} /><Text>Low Risk</Text></>
         )}
       </Stack>
     </div>
+  );
+}
 
-    {analysisResult.riskFactors && analysisResult.riskFactors.length > 0 && (
-      <Stack style={{ marginBottom: '20px' }}>
-        <Stack horizontal verticalAlign="center" tokens={{ childrenGap: 6 }}>
-          <ChartMultipleFilled style={{ fontSize: '14px' }} />
-          <Text block className={styles.sectionTitle}>Risk Factors ({analysisResult.riskFactors.length})</Text>
-        </Stack>
-        {analysisResult.riskFactors.map((factor, i) => (
-          <div key={i} className={styles.riskFactorCard}>
-            <Stack horizontal className={styles.riskFactorContent} tokens={{ childrenGap: 12 }}>
-              <div className={styles.riskFactorIconWrap}>{getSeverityIcon(factor.severity)}</div>
-              <Stack className={styles.riskFactorBody} tokens={{ childrenGap: 4 }}>
-                <Text block className={styles.riskFactorSeverity}>{factor.severity} - {factor.factor}</Text>
-                <Text block className={styles.riskFactorDesc}>{factor.description}</Text>
-                <div className={styles.riskFactorRec}>
-                  <span>→</span>
-                  <span>{factor.recommendation}</span>
-                </div>
-              </Stack>
-            </Stack>
-          </div>
-        ))}
+function RiskFactors({ factors }: { factors: IContractAnalysis['riskFactors'] }): React.ReactElement | null {
+  if (!factors || factors.length === 0) return null;
+
+  return (
+    <Stack style={{ marginBottom: '20px' }}>
+      <Stack horizontal verticalAlign="center" tokens={{ childrenGap: 6 }}>
+        <ChartMultipleFilled style={{ fontSize: '14px' }} />
+        <Text block className={styles.sectionTitle}>Risk Factors ({factors.length})</Text>
       </Stack>
-    )}
+      {factors.map((factor, i) => (
+        <div key={i} className={styles.riskFactorCard}>
+          <Stack horizontal className={styles.riskFactorContent} tokens={{ childrenGap: 12 }}>
+            <div className={styles.riskFactorIconWrap}>{getSeverityIcon(factor.severity)}</div>
+            <Stack className={styles.riskFactorBody} tokens={{ childrenGap: 4 }}>
+              <Text block className={styles.riskFactorSeverity}>{factor.severity} - {factor.factor}</Text>
+              <Text block className={styles.riskFactorDesc}>{factor.description}</Text>
+              <div className={styles.riskFactorRec}>
+                <span>→</span>
+                <span>{factor.recommendation}</span>
+              </div>
+            </Stack>
+          </Stack>
+        </div>
+      ))}
+    </Stack>
+  );
+}
 
+function Clauses({ clauses }: { clauses: IContractAnalysis['clauses'] }): React.ReactElement {
+  return (
     <Stack>
       <Stack horizontal verticalAlign="center" tokens={{ childrenGap: 6 }}>
         <DocumentBulletListRegular style={{ fontSize: '14px' }} />
-        <Text block className={styles.sectionTitle}>Clauses ({analysisResult.clauses.length})</Text>
+        <Text block className={styles.sectionTitle}>Clauses ({clauses.length})</Text>
       </Stack>
-      {analysisResult.clauses.map((clause, i) => (
+      {clauses.map((clause, i) => (
         <Stack key={i} horizontal verticalAlign="center" className={styles.clauseRow} tokens={{ childrenGap: 0 }}>
           <Stack className={styles.clauseInfo}>
             <Text block className={styles.clauseTitle}>{clause.ref} — {clause.title}</Text>
@@ -107,11 +108,28 @@ export const UploadResults: React.FC<IUploadResultsProps> = ({ analysisResult, o
         </Stack>
       ))}
     </Stack>
+  );
+}
 
-    <Stack className={styles.resetActions}>
-      <button className={styles.resetButton} onClick={onReset}>
-        Analyze Another Contract
-      </button>
+export const UploadResults: React.FC<IUploadResultsProps> = ({ analysisResult, onReset }) => (
+  <Stack tokens={{ childrenGap: 0 }}>
+    <Stack className={styles.successBanner}>
+      <Text block className={styles.successTitle}>Analysis Complete & Saved to SharePoint</Text>
+      <Text block className={styles.successHint}>
+        Document uploaded to library with metadata · Refresh library view to see it
+      </Text>
     </Stack>
+
+    <RiskScoreCard score={analysisResult.overallRiskScore} />
+    <RiskFactors factors={analysisResult.riskFactors} />
+    <Clauses clauses={analysisResult.clauses}/>
+
+    {onReset && (
+      <Stack className={styles.resetActions}>
+        <button className={styles.resetButton} onClick={onReset}>
+          Analyze Another Contract
+        </button>
+      </Stack>
+    )}
   </Stack>
 );
