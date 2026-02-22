@@ -1,0 +1,21 @@
+.card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 8px;
+  padding: 7px 12px;
+  min-width: 75px;
+}
+
+.value {
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.label {
+  font-size: 8px;
+  color: #64748b;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  margin-top: 1px;
+}

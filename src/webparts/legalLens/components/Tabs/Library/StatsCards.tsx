@@ -1,4 +1,6 @@
 import * as React from 'react';
+import { Stack, Text } from '@fluentui/react';
+import styles from './Library.module.scss';
 
 export interface IStatsCardsProps {
   total: number;
@@ -7,52 +9,22 @@ export interface IStatsCardsProps {
   alerts: number;
 }
 
-export const StatsCards: React.FC<IStatsCardsProps> = ({
-  total,
-  compliant,
-  warnings,
-  alerts
-}) => {
+export const StatsCards: React.FC<IStatsCardsProps> = ({ total, compliant, warnings, alerts }) => {
   const stats = [
-    { label: 'Total', value: total.toString(), color: '#06b6d4' },
-    { label: 'Compliant', value: compliant.toString(), color: '#10b981' },
-    { label: 'Warnings', value: warnings.toString(), color: '#f59e0b' },
-    { label: 'Alerts', value: alerts.toString(), color: '#ef4444' }
+    { label: 'Total',     value: total,     color: '#06b6d4' },
+    { label: 'Compliant', value: compliant,  color: '#10b981' },
+    { label: 'Warnings',  value: warnings,   color: '#f59e0b' },
+    { label: 'Alerts',    value: alerts,     color: '#ef4444' }
   ];
 
   return (
-    <div style={{ display: 'flex', gap: '8px' }}>
+    <Stack horizontal tokens={{ childrenGap: 8 }}>
       {stats.map(s => (
-        <div 
-          key={s.label} 
-          style={{ 
-            background: 'rgba(255,255,255,0.03)', 
-            border: '1px solid rgba(255,255,255,0.07)', 
-            borderRadius: '8px', 
-            padding: '7px 12px', 
-            textAlign: 'center', 
-            minWidth: '62px' 
-          }}
-        >
-          <div style={{ 
-            fontSize: '17px', 
-            fontWeight: 700, 
-            color: s.color, 
-            lineHeight: 1.2 
-          }}>
-            {s.value}
-          </div>
-          <div style={{ 
-            fontSize: '8px', 
-            color: '#64748b', 
-            letterSpacing: '0.5px', 
-            textTransform: 'uppercase', 
-            marginTop: '1px' 
-          }}>
-            {s.label}
-          </div>
-        </div>
+        <Stack key={s.label} horizontalAlign="center" className={styles.card}>
+          <Text className={styles.value} style={{ color: s.color }}>{s.value}</Text>
+          <Text className={styles.label}>{s.label}</Text>
+        </Stack>
       ))}
-    </div>
+    </Stack>
   );
 };
