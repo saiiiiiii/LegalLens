@@ -73,6 +73,9 @@
     font-weight: 600;
     height: 40px;
     line-height: 40px;
+    &:hover {
+      background: transparent;
+    }
   }
 
   :global(.ms-DetailsRow) {
@@ -162,4 +165,112 @@
 .emptyText {
   font-size: 13px;
   margin-bottom: 8px;
+}
+
+// DocumentOverview
+.infoColA {
+  flex: 1;
+  min-width: 0;
+}
+
+.infoColB {
+  flex: 1;
+  min-width: 0;
+}
+
+.overviewSection {
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+
+  &:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+}
+.columnOne{
+  flex: 2;
+  min-width: 200px;
+  margin-right: 20px;
+  .documentInfo {
+    background: hsla(0, 0%, 100%, .03);
+    border: 1px solid hsla(0, 0%, 100%, .08);
+    border-radius: 12px;
+    padding: 16px;
+  }
+}
+
+.columnTwo {
+  flex: 1;
+  min-width: 0;
+  .documentOverview {
+    background: hsla(0, 0%, 100%, .03);
+    border: 1px solid hsla(0, 0%, 100%, .08);
+    border-radius: 12px;
+    padding: 16px;
+  }
+}
+
+
+.documentWrap {
+  padding: 20px;
+}
+
+.overviewField {
+  min-width: 140px;
+}
+
+.overviewFieldLabel {
+  font-size: 9px;
+  color: #64748b;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  font-weight: 600;
+  margin-bottom: 3px;
+}
+
+.overviewFieldValue {
+  font-size: 12px;
+  color: #e2e8f0;
+  font-weight: 500;
+}
+
+.overviewTag {
+  font-size: 10px;
+  color: #a5b4fc;
+  background: rgba(99, 102, 241, 0.1);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  border-radius: 4px;
+  padding: 2px 8px;
+}
+
+.overviewSectionTitle {
+  font-size: 11px;
+  font-weight: 700;
+  color: #a5b4fc;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.overviewFileLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #a5b4fc;
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.overviewFileLinkIcon {
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.overviewSummary {
+  font-size: 11px;
+  color: #94a3b8;
+  line-height: 1.7;
+  margin-top: 4px;
 }

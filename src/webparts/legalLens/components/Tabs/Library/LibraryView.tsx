@@ -1,17 +1,23 @@
 import * as React from 'react';
-import { Stack, Text, Spinner, SpinnerSize, MessageBar, MessageBarType } from '@fluentui/react';
+import { Stack, Text, Spinner, SpinnerSize, MessageBar, MessageBarType, ActionButton } from '@fluentui/react';
 import { ISharePointService } from '../../../services/SharePointService';
 import { useContracts } from '../../../hooks/useContracts';
+import { IContract } from '../../../models/IContract';
 import { ContractTable } from './ContractTable';
 import { StatsCards } from './StatsCards';
 import { TagFilter } from './TagFilter';
+import { DocumentOverview } from './DocumentOverview';
 import styles from './Library.module.scss';
+import { IAzureAIFoundryService } from '../../../services/AzureAIFoundryService';
+import { ILang } from '../../../constants/languages';
 
 export interface ILibraryViewProps {
   sharePointService: ISharePointService;
+  aiFoundryService: IAzureAIFoundryService;
+  langs: ILang[];
 }
 
-export const LibraryView: React.FC<ILibraryViewProps> = ({ sharePointService }) => {
+export const LibraryView: React.FC<ILibraryViewProps> = ({ sharePointService, aiFoundryService, langs }) => {
   const {
     loading,
     error,
@@ -21,6 +27,8 @@ export const LibraryView: React.FC<ILibraryViewProps> = ({ sharePointService }) 
     selectedTag,
     setSelectedTag
   } = useContracts(sharePointService);
+
+  const [selectedContract, setSelectedContract] = React.useState<IContract | null>(null);
 
   if (loading) {
     return (
@@ -50,6 +58,21 @@ export const LibraryView: React.FC<ILibraryViewProps> = ({ sharePointService }) 
         >
           {error}
         </MessageBar>
+      </Stack>
+    );
+  }
+
+  if (selectedContract) {
+    return (
+      <Stack style={{ animation: 'fadeIn 0.35s ease' }} tokens={{ childrenGap: 16 }}>
+        <ActionButton
+          iconProps={{ iconName: 'Back' }}
+          onClick={() => setSelectedContract(null)}
+          styles={{ root: { color: '#818cf8', padding: 0 }, icon: { color: '#818cf8' } }}
+        >
+          Back to Library
+        </ActionButton>
+        <DocumentOverview contract={selectedContract} aiFoundryService={aiFoundryService} langs={langs}/>
       </Stack>
     );
   }
@@ -84,7 +107,7 @@ export const LibraryView: React.FC<ILibraryViewProps> = ({ sharePointService }) 
         />
       </Stack>
 
-      <ContractTable contracts={filteredContracts} />
+      <ContractTable contracts={filteredContracts} onSelect={setSelectedContract} />
     </Stack>
   );
 };

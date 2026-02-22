@@ -7,9 +7,10 @@ import styles from './Library.module.scss';
 
 export interface IContractTableProps {
   contracts: IContract[];
+  onSelect: (contract: IContract) => void;
 }
 
-export const ContractTable: React.FC<IContractTableProps> = ({ contracts }) => {
+export const ContractTable: React.FC<IContractTableProps> = ({ contracts, onSelect }) => {
   const statusColor = (status: string): string => {
     if (status === 'critical') return '#ef4444';
     if (status === 'warning') return '#f59e0b';
@@ -103,6 +104,7 @@ export const ContractTable: React.FC<IContractTableProps> = ({ contracts }) => {
         selectionMode={SelectionMode.none}
         layoutMode={DetailsListLayoutMode.justified}
         isHeaderVisible={true}
+        onItemInvoked={(item: IContract) => onSelect(item)}
       />
     </div>
   );

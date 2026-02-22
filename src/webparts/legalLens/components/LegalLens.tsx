@@ -178,7 +178,7 @@ export default class LegalLens extends React.Component<ILegalLensProps, ILegalLe
   private renderView(): React.ReactElement {
     switch (this.state.view) {
       case 'library':
-        return <LibraryView sharePointService={this.props.sharePointService} />;
+        return <LibraryView sharePointService={this.props.sharePointService} aiFoundryService={this.props.aiFoundryService} langs={this.props.langs} />;
       case 'upload': return (
         <UploadView
           contracts={this.state.contracts}
@@ -198,7 +198,7 @@ export default class LegalLens extends React.Component<ILegalLensProps, ILegalLe
           userDisplayName={this.props.userDisplayName}
         />
       );
-      default: return <LibraryView sharePointService={this.props.sharePointService} />;
+      default: return <LibraryView sharePointService={this.props.sharePointService} aiFoundryService={this.props.aiFoundryService} langs={this.props.langs} />;
     }
   }
 }
