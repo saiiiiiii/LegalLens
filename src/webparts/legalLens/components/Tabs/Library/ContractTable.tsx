@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { Stack, Text, DetailsList, DetailsListLayoutMode, IColumn, SelectionMode } from '@fluentui/react';
-import { DocumentRegular } from '@fluentui/react-icons';
+import { DocumentRegular, OpenRegular } from '@fluentui/react-icons';
 import { IContract } from '../../../models/IContract';
 import { riskScoreTextColor } from '../../../utilities/colorUtils';
 import styles from './Library.module.scss';
@@ -18,6 +18,20 @@ export const ContractTable: React.FC<IContractTableProps> = ({ contracts, onSele
   };
 
   const columns: IColumn[] = [
+    {
+      key: 'open',
+      name: '',
+      minWidth: 36,
+      maxWidth: 36,
+      onRender: (item: IContract) => (
+        <button
+          className={styles.openBtn}
+          onClick={() => onSelect(item)}
+        >
+          <OpenRegular />
+        </button>
+      )
+    },
     {
       key: 'name',
       name: 'Contract',
@@ -104,7 +118,6 @@ export const ContractTable: React.FC<IContractTableProps> = ({ contracts, onSele
         selectionMode={SelectionMode.none}
         layoutMode={DetailsListLayoutMode.justified}
         isHeaderVisible={true}
-        onItemInvoked={(item: IContract) => onSelect(item)}
       />
     </div>
   );

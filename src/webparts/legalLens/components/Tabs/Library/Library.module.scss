@@ -54,7 +54,7 @@
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 16px;
+  border-radius: 12px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
   overflow: hidden;
 
@@ -85,6 +85,24 @@
 
     &:hover {
       background: rgba(255, 255, 255, 0.02);
+    }
+  }
+
+  .openBtn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border: none;
+    background: transparent;
+    color: #64748b;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 16px;
+    &:hover {
+      background: rgba(99, 102, 241, 0.15);
+      color: #a5b4fc;
     }
   }
 
