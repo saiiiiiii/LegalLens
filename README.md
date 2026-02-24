@@ -1,14 +1,28 @@
 # LegalLens SPFx Solution
 
-AI-powered contract management web part for SharePoint Online with auto-classification, multilingual translation, and Q&A agent capabilities.
+AI-powered contract management and e-signature platform built on SharePoint Online. Includes an SPFx web part for internal users and a vendor-facing signing flow backed by Azure Functions — no SharePoint access required for external signers.
+
+---
+
+## Authors
+
+| Name | GitHub |
+|------|--------|
+| Sai Siva Ram Bandaru | [@saiiiiiii](https://github.com/saiiiiiii) |
+| Antanina Druzhkina | [@Ateina](https://github.com/Ateina) |
+
+---
 
 ## Features
 
 - **Contract Library View**: Auto-classified contracts with risk scoring, status tracking, and metadata enrichment
-- **TranslatePro**: AI-powered translation (English, German, Spanish) with clause-level preservation
-- **Q&A Agent**: Interactive contract analysis powered by Azure AI
+- **TranslatePro** — AI-powered translation (English, German, Spanish) with clause-level preservation
+- **Q&A Agent** — Interactive contract analysis powered by Azure AI Foundry
+- **Audit Trail** — All signing events timestamped and logged; Application Insights monitoring
 - **SharePoint Integration**: Reads contracts directly from SharePoint document libraries
 - **Real-time Processing**: Live translation and Q&A with progress indicators
+- **Document Preview** — PDF rendered page-by-page; plain-text files displayed inline; Word documents offered as download before signing
+- **E-Signature** — Multi-signer workflow; internal staff sign via the web part, external vendors sign via a secure one-time link (no SharePoint login required)
 
 ## SharePoint Document Library Setup
 
@@ -51,15 +65,221 @@ AI-powered contract management web part for SharePoint Online with auto-classifi
 | Tags | Single lines of text | Tags of E-Signature |
 | RiskScore | Number | Risk score from 0-100 |
 
+### 3. Signature Tokens List
+
+Create a **List** named **Signature Tokens** and add these columns:
+
+| Column Name | Type | Notes |
+|-------------|------|-------|
+| Title | Single line of text | Token ID (used as display label) |
+| TokenID | Single line of text | Cryptographic token (48 hex chars) |
+| ContractID | Number | SharePoint list item ID of the contract |
+| ContractName | Single line of text | Display name of the contract |
+| FileName | Single line of text | Filename in the Contracts library (e.g. `agreement.pdf`) |
+| SignerEmail | Single line of text | Recipient email — verified before signing |
+| SignerName | Single line of text | Recipient display name |
+| SignerID | Single line of text | Internal signer identifier |
+| DriveItemID | Single line of text | Graph drive item ID (populated automatically) |
+| Expires | Date and Time | Token expiry (default: 7 days from creation) |
+| Used | Yes/No | Marked `true` after the vendor signs |
+| SignedDate | Date and Time | Timestamp of signature submission |
+
+---
+
+## Azure Functions Setup
+
+### Prerequisites
+
+- Azure subscription with a Function App (Node.js 18+, Linux, Consumption plan)
+- Entra ID (Azure AD) app registration with the following **Application** permissions (admin consent required):
+
+| Permission | Type | Purpose |
+|-----------|------|---------|
+| `Sites.ReadWrite.All` | Application | Read/write SharePoint sites |
+| `Files.ReadWrite.All` | Application | Download and upload documents |
+| `Mail.Send` | Application | Send invitation emails via Microsoft Graph |
+
+> **Note:** The solution uses Gmail (nodemailer) for email delivery by default, which avoids new-tenant reputation issues. `Mail.Send` is only needed if you switch to Microsoft Graph mail.
+
+### Environment Variables
+
+Set these in `local.settings.json` (local) or **Function App → Settings → Environment Variables** (Azure):
+
+```json
+{
+  "TENANT_ID":               "your-entra-tenant-id",
+  "CLIENT_ID":               "your-app-registration-client-id",
+  "CLIENT_SECRET":           "your-app-client-secret",
+  "SHAREPOINT_SITE_URL":     "https://tenant.sharepoint.com/sites/YourSite",
+  "SHAREPOINT_SITE_ID":      "tenant.sharepoint.com,,",
+  "CONTRACTS_LIBRARY_ID":    "",
+  "SIGNED_DOCS_LIBRARY_ID":  "",
+  "TOKENS_LIST_ID":          "",
+  "GMAIL_USER":              "youremail@gmail.com",
+  "GMAIL_APP_PASSWORD":      "xxxx xxxx xxxx xxxx"
+}
+```
+
+**Gmail App Password:** Go to [myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords), create an app password named "LegalLens", and paste the 16-character code (no spaces) into `GMAIL_APP_PASSWORD`. Requires 2-Step Verification to be enabled on the Gmail account.
+
+**SharePoint IDs:** Run the helper script `get-drive-ids.js` after filling in the other variables to retrieve the correct list/library GUIDs.
+
+### Deploy
+
+cd AzureFunctions
+npm install
+npm run build
+func azure functionapp publish
+
+---
+
+## API Reference
+
+### GET `/api/validate/{tokenId}`
+
+Validates a signing token. Called by `sign.html` on load.
+
+**Response:**
+```json
+{
+  "token": {
+    "tokenId": "a3f9...",
+    "contractName": "Vendor Agreement 2026",
+    "signerName": "Jane Smith",
+    "signerEmail": "jane@vendor.com",
+    "expires": "2026-03-01T00:00:00Z"
+  },
+  "document": {
+    "name": "vendor-agreement.pdf",
+    "size": 524288,
+    "webUrl": "..."
+  }
+}
+```
+
+---
+
+### GET `/api/document/{tokenId}`
+
+Downloads the contract file. Serves the correct `Content-Type` per file extension:
+
+| Extension | Content-Type | Browser behaviour |
+|-----------|-------------|-------------------|
+| `.pdf` | `application/pdf` | Rendered inline by browser |
+| `.txt` | `text/plain; charset=utf-8` | Rendered as text in the viewer |
+| `.docx` | `application/vnd.openxmlformats-officedocument.wordprocessingml.document` | Download prompt |
+| `.doc` | `application/msword` | Download prompt |
+
+---
+
+### POST `/api/sign`
+
+Submits the vendor's signature.
+
+**Request body:**
+```json
+{
+  "tokenId": "a3f9...",
+  "email": "sai@vendor.com",
+  "signature": "data:image/png;base64,iVBOR..."
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Signature submitted successfully",
+  "signedDocument": "vendor-agreement_signed_1740000000000.pdf",
+  "signedAt": "2026-02-24T10:30:00Z"
+}
+```
+
+---
+
+### POST `/api/invite` *(internal — called by the web part)*
+
+Sends a signing invitation email via Gmail. Called automatically when an internal user creates a signature request in the web part.
+
+---
+
+## Vendor Signing Flow (`sign.html`)
+
+The standalone signing page lives at `public/sign.html` and is hosted as a static file.
+
+**Signing URL format:**
+```
+https://yourdomain.com/sign.html?token=<tokenId>
+```
+
+**Step-by-step flow:**
+
+1. Page loads → `GET /api/validate/{tokenId}` → shows document details
+2. PDF panel loads in background (blurred) while vendor is on identity verification step
+3. Vendor enters their email address — must match the invitation recipient
+4. Email verified → PDF/TXT panel unlocks and signature panel appears
+5. Vendor chooses signature method: Draw, Theme (styled text), or Upload image
+6. Vendor ticks consent checkbox and clicks **Sign Document**
+7. `POST /api/sign` → Azure Function merges signature into PDF → uploads signed PDF to SharePoint → marks token as used
+8. Success screen shown
+
+### Configure Web Part Properties
+
+After deploying the `.sppkg` to your App Catalog, edit the web part properties in SharePoint:
+
+| Property | Description |
+|----------|-------------|
+| Contract Library URL | Full URL to your Contracts document library |
+| Azure AI Foundry Endpoint | e.g. `https://your-project.openai.azure.com` |
+| Azure AI Foundry API Key | API key for your AI Foundry deployment |
+| Azure AI Foundry Deployment | Model name, e.g. `gpt-4o` |
+| Enable Document Analysis | Toggle — enables Azure Document Intelligence for PDF text extraction |
+| Document Intelligence Endpoint | e.g. `https://your-di.cognitiveservices.azure.com` |
+| Document Intelligence Key | API key for Document Intelligence |
+
+### Build & Deploy
+
+```bash
+cd LegalLensWebPart
+npm install
+gulp build
+gulp bundle --ship
+gulp package-solution --ship
+```
+
+---
+
+## Security
+
+- **Vendors never access SharePoint** — all document operations go through Azure Functions using Application permissions (Client Credentials flow)
+- **One-time tokens** — each signing link works exactly once; the token is marked `Used = true` after submission
+- **Email verification** — vendor must enter the invited email address before the document unlocks
+- **Time-limited** — tokens expire after 7 days by default
+- **No user credentials stored** — the Function App authenticates as a service principal via client secret
+
+---
+
+## Monitoring
+
+Application Insights is automatically configured for Azure Functions.
+
+---
+
+## Cost Estimate
+
+| Service | Tier | Estimated Cost |
+|---------|------|----------------|
+| Azure Functions | Consumption | Free up to 1M executions; ~$0.20/M after |
+| Azure Storage | LRS | < $1/month |
+| Gmail (nodemailer) | Free | $0 |
+| **Total** | | **~$5–10/month** for 1,000 signatures |
+
+For comparison: DocuSign costs $25+/user/month.
+
+---
+
 ## Version History
 
 | Version | Date | Changes |
 |---------|------|---------|
-| 1.0.0 | 2026-02-10 | Initial release with Library, TranslatePro, Alerts, and Q&A Agent |
-
-## Solution
-
-| Solution | Author(s) |
-|----------|-----------|
-| LegalLens| [Sai Siva Ram Bandaru](https://github.com/saiiiiiii)
-| LegalLens| [Antanina Druzhkina](https://github.com/Ateina)
+| 1.0.0 | 2026-02-10 | Initial release with Library, TranslatePro, Alerts, E-Signature and Q&A Agent |
