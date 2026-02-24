@@ -146,8 +146,8 @@ Validates a signing token. Called by [sign.html](./legallens-signatures/sign.htm
   "token": {
     "tokenId": "a3f9...",
     "contractName": "Vendor Agreement 2026",
-    "signerName": "Jane Smith",
-    "signerEmail": "jane@vendor.com",
+    "signerName": "Sai Bandaru",
+    "signerEmail": "sai@vendor.com",
     "expires": "2026-03-01T00:00:00Z"
   },
   "document": {
