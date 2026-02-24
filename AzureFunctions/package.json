@@ -1,0 +1,28 @@
+{
+  "name": "legallens-signature-function",
+  "version": "1.0.0",
+  "description": "Azure Function for external document signing",
+  "main": "dist/functions/*.js",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc -w",
+    "prestart": "npm run build",
+    "start": "func start",
+    "test": "echo \"No tests yet\""
+  },
+  "dependencies": {
+    "@azure/functions": "^4.0.0",
+    "@azure/identity": "^4.0.0",
+    "@microsoft/microsoft-graph-client": "^3.0.7",
+    "isomorphic-fetch": "^3.0.0",
+    "mammoth": "^1.11.0",
+    "node-fetch": "^2.7.0",
+    "nodemailer": "^8.0.1",
+    "pdf-lib": "^1.17.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/nodemailer": "^7.0.11",
+    "typescript": "^5.0.0"
+  }
+}
