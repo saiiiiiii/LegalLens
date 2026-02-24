@@ -196,6 +196,8 @@ export default class LegalLens extends React.Component<ILegalLensProps, ILegalLe
           contracts={this.state.contracts}
           sharePointService={this.props.sharePointService}
           userDisplayName={this.props.userDisplayName}
+          userEmail={this.props.userEmail}
+          context={this.props.context}
         />
       );
       default: return <LibraryView sharePointService={this.props.sharePointService} aiFoundryService={this.props.aiFoundryService} langs={this.props.langs} />;

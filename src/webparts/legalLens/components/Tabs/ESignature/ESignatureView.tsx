@@ -17,24 +17,40 @@ import { generateTableFields, calculateDocumentMargin } from '../../../utilities
 import { generateSignedPDF } from '../../../utilities/pdfGenerator';
 import { StepHeader } from './StepHeader';
 import { SignatureTable } from './SignatureTable';
+import { useSignatureTokens } from '../../../hooks/useSignatureTokens';
+import {
+  Modal, IModalStyles,
+} from '@fluentui/react/lib/Modal';
+import { DefaultButton, PrimaryButton, IconButton } from '@fluentui/react/lib/Button';
+import { Icon } from '@fluentui/react/lib/Icon';
+import { MessageBar, MessageBarType } from '@fluentui/react/lib/MessageBar';
+import { Spinner, SpinnerSize } from '@fluentui/react/lib/Spinner';
 
 export interface IESignatureViewProps {
   contracts: IContract[];
   sharePointService: ISharePointService;
   userDisplayName: string;
+  userEmail: string;
+  context: any;
 }
+
+const AZURE_FUNCTION_URL = 'https://{AzureFunctionURL}';
+
+const SIGNING_PAGE_URL = '../../../../sign.html';
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 export const ESignatureView: React.FC<IESignatureViewProps> = ({
   contracts,
   sharePointService,
   userDisplayName,
+  userEmail,
+  context,
 }) => {
   // Initialize hooks
   const workflow = useSignatureWorkflow(userDisplayName);
   const drafts = useDraftDocuments();
   const signed = useSignedDocuments(sharePointService);
-
+  const signatureTokens = useSignatureTokens(sharePointService); 
   // Destructure workflow state
   const {
     step,
@@ -67,6 +83,45 @@ export const ESignatureView: React.FC<IESignatureViewProps> = ({
   const [canvasEmpty, setCanvasEmpty] = React.useState(true);
   const [signedPdf, setSignedPdf] = React.useState<any>(null);
 
+  // ─── PDF preview modal state ─────────────────────────────────────────────
+  const [pdfPreview, setPdfPreview] = React.useState<{
+    open: boolean;
+    url: string;
+    title: string;
+  }>({ open: false, url: '', title: '' });
+
+  // ─── Modal state (replaces all alert() calls) ──────────────────────────
+  type ModalVariant = 'success' | 'error' | 'warning' | 'info';
+  const [modal, setModal] = React.useState<{
+    open: boolean;
+    title: string;
+    message: string;
+    variant: ModalVariant;
+    detail?: string;
+    actions?: Array<{ label: string; primary?: boolean; onClick: () => void }>;
+  }>({ open: false, title: '', message: '', variant: 'info' });
+
+  const showModal = (
+    title: string,
+    message: string,
+    variant: ModalVariant = 'info',
+    detail?: string,
+    actions?: Array<{ label: string; primary?: boolean; onClick: () => void }>
+  ) => setModal({ open: true, title, message, variant, detail, actions });
+
+  const closeModal = () => setModal(m => ({ ...m, open: false }));
+
+  React.useEffect(() => {
+    const interval = setInterval(() => {
+      console.log('[ESignature] Auto-refreshing token status...');
+      signatureTokens.refresh();
+      signed.refresh();
+    }, 30000); // 30 seconds
+
+    return () => clearInterval(interval);
+  }, [signatureTokens, signed]);
+
+
   // Refs
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
   const docRef = React.useRef<HTMLDivElement>(null);
@@ -87,6 +142,7 @@ export const ESignatureView: React.FC<IESignatureViewProps> = ({
     }
   }, []);
 
+  
   // Canvas setup
   React.useEffect(() => {
     if (!canvasRef.current || mode !== 'draw') return;
@@ -101,6 +157,196 @@ export const ESignatureView: React.FC<IESignatureViewProps> = ({
     ctx.strokeStyle = penColor;
     setCanvasEmpty(true);
   }, [canvasRef, mode, penColor, setCanvasEmpty]);
+
+  /**
+   * Invite external signer via email
+   */
+  const inviteExternalSigner = async (signer: ISigner) => {
+  if (!contract || !signer.email || !signer.name) {
+    showModal('Missing Information', 'Please enter signer name and email before sending the invitation.', 'warning'); return;
+    return;
+  }
+
+  try {
+    console.log('[ESignature] Inviting external signer:', signer.email);
+
+    let driveItemId = '';
+    try {
+      if (contract.fileUrl) {
+        driveItemId = await sharePointService.getContractDriveItemId(contract.fileUrl);
+      }
+    } catch (err) {
+      console.warn('[ESignature] Could not get drive item ID:', err);
+    }
+
+    const tokenId = await sharePointService.createSignatureToken({
+      contractId: contract.id,
+      contractName: contract.name,
+      fileName: contract.name,
+      signerEmail: signer.email,
+      signerName: signer.name,
+      signerId: signer.id,
+      driveItemId: driveItemId,
+    });
+
+    //  ADD THIS: Immediately refresh tokens so UI updates
+    await signatureTokens.refresh();
+
+    const signUrl = `${SIGNING_PAGE_URL}?token=${tokenId}`;
+
+    console.log('[ESignature] ✓ Token created:', tokenId);
+    console.log('[ESignature] Signing URL:', signUrl);
+
+    const emailSent = await sendSignatureEmail({
+      to: signer.email,
+      name: signer.name,
+      contractName: contract.name,
+      signUrl: signUrl,
+      expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+    });
+
+    if (emailSent) {
+      showModal('Invitation Sent', `Signature invitation sent to ${signer.email}. The vendor will receive an email with a secure signing link. This document has been moved to "In Progress".`, 'success');
+    } else {
+      await navigator.clipboard.writeText(signUrl);
+      navigator.clipboard.writeText(signUrl); showModal('Link Copied to Clipboard', `The signing link for ${signer.name} has been copied. Share it with them directly. This link expires in 30 days.`, 'info', signUrl);
+    }
+
+  } catch (error: any) {
+    console.error('[ESignature] Error:', error);
+    showModal('Failed to Create Link', error.message, 'error');
+  }
+};
+
+
+  /**
+   * Send signature email via Azure Function (app-level Mail.Send).
+   * Using me/sendMail from SPFx causes 403 — delegated auth is not available
+   * in app-only context. The Azure Function uses Client Credentials which work.
+   */
+  async function sendSignatureEmail(params: {
+    to: string;
+    name: string;
+    contractName: string;
+    signUrl: string;
+    expiresAt: string;
+  }): Promise<boolean> {
+    try {
+      console.log('[Email] Calling Azure Function sendInvite for:', params.to);
+
+      const response = await fetch(`${AZURE_FUNCTION_URL}/api/sendInvite`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          signerEmail:  params.to,
+          signerName:   params.name,
+          contractName: params.contractName,
+          signingUrl:   params.signUrl,
+          expiresAt:    params.expiresAt,
+          emailHtml:    generateEmailHTML(params),
+        }),
+      });
+
+      if (response.ok) {
+        console.log('[Email] ✓ Sent to:', params.to);
+        return true;
+      } else {
+        const err = await response.text();
+        console.error('[Email] Azure Function error:', err);
+        return false;
+      }
+    } catch (error) {
+      console.error('[Email] Network error calling sendInvite:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Generate HTML email content
+   */
+  function generateEmailHTML(params: {
+    name: string;
+    contractName: string;
+    signUrl: string;
+    expiresAt: string;
+  }): string {
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body { font-family: 'Segoe UI', Arial, sans-serif; margin: 0; padding: 0; background: #f5f5f5; }
+          .container { max-width: 600px; margin: 20px auto; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
+          .header { background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white; padding: 40px 30px; text-align: center; }
+          .header h1 { margin: 0; font-size: 28px; font-weight: 600; }
+          .content { padding: 40px 30px; }
+          .greeting { font-size: 16px; margin-bottom: 20px; color: #333; }
+          .doc-box { background: #f8f9fa; padding: 25px; border-radius: 8px; border-left: 4px solid #6366f1; margin: 25px 0; }
+          .doc-title { font-size: 20px; font-weight: 600; color: #6366f1; margin: 0; }
+          .button-container { text-align: center; margin: 30px 0; }
+          .button { display: inline-block; padding: 16px 40px; background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 15px rgba(99,102,241,0.3); }
+          .button:hover { transform: translateY(-2px); }
+          .warning { background: #fff3cd; border: 1px solid #ffc107; padding: 15px; border-radius: 6px; margin: 25px 0; }
+          .warning-text { color: #856404; font-size: 14px; margin: 0; }
+          .footer { padding: 30px; background: #f8f9fa; text-align: center; border-top: 1px solid #e5e7eb; }
+          .footer-text { color: #6c757d; font-size: 12px; margin: 5px 0; }
+          .security-note { background: #e7f3ff; border-left: 4px solid #0ea5e9; padding: 15px; margin: 25px 0; }
+          .security-text { color: #0369a1; font-size: 14px; margin: 0; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>✍️ Signature Required</h1>
+          </div>
+          
+          <div class="content">
+            <p class="greeting">Hello <strong>${params.name}</strong>,</p>
+            
+            <p>Please review and sign the following document:</p>
+            
+            <div class="doc-box">
+              <p class="doc-title">📄 ${params.contractName}</p>
+            </div>
+            
+            <div class="button-container">
+              <a href="${params.signUrl}" class="button">
+                Review & Sign Document →
+              </a>
+            </div>
+            
+            <div class="warning">
+              <p class="warning-text">
+                <strong>⏱️ Important:</strong> This link expires on <strong>${new Date(params.expiresAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</strong>
+              </p>
+            </div>
+            
+            <div class="security-note">
+              <p class="security-text">
+                <strong>🔒 Security Note:</strong> This is a one-time use link. Once you sign, the link will become invalid. Do not share this link with others.
+              </p>
+            </div>
+            
+            <p style="color: #666; font-size: 14px; line-height: 1.6;">
+              The signing process is quick and easy:
+              <br>1. Click the link above
+              <br>2. Verify your email address
+              <br>3. Review the document
+              <br>4. Sign electronically
+              <br>5. Done! The signed document will be automatically processed.
+            </p>
+          </div>
+          
+          <div class="footer">
+            <p class="footer-text">This is an automated message from LegalLens E-Signature System</p>
+            <p class="footer-text">If you have questions, please contact the sender</p>
+            <p class="footer-text">© ${new Date().getFullYear()} LegalLens. All rights reserved.</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+  }
 
   // ─── Workflow Actions ─────────────────────────────────────────────────────
 
@@ -131,7 +377,7 @@ export const ESignatureView: React.FC<IESignatureViewProps> = ({
     const contractData = contracts.find(c => c.id === contractId);
 
     if (!draft || !contractData) {
-      alert('Draft not found');
+      showModal('Draft Not Found', 'Could not find the draft for this document.', 'error'); return;
       return;
     }
 
@@ -152,13 +398,13 @@ export const ESignatureView: React.FC<IESignatureViewProps> = ({
 
     if (mode === 'draw') {
       if (!canvasRef.current || canvasEmpty) {
-        alert('Please draw your signature first');
+        showModal('No Signature', 'Please draw your signature in the canvas before applying.', 'warning'); return;
         return;
       }
       imgData = canvasRef.current.toDataURL('image/png');
     } else if (mode === 'type') {
       if (!typedName.trim()) {
-        alert('Please type your name');
+        showModal('Name Required', 'Please type your name to generate a typed signature.', 'warning'); return;
         return;
       }
       const tempCanvas = document.createElement('canvas');
@@ -175,7 +421,7 @@ export const ESignatureView: React.FC<IESignatureViewProps> = ({
       imgData = tempCanvas.toDataURL('image/png');
     } else if (mode === 'upload') {
       if (!uploadImg) {
-        alert('Please upload an image');
+        showModal('No Image', 'Please upload a signature image (PNG or JPG).', 'warning'); return;
         return;
       }
       imgData = uploadImg;
@@ -275,7 +521,7 @@ export const ESignatureView: React.FC<IESignatureViewProps> = ({
     const anySignature = fields.filter(f => f.type === 'signature').some(f => f.value);
 
     if (!anySignature) {
-      alert('Please sign at least one signature field');
+      showModal('Signature Required', 'Please sign at least one signature field before completing.', 'warning'); return;
       return;
     }
 
@@ -305,12 +551,12 @@ export const ESignatureView: React.FC<IESignatureViewProps> = ({
       } else if (contract) {
         // Partial signatures - save as draft
         drafts.saveDraft(contract.id, contract.name, signers, fields);
-        alert('✓ Progress saved! Other signers can continue later.');
+        showModal('Progress Saved', 'Your progress has been saved. Other signers can continue later.', 'success');
         reset();
       }
     } catch (err: any) {
       console.error('[Sign] Error:', err);
-      alert(`Error: ${err.message}`);
+      showModal('Error Saving Document', err.message, 'error');
     } finally {
       setSaving(false);
     }
@@ -325,6 +571,155 @@ export const ESignatureView: React.FC<IESignatureViewProps> = ({
   // ═══════════════════════════════════════════════════════════════════════════
   // RENDER
   // ═══════════════════════════════════════════════════════════════════════════
+
+  // ─── FLUENT UI MODAL (replaces all alert() calls) ────────────────────────
+  const renderModal = () => {
+    if (!modal.open) return null;
+    const iconMap: Record<string, string> = {
+      success: 'CompletedSolid',
+      error: 'StatusErrorFull',
+      warning: 'Warning',
+      info: 'Info',
+    };
+    const colorMap: Record<string, string> = {
+      success: '#10b981',
+      error: '#ef4444',
+      warning: '#f59e0b',
+      info: '#6366f1',
+    };
+    const icon = iconMap[modal.variant];
+    const color = colorMap[modal.variant];
+
+    return (
+      <div
+        style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0,0,0,0.6)', zIndex: 10000,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          animation: 'fadeIn 0.15s ease',
+        }}
+        onClick={closeModal}
+      >
+        <div
+          onClick={e => e.stopPropagation()}
+          style={{
+            background: '#1e293b',
+            borderRadius: 16,
+            padding: '32px 28px 24px',
+            width: '90%', maxWidth: 420,
+            border: `1px solid ${color}44`,
+            boxShadow: `0 20px 60px rgba(0,0,0,0.6), 0 0 0 1px ${color}22`,
+          }}
+        >
+          {/* Header */}
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14, marginBottom: 16 }}>
+            <Icon iconName={icon} style={{ fontSize: 28, color, flexShrink: 0, marginTop: 2 }}/>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 16, fontWeight: 700, color: '#e2e8f0', marginBottom: 6 }}>
+                {modal.title}
+              </div>
+              <div style={{ fontSize: 13, color: '#94a3b8', lineHeight: 1.6 }}>
+                {modal.message}
+              </div>
+              {modal.detail && (
+                <div style={{
+                  marginTop: 10, padding: '8px 12px',
+                  background: 'rgba(255,255,255,0.04)',
+                  borderRadius: 8, fontSize: 11,
+                  color: '#64748b', fontFamily: 'monospace',
+                  wordBreak: 'break-all',
+                }}>
+                  {modal.detail}
+                </div>
+              )}
+            </div>
+            <IconButton
+              iconProps={{ iconName: 'Cancel' }}
+              onClick={closeModal}
+              styles={{ root: { color: '#64748b', background: 'transparent' }, rootHovered: { color: '#e2e8f0', background: 'rgba(255,255,255,0.06)' } }}
+            />
+          </div>
+
+          {/* Actions */}
+          <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+            {modal.actions ? modal.actions.map((a, i) => (
+              a.primary
+                ? <PrimaryButton key={i} text={a.label} onClick={() => { a.onClick(); closeModal(); }} styles={{ root: { borderRadius: 8 } }}/>
+                : <DefaultButton key={i} text={a.label} onClick={() => { a.onClick(); closeModal(); }} styles={{ root: { borderRadius: 8, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', color: '#94a3b8' } }}/>
+            )) : (
+              <PrimaryButton
+                text="OK"
+                onClick={closeModal}
+                styles={{
+                  root: { borderRadius: 8, background: color, border: 'none', minWidth: 80 },
+                  rootHovered: { background: color, opacity: 0.9, border: 'none' },
+                }}
+              />
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // ─── PDF PREVIEW MODAL ────────────────────────────────────────────────────
+  const renderPdfPreview = () => {
+    if (!pdfPreview.open) return null;
+    return (
+      <div
+        style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0,0,0,0.88)', zIndex: 10001,
+          display: 'flex', flexDirection: 'column',
+          animation: 'fadeIn 0.15s ease',
+        }}
+        onClick={() => setPdfPreview(p => ({ ...p, open: false }))}
+      >
+        {/* Header bar */}
+        <div
+          onClick={e => e.stopPropagation()}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 14,
+            padding: '14px 20px',
+            background: '#1e293b',
+            borderBottom: '1px solid rgba(255,255,255,0.08)',
+            flexShrink: 0,
+          }}
+        >
+          <Icon iconName='PDF' style={{ fontSize: 22, color: '#ef4444' }}/>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 14, fontWeight: 700, color: '#e2e8f0' }}>{pdfPreview.title}</div>
+            <div style={{ fontSize: 11, color: '#64748b', marginTop: 1 }}>Signed Document — Read Only</div>
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <DefaultButton
+              text='Open in SharePoint'
+              iconProps={{ iconName: 'OpenInNewWindow' }}
+              onClick={() => window.open(pdfPreview.url, '_blank', 'noopener,noreferrer')}
+              styles={{ root: { borderRadius: 8, fontSize: 11, height: 32, background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.35)', color: '#818cf8' }, rootHovered: { background: 'rgba(99,102,241,0.25)', border: '1px solid rgba(99,102,241,0.5)', color: '#a5b4fc' } }}
+            />
+            <IconButton
+              iconProps={{ iconName: 'Cancel' }}
+              onClick={() => setPdfPreview(p => ({ ...p, open: false }))}
+              styles={{ root: { color: '#64748b', background: 'rgba(255,255,255,0.04)', borderRadius: 8 }, rootHovered: { color: '#e2e8f0', background: 'rgba(255,255,255,0.1)' } }}
+            />
+          </div>
+        </div>
+
+        {/* PDF iframe */}
+        <div
+          onClick={e => e.stopPropagation()}
+          style={{ flex: 1, overflow: 'hidden' }}
+        >
+          <iframe
+            src={pdfPreview.url}
+            style={{ width: '100%', height: '100%', border: 'none' }}
+            title={pdfPreview.title}
+          />
+        </div>
+      </div>
+    );
+  };
 
   // ─── SIGNATURE PAD MODAL (renders on top of everything) ───────────────────
   const renderSignaturePad = () => {
@@ -362,7 +757,7 @@ export const ESignatureView: React.FC<IESignatureViewProps> = ({
           }}
         >
           <h3 style={{ margin: '0 0 20px', fontSize: 18, color: '#e2e8f0' }}>
-            ✍️ Add Your Signature
+            Add Your Signature
           </h3>
 
           {/* Mode tabs */}
@@ -552,288 +947,350 @@ export const ESignatureView: React.FC<IESignatureViewProps> = ({
 
   // ─── STEP 1: SELECT DOCUMENT ──────────────────────────────────────────────
   if (step === 'select') {
-    if (signed.loading) {
-      return (
-        <div style={{ animation: 'fadeIn 0.3s ease', textAlign: 'center', padding: '60px 20px' }}>
-          <div style={{ fontSize: 32, marginBottom: 12 }}>📄</div>
-          <div style={{ fontSize: 13, color: '#94a3b8' }}>Loading documents...</div>
+  // Calculate counts including token status
+  const unsignedContracts = contracts.filter(c => {
+    const isSigned = signed.signedContractNames.has(c.name);
+    const tokenStatus = signatureTokens.getTokenStatus(c.id);
+    return !isSigned && (!tokenStatus || (tokenStatus.pendingTokens === 0 && tokenStatus.completedTokens === 0));
+  });
+
+  const inProgressContracts = contracts.filter(c => {
+    const isInProgressDraft = drafts.inProgressContractNames.has(c.name);
+    const tokenStatus = signatureTokens.getTokenStatus(c.id);
+    return isInProgressDraft || (tokenStatus && tokenStatus.pendingTokens > 0);
+  });
+
+  const signedContracts = contracts.filter(c => {
+    const isSignedDoc = signed.signedContractNames.has(c.name);
+    const tokenStatus = signatureTokens.getTokenStatus(c.id);
+    return isSignedDoc || (tokenStatus && tokenStatus.pendingTokens === 0 && tokenStatus.completedTokens > 0);
+  });
+
+  let displayContracts = contracts;
+  if (viewMode === 'unsigned') {
+    displayContracts = unsignedContracts;
+  } else if (viewMode === 'inprogress') {
+    displayContracts = inProgressContracts;
+  } else if (viewMode === 'signed') {
+    displayContracts = signedContracts;
+  }
+
+  return (
+    <div style={{ animation: 'fadeIn 0.3s ease' }}>
+      {/*  NEW: Header with refresh button */}
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'flex-start', 
+        marginBottom: 20 
+      }}>
+        <div style={{ flex: 1 }}>
+          <StepHeader
+            title="Select Document"
+            subtitle="Choose a contract to prepare for signature"
+          />
         </div>
-      );
-    }
+        
+        {/*  REFRESH BUTTON */}
+        <button
+          onClick={async () => {
+            console.log('[ESignature] Manual refresh triggered');
+            await signatureTokens.refresh();
+            await signed.refresh();
 
-    const unsignedContracts = contracts.filter(
-      c => !signed.signedContractNames.has(c.name) && !drafts.inProgressContractNames.has(c.name)
-    );
-    const inProgressContracts = contracts.filter(c =>
-      drafts.inProgressContractNames.has(c.name)
-    );
-    const signedContracts = contracts.filter(c => signed.signedContractNames.has(c.name));
-
-    const displayContracts =
-      viewMode === 'unsigned'
-        ? unsignedContracts
-        : viewMode === 'inprogress'
-        ? inProgressContracts
-        : signedContracts;
-
-    return (
-      <div style={{ animation: 'fadeIn 0.3s ease' }}>
-        <StepHeader
-          title="Select Document"
-          subtitle={`Choose a contract to sign (${unsignedContracts.length} unsigned, ${inProgressContracts.length} in progress, ${signedContracts.length} signed)`}
-        />
-
-        {/* View mode toggle */}
-        <div
+          }}
           style={{
+            padding: '10px 16px',
+            borderRadius: 8,
+            border: '1px solid rgba(99,102,241,0.3)',
+            background: 'rgba(99,102,241,0.1)',
+            color: '#818cf8',
+            fontSize: 11,
+            fontWeight: 600,
+            cursor: 'pointer',
             display: 'flex',
-            gap: 8,
-            marginBottom: 16,
-            padding: '4px',
-            borderRadius: 10,
-            background: 'rgba(255,255,255,0.03)',
-            border: '1px solid rgba(255,255,255,0.08)',
-            width: 'fit-content',
+            alignItems: 'center',
+            gap: 6,
+            transition: 'all 0.2s',
+            marginTop: -10,
+          }}
+          onMouseEnter={e => e.currentTarget.style.background = 'rgba(99,102,241,0.2)'}
+          onMouseLeave={e => e.currentTarget.style.background = 'rgba(99,102,241,0.1)'}
+        >
+          <Icon iconName='Refresh' style={{marginRight:6}}/> Refresh
+        </button>
+      </div>
+
+      {/* View mode tabs */}
+      <div style={{ display: 'flex', gap: 10, marginBottom: 20 }}>
+        <button
+          onClick={() => setViewMode('unsigned')}
+          style={{
+            flex: 1,
+            padding: '10px 18px',
+            borderRadius: 8,
+            border: '1px solid rgba(99,102,241,0.3)',
+            cursor: 'pointer',
+            background: viewMode === 'unsigned' 
+              ? 'linear-gradient(135deg,#6366f1,#8b5cf6)' 
+              : 'transparent',
+            color: viewMode === 'unsigned' ? '#fff' : '#94a3b8',
+            fontSize: 11,
+            fontWeight: 600,
+            transition: 'all 0.2s',
           }}
         >
-          <button
-            onClick={() => setViewMode('unsigned')}
-            style={{
-              padding: '8px 16px',
-              borderRadius: 7,
-              border: 'none',
-              cursor: 'pointer',
-              background:
-                viewMode === 'unsigned'
-                  ? 'linear-gradient(135deg,#6366f1,#8b5cf6)'
-                  : 'transparent',
-              color: viewMode === 'unsigned' ? '#fff' : '#94a3b8',
-              fontSize: 11,
-              fontWeight: 600,
-              transition: 'all 0.2s',
-            }}
-          >
-            📄 Unsigned ({unsignedContracts.length})
-          </button>
-          <button
-            onClick={() => setViewMode('inprogress')}
-            style={{
-              padding: '8px 16px',
-              borderRadius: 7,
-              border: 'none',
-              cursor: 'pointer',
-              background:
-                viewMode === 'inprogress'
-                  ? 'linear-gradient(135deg,#f59e0b,#d97706)'
-                  : 'transparent',
-              color: viewMode === 'inprogress' ? '#fff' : '#94a3b8',
-              fontSize: 11,
-              fontWeight: 600,
-              transition: 'all 0.2s',
-            }}
-          >
-            ⏳ In Progress ({inProgressContracts.length})
-          </button>
-          <button
-            onClick={() => setViewMode('signed')}
-            style={{
-              padding: '8px 16px',
-              borderRadius: 7,
-              border: 'none',
-              cursor: 'pointer',
-              background:
-                viewMode === 'signed'
-                  ? 'linear-gradient(135deg,#10b981,#059669)'
-                  : 'transparent',
-              color: viewMode === 'signed' ? '#fff' : '#94a3b8',
-              fontSize: 11,
-              fontWeight: 600,
-              transition: 'all 0.2s',
-            }}
-          >
-            ✓ Signed ({signedContracts.length})
-          </button>
-        </div>
+          <Icon iconName='DocumentSet' style={{marginRight:5}}/> Unsigned ({unsignedContracts.length})
+        </button>
+        
+        <button
+          onClick={() => setViewMode('inprogress')}
+          style={{
+            flex: 1,
+            padding: '10px 18px',
+            borderRadius: 8,
+            border: '1px solid rgba(245,158,11,0.3)',
+            cursor: 'pointer',
+            background: viewMode === 'inprogress' 
+              ? 'linear-gradient(135deg,#f59e0b,#d97706)' 
+              : 'transparent',
+            color: viewMode === 'inprogress' ? '#fff' : '#94a3b8',
+            fontSize: 11,
+            fontWeight: 600,
+            transition: 'all 0.2s',
+          }}
+        >
+          <Icon iconName='Clock' style={{marginRight:5}}/> In Progress ({inProgressContracts.length})
+        </button>
+        
+        <button
+          onClick={() => setViewMode('signed')}
+          style={{
+            flex: 1,
+            padding: '10px 18px',
+            borderRadius: 8,
+            border: '1px solid rgba(16,185,129,0.3)',
+            cursor: 'pointer',
+            background: viewMode === 'signed' 
+              ? 'linear-gradient(135deg,#10b981,#059669)' 
+              : 'transparent',
+            color: viewMode === 'signed' ? '#fff' : '#94a3b8',
+            fontSize: 11,
+            fontWeight: 600,
+            transition: 'all 0.2s',
+          }}
+        >
+          <Icon iconName='CheckMark' style={{marginRight:5}}/> Signed ({signedContracts.length})
+        </button>
+      </div>
 
-        {/* Document list */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxHeight: 520, overflowY: 'auto' }}>
-          {displayContracts.length === 0 && (
+      {/* Document list */}
+      <div style={{ 
+        display: 'flex', 
+        flexDirection: 'column', 
+        gap: 10, 
+        maxHeight: 520, 
+        overflowY: 'auto' 
+      }}>
+        {displayContracts.length === 0 && (
+          <div style={{
+            padding: 40,
+            textAlign: 'center',
+            color: '#64748b',
+            fontSize: 12,
+            background: 'rgba(255,255,255,0.02)',
+            borderRadius: 12,
+            border: '1px dashed rgba(255,255,255,0.1)',
+          }}>
+            {viewMode === 'unsigned'
+              ? 'All documents have been signed!'
+              : viewMode === 'inprogress'
+              ? 'No documents in progress'
+              : 'No signed documents yet'}
+          </div>
+        )}
+
+        {displayContracts.map(c => {
+          const isSigned = signed.signedContractNames.has(c.name);
+          const isInProgressDraft = drafts.inProgressContractNames.has(c.name);
+          const tokenStatus = signatureTokens.getTokenStatus(c.id);
+          
+          //  Combined status logic
+          const hasActiveTokens = tokenStatus && tokenStatus.pendingTokens > 0;
+          const allTokensCompleted = tokenStatus && tokenStatus.pendingTokens === 0 && tokenStatus.completedTokens > 0;
+          
+          const isInProgress = isInProgressDraft || hasActiveTokens;
+          const isCompleted = isSigned || allTokensCompleted;
+          
+          const draft = drafts.getDraft(c.id);
+          const progress = isInProgressDraft && draft ? drafts.getProgress(c.id) : null;
+
+          // Find matching signed doc record (has fileRef + fileName)
+          const signedDocRecord = isCompleted
+            ? signed.signedDocs.find(d =>
+                d.contractName === c.name ||
+                d.contractName === c.name.replace(/\.[^.]+$/, '') ||
+                (d.fileName && d.fileName.includes(c.name.replace(/\.[^.]+$/, '')))
+              )
+            : undefined;
+
+          const isDownloading = !!(signedDocRecord && signed.downloadingDoc === signedDocRecord.fileName);
+
+          return (
             <div
+              key={c.id}
+              onClick={() => {
+                if (isCompleted) return; // actions handled by View/Download buttons
+                if (isInProgress) {
+                  if (isInProgressDraft) {
+                    handleResumeInProgress(c.id);
+                  } else if (hasActiveTokens) {
+                    showModal('Pending Vendor Signatures', `This document has ${tokenStatus!.pendingTokens} pending signature(s) from external vendors. Total: ${tokenStatus!.totalTokens} | Completed: ${tokenStatus!.completedTokens} | Pending: ${tokenStatus!.pendingTokens}. The document will move to "Signed" when all vendors complete their signatures.`, 'warning');
+                  }
+                } else {
+                  selectContract(c);
+                }
+              }}
               style={{
-                padding: 40,
-                textAlign: 'center',
-                color: '#64748b',
-                fontSize: 12,
-                background: 'rgba(255,255,255,0.02)',
+                padding: '14px 16px',
                 borderRadius: 12,
-                border: '1px dashed rgba(255,255,255,0.1)',
+                cursor: isCompleted ? 'default' : 'pointer',
+                background: isCompleted ? 'rgba(16,185,129,0.04)' : 'rgba(255,255,255,0.02)',
+                border: isCompleted
+                  ? '1px solid rgba(16,185,129,0.25)'
+                  : isInProgress
+                  ? '1px solid rgba(245,158,11,0.3)'
+                  : '1px solid rgba(255,255,255,0.08)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 12,
+                transition: 'all 0.2s',
+              }}
+              onMouseEnter={e => {
+                if (!isCompleted) e.currentTarget.style.background = isInProgress ? 'rgba(245,158,11,0.08)' : 'rgba(99,102,241,0.08)';
+              }}
+              onMouseLeave={e => {
+                if (!isCompleted) e.currentTarget.style.background = 'rgba(255,255,255,0.02)';
               }}
             >
-              {viewMode === 'unsigned'
-                ? '🎉 All documents have been signed!'
-                : viewMode === 'inprogress'
-                ? '📝 No documents in progress'
-                : '✓ No signed documents yet'}
-            </div>
-          )}
+              {/* Status icon */}
+              <Icon
+                iconName={isCompleted ? 'CheckboxComposite' : isInProgress ? 'Clock' : 'Document'}
+                style={{ fontSize: 26, color: isCompleted ? '#10b981' : isInProgress ? '#f59e0b' : '#6366f1', flexShrink: 0 }}
+              />
 
-          {displayContracts.map(c => {
-            const isSigned = signed.signedContractNames.has(c.name);
-            const isInProgress = drafts.inProgressContractNames.has(c.name);
-            const draft = drafts.getDraft(c.id);
-            const progress = isInProgress && draft ? drafts.getProgress(c.id) : null;
-
-            return (
-              <div
-                key={c.id}
-                onClick={() => {
-                  if (isInProgress) {
-                    handleResumeInProgress(c.id);
-                  } else if (!isSigned) {
-                    selectContract(c);
-                  }
-                }}
-                style={{
-                  padding: '16px 20px',
-                  borderRadius: 12,
-                  cursor: isSigned ? 'default' : 'pointer',
-                  background: 'rgba(255,255,255,0.02)',
-                  border: isSigned
-                    ? '1px solid rgba(16,185,129,0.2)'
-                    : isInProgress
-                    ? '1px solid rgba(245,158,11,0.3)'
-                    : '1px solid rgba(255,255,255,0.08)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 14,
-                  transition: 'all 0.2s',
-                  opacity: isSigned ? 0.9 : 1,
-                }}
-                onMouseEnter={e =>
-                  !isSigned &&
-                  (e.currentTarget.style.background = isInProgress
-                    ? 'rgba(245,158,11,0.08)'
-                    : 'rgba(99,102,241,0.08)')
-                }
-                onMouseLeave={e =>
-                  !isSigned && (e.currentTarget.style.background = 'rgba(255,255,255,0.02)')
-                }
-              >
-                <span style={{ fontSize: 32 }}>
-                  {isSigned ? '✅' : isInProgress ? '⏳' : '📄'}
-                </span>
-                <div style={{ flex: 1 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3 }}>
-                    <div style={{ fontSize: 13, color: '#e2e8f0', fontWeight: 600 }}>{c.name}</div>
-                    {isSigned && (
-                      <span
-                        style={{
-                          padding: '2px 8px',
-                          borderRadius: 4,
-                          fontSize: 9,
-                          fontWeight: 700,
-                          background: 'rgba(16,185,129,0.15)',
-                          color: '#10b981',
-                          border: '1px solid rgba(16,185,129,0.3)',
-                        }}
-                      >
-                        SIGNED
-                      </span>
-                    )}
-                    {isInProgress && progress && (
-                      <span
-                        style={{
-                          padding: '2px 8px',
-                          borderRadius: 4,
-                          fontSize: 9,
-                          fontWeight: 700,
-                          background: 'rgba(245,158,11,0.15)',
-                          color: '#f59e0b',
-                          border: '1px solid rgba(245,158,11,0.3)',
-                        }}
-                      >
-                        IN PROGRESS ({progress.signed}/{progress.total})
-                      </span>
-                    )}
+              {/* Main info */}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3, flexWrap: 'wrap' }}>
+                  <div style={{ fontSize: 13, color: '#e2e8f0', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {c.name}
                   </div>
-                  <div style={{ fontSize: 10, color: '#64748b' }}>
-                    {c.type} · {c.parties.slice(0, 2).join(', ')}
-                    {isInProgress && draft && (
-                      <span style={{ marginLeft: 8, color: '#f59e0b' }}>
-                        · Last saved: {new Date(draft.savedAt).toLocaleDateString()}
-                      </span>
-                    )}
-                  </div>
+                  {isCompleted && (
+                    <span style={{ padding: '2px 8px', borderRadius: 4, fontSize: 9, fontWeight: 700, background: 'rgba(16,185,129,0.15)', color: '#10b981', border: '1px solid rgba(16,185,129,0.3)', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                      SIGNED
+                    </span>
+                  )}
+                  {isInProgress && !isCompleted && (
+                    <span style={{ padding: '2px 8px', borderRadius: 4, fontSize: 9, fontWeight: 700, background: 'rgba(245,158,11,0.15)', color: '#f59e0b', border: '1px solid rgba(245,158,11,0.3)', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                      {hasActiveTokens && tokenStatus
+                        ? `PENDING (${tokenStatus.pendingTokens} vendor${tokenStatus.pendingTokens > 1 ? 's' : ''})`
+                        : progress ? `IN PROGRESS (${progress.signed}/${progress.total})` : 'IN PROGRESS'}
+                    </span>
+                  )}
                 </div>
-                {!isSigned && !isInProgress ? (
-                  <div
-                    style={{
-                      padding: '5px 12px',
-                      borderRadius: 6,
-                      fontSize: 9,
-                      fontWeight: 700,
-                      background: 'rgba(99,102,241,0.12)',
-                      color: '#818cf8',
-                    }}
-                  >
-                    SELECT →
-                  </div>
-                ) : isInProgress ? (
+                <div style={{ fontSize: 10, color: '#64748b' }}>
+                  {c.type} · {c.parties.slice(0, 2).join(', ')}
+                  {tokenStatus && (
+                    <span style={{ marginLeft: 8, color: tokenStatus.pendingTokens > 0 ? '#f59e0b' : '#10b981' }}>
+                      · {tokenStatus.completedTokens}/{tokenStatus.totalTokens} vendor signatures
+                    </span>
+                  )}
+                  {isInProgressDraft && draft && (
+                    <span style={{ marginLeft: 8, color: '#f59e0b' }}>· Saved {new Date(draft.savedAt).toLocaleDateString()}</span>
+                  )}
+                  {isCompleted && signedDocRecord?.signedAt && (
+                    <span style={{ marginLeft: 8, color: '#10b981' }}>
+                      · Signed {new Date(signedDocRecord.signedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                    </span>
+                  )}
+                  {isCompleted && signedDocRecord?.signerNames && (
+                    <span style={{ marginLeft: 8, color: '#64748b' }}>· by {signedDocRecord.signerNames}</span>
+                  )}
+                </div>
+              </div>
+
+              {/* ── Action buttons ── */}
+              {isCompleted && signedDocRecord ? (
+                <div style={{ display: 'flex', gap: 6, flexShrink: 0 }} onClick={e => e.stopPropagation()}>
+
+                  {/* VIEW */}
                   <button
-                    onClick={e => {
-                      e.stopPropagation();
-                      handleResumeInProgress(c.id);
-                    }}
+                    title='View signed PDF'
+                    onClick={() => setPdfPreview({
+                      open: true,
+                      url: `${window.location.origin}${signedDocRecord.fileRef}`,
+                      title: signedDocRecord.fileName || c.name,
+                    })}
                     style={{
-                      padding: '6px 14px',
-                      borderRadius: 6,
-                      border: 'none',
-                      cursor: 'pointer',
-                      background: 'linear-gradient(135deg,#f59e0b,#d97706)',
-                      color: '#fff',
-                      fontSize: 9,
-                      fontWeight: 700,
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 5,
+                      display: 'flex', alignItems: 'center', gap: 5,
+                      padding: '7px 12px', borderRadius: 8,
+                      border: '1px solid rgba(99,102,241,0.35)',
+                      background: 'rgba(99,102,241,0.1)',
+                      color: '#818cf8', fontSize: 11, fontWeight: 600,
+                      cursor: 'pointer', transition: 'all 0.15s',
                     }}
+                    onMouseEnter={e => { e.currentTarget.style.background = 'rgba(99,102,241,0.22)'; e.currentTarget.style.color = '#a5b4fc'; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = 'rgba(99,102,241,0.1)'; e.currentTarget.style.color = '#818cf8'; }}
                   >
-                    <span>▶</span> Continue Signing
+                    <Icon iconName='View' style={{ fontSize: 13 }}/> View
                   </button>
-                ) : (
+
+                  {/* DOWNLOAD */}
                   <button
-                    onClick={async e => {
+                    title='Download signed PDF'
+                    disabled={isDownloading}
+                    onClick={async (e) => {
                       e.stopPropagation();
                       try {
-                        await signed.downloadDocument(c.name);
+                        await signed.downloadDocument(signedDocRecord);
                       } catch (err: any) {
-                        alert(`Download failed: ${err.message}`);
+                        showModal('Download Failed', err.message, 'error');
                       }
                     }}
                     style={{
-                      padding: '6px 14px',
-                      borderRadius: 6,
-                      border: 'none',
-                      cursor: 'pointer',
-                      background: 'linear-gradient(135deg,#0891b2,#0e7490)',
-                      color: '#fff',
-                      fontSize: 9,
-                      fontWeight: 700,
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 5,
+                      display: 'flex', alignItems: 'center', gap: 5,
+                      padding: '7px 12px', borderRadius: 8,
+                      border: '1px solid rgba(16,185,129,0.35)',
+                      background: isDownloading ? 'rgba(16,185,129,0.04)' : 'rgba(16,185,129,0.1)',
+                      color: isDownloading ? '#64748b' : '#10b981',
+                      fontSize: 11, fontWeight: 600,
+                      cursor: isDownloading ? 'not-allowed' : 'pointer',
+                      transition: 'all 0.15s', opacity: isDownloading ? 0.6 : 1,
                     }}
+                    onMouseEnter={e => { if (!isDownloading) { e.currentTarget.style.background = 'rgba(16,185,129,0.22)'; e.currentTarget.style.color = '#34d399'; } }}
+                    onMouseLeave={e => { if (!isDownloading) { e.currentTarget.style.background = 'rgba(16,185,129,0.1)'; e.currentTarget.style.color = '#10b981'; } }}
                   >
-                    <span>⬇</span> Download
+                    {isDownloading
+                      ? <><Spinner size={SpinnerSize.small} style={{ marginRight: 4 }}/> Downloading...</>
+                      : <><Icon iconName='Download' style={{ fontSize: 13 }}/> Download</>
+                    }
                   </button>
-                )}
-              </div>
-            );
-          })}
-        </div>
+                </div>
+              ) : !isCompleted && !isInProgress ? (
+                <div style={{ padding: '5px 12px', borderRadius: 6, fontSize: 9, fontWeight: 700, background: 'rgba(99,102,241,0.12)', color: '#818cf8', flexShrink: 0 }}>
+                  SELECT
+                </div>
+              ) : null}
+
+            </div>
+          );
+        })}
       </div>
-    );
-  }
+      {renderModal()}
+      {renderPdfPreview()}
+    </div>
+  );
+}
 
   // ─── STEP 2: ADD SIGNERS ──────────────────────────────────────────────────
   if (step === 'author' && contract) {
@@ -875,10 +1332,11 @@ export const ESignatureView: React.FC<IESignatureViewProps> = ({
                       fontWeight: 600,
                     }}
                   >
-                    × Remove
+                    <Icon iconName='Cancel' style={{fontSize:10}}/> Remove
                   </button>
                 )}
               </div>
+              
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                 <input
                   type="text"
@@ -910,7 +1368,7 @@ export const ESignatureView: React.FC<IESignatureViewProps> = ({
                 />
                 <input
                   type="email"
-                  placeholder="Email (optional)"
+                  placeholder="Email *"
                   value={signer.email}
                   onChange={e => updateSigner(signer.id, { email: e.target.value })}
                   style={{
@@ -924,6 +1382,47 @@ export const ESignatureView: React.FC<IESignatureViewProps> = ({
                   }}
                 />
               </div>
+
+              {/* Send Signature Link Button */}
+              {signer.email && signer.email !== userEmail && signer.name && (
+                <button
+                  onClick={() => inviteExternalSigner(signer)}
+                  style={{
+                    marginTop: 12,
+                    padding: '10px 16px',
+                    borderRadius: 6,
+                    border: 'none',
+                    background: 'linear-gradient(135deg, #10b981, #059669)',
+                    color: 'white',
+                    fontSize: 12,
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    width: '100%',
+                    justifyContent: 'center',
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
+                  onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
+                >
+                  <Icon iconName='Send' style={{marginRight:6}}/> Send Signature Link to {signer.name}
+                </button>
+              )}
+              
+              {signer.email && signer.email !== userEmail && !signer.name && (
+                <div style={{
+                  marginTop: 12,
+                  padding: '8px 12px',
+                  borderRadius: 6,
+                  background: 'rgba(251,191,36,0.1)',
+                  border: '1px solid rgba(251,191,36,0.2)',
+                  fontSize: 11,
+                  color: '#fbbf24',
+                }}>
+                  Enter name to send signature link
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -959,7 +1458,7 @@ export const ESignatureView: React.FC<IESignatureViewProps> = ({
               cursor: 'pointer',
             }}
           >
-            ← Back
+            Back
           </button>
           <button
             disabled={signers.some(s => !s.name.trim())}
@@ -978,9 +1477,10 @@ export const ESignatureView: React.FC<IESignatureViewProps> = ({
               opacity: signers.some(s => !s.name.trim()) ? 0.5 : 1,
             }}
           >
-            Place Signature Fields →
+            Place Signature Fields
           </button>
         </div>
+      {renderModal()}
       </div>
     );
   }
@@ -1066,7 +1566,7 @@ export const ESignatureView: React.FC<IESignatureViewProps> = ({
               cursor: 'pointer',
             }}
           >
-            ← Back
+            Back
           </button>
           <button
             disabled={fields.length === 0}
@@ -1086,7 +1586,7 @@ export const ESignatureView: React.FC<IESignatureViewProps> = ({
               opacity: fields.length === 0 ? 0.5 : 1,
             }}
           >
-            Continue to Sign →
+            Continue to Sign
           </button>
         </div>
       </div>
@@ -1108,7 +1608,7 @@ export const ESignatureView: React.FC<IESignatureViewProps> = ({
               border: '2px solid rgba(16,185,129,0.3)',
             }}
           >
-            <div style={{ fontSize: 64, marginBottom: 20 }}>✅</div>
+            <div style={{ marginBottom: 20 }}><Icon iconName='CompletedSolid' style={{fontSize:64, color:'#10b981'}}/></div>
             <h2 style={{ margin: '0 0 10px', fontSize: 22, color: '#10b981', fontWeight: 700 }}>
               Document Signed Successfully!
             </h2>
@@ -1134,7 +1634,7 @@ export const ESignatureView: React.FC<IESignatureViewProps> = ({
                   boxShadow: '0 4px 20px rgba(8,145,178,0.4)',
                 }}
               >
-                <span>⬇</span> Download PDF
+                <Icon iconName='Download' style={{marginRight:6}}/> Download PDF
               </button>
 
               <button
@@ -1154,7 +1654,7 @@ export const ESignatureView: React.FC<IESignatureViewProps> = ({
                   boxShadow: '0 4px 20px rgba(99,102,241,0.4)',
                 }}
               >
-                <span>+</span> Sign New Document
+                <Icon iconName='Add' style={{marginRight:6}}/> Sign New Document
               </button>
             </div>
           </div>
@@ -1179,13 +1679,13 @@ export const ESignatureView: React.FC<IESignatureViewProps> = ({
           return signerFields.some(f => !f.value);
         })
         .map(s => s.name);
-      statusMessage = `✓ You've signed. Waiting for: ${pendingSigners.join(', ')}`;
+      statusMessage = `You've signed. Waiting for: ${pendingSigners.join(', ')}`;
     } else if (!currentUserSigned) {
       statusMessage = `Please sign your ${currentUserFields.length} signature field${
         currentUserFields.length > 1 ? 's' : ''
       }`;
     } else if (allSigned) {
-      statusMessage = '✓ All signatures complete! Ready to save.';
+      statusMessage = 'All signatures complete. Ready to save.';
     }
 
     return (
@@ -1254,7 +1754,7 @@ export const ESignatureView: React.FC<IESignatureViewProps> = ({
                 gap: 8,
               }}
             >
-              <span>ℹ️</span>
+              <Icon iconName='Info' style={{marginRight:8, color:'#fbbf24'}}/>
               <div>
                 {currentUserSigned
                   ? 'Document requires all signers to complete. Share this link with other signers.'
@@ -1284,17 +1784,18 @@ export const ESignatureView: React.FC<IESignatureViewProps> = ({
             }}
           >
             {saving
-              ? '⏳ Saving...'
+              ? <><Spinner size={SpinnerSize.small} style={{marginRight:6}}/> Saving...</>
               : allSigned
-              ? '✓ Complete & Save to SharePoint'
+              ? 'Complete & Save to SharePoint'
               : currentUserSigned
-              ? '⏳ Waiting for Other Signers'
-              : '✓ Complete & Save to SharePoint'}
+              ? 'Waiting for Other Signers'
+              : 'Complete & Save to SharePoint'}
           </button>
         </div>
         
         {/* Signature pad modal overlay */}
         {renderSignaturePad()}
+        {renderModal()}
       </div>
     );
   }
@@ -1359,23 +1860,20 @@ function DraggableField({
         }}
         style={{
           position: 'absolute',
-          top: -8,
-          right: -8,
-          width: 18,
-          height: 18,
+          top: -8, right: -8,
+          width: 18, height: 18,
           borderRadius: '50%',
           background: '#ef4444',
           border: 'none',
           color: '#fff',
-          fontSize: 11,
+          fontSize: 9,
           cursor: 'pointer',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          lineHeight: 1,
         }}
       >
-        ×
+        <Icon iconName='Cancel' style={{fontSize:9,color:'#fff'}}/>
       </button>
     </div>
   );

@@ -14,8 +14,21 @@ export interface ISharePointService {
   getContractFile(fileUrl: string): Promise<File>;
   saveAnalyzedContract(fileName: string, fileBlob: Blob, analysisResult: any): Promise<void>;
   saveSignedDocument(fileName: string, pdfBlob: Blob, metadata: ISignedDocMetadata): Promise<void>;
-  getSignedDocuments(): Promise<Array<{ contractName: string; signedAt: string; signerNames: string }>>;
+  getSignedDocuments(): Promise<Array<{ contractName: string; signedAt: string; signerNames: string; fileRef: string; fileName: string }>>;
   getSignedDocumentFile(contractName: string): Promise<Blob>;
+  createSignatureToken(params: ISignatureTokenParams): Promise<string>;
+  getContractDriveItemId(fileUrl: string): Promise<string>;
+  getSignatureTokens(): Promise<Array<{ id: string; tokenId: string; contractId: number; contractName: string; signerEmail: string; signerName: string; used: boolean; expires: string; signedDate?: string; }>>;
+}
+
+export interface ISignatureTokenParams {
+  contractId: number;
+  contractName: string;
+  fileName: string;
+  signerEmail: string;
+  signerName: string;
+  signerId: string;
+  driveItemId?: string;
 }
 
 export interface ISignedDocMetadata {
@@ -506,6 +519,7 @@ export class SharePointService implements ISharePointService {
         .getByUrl(fileName);
 
       const item = await file.getItem();
+
       await item.update({
         Title: 'Signed – ' + metadata.contractName,
         ContractType: 'Signed Document',
@@ -524,7 +538,14 @@ export class SharePointService implements ISharePointService {
       throw new Error(`Failed to save signed document: ${error.message || error}`);
     }
   }
-  public async getSignedDocuments(): Promise<Array<{ contractName: string; signedAt: string; signerNames: string }>> {
+
+  public async getSignedDocuments(): Promise<Array<{
+    contractName: string;
+    signedAt: string;
+    signerNames: string;
+    fileRef: string;
+    fileName: string;
+  }>> {
     try {
       const signedLibrary = 'Signed Documents';
       console.log('[SharePoint] Fetching signed documents from:', signedLibrary);
@@ -532,16 +553,18 @@ export class SharePointService implements ISharePointService {
       const items = await this.sp.web.lists
         .getByTitle(signedLibrary)
         .items
-        .select('Title', 'Parties', 'Created')
+        .select('Title', 'Parties', 'Created', 'FileRef', 'FileLeafRef')
         .orderBy('Created', false)
         .top(100)();
 
       console.log('[SharePoint] Found', items.length, 'signed documents');
 
       return items.map(item => ({
-        contractName: (item.Title || '').replace('Signed – ', ''), // Remove prefix
+        contractName: (item.Title || '').replace('Signed – ', ''),
         signedAt: item.Created || '',
         signerNames: item.Parties || '',
+        fileRef: item.FileRef || '',
+        fileName: item.FileLeafRef || '',
       }));
     } catch (error: any) {
       console.error('[SharePoint] Error fetching signed documents:', error);
@@ -587,4 +610,140 @@ export class SharePointService implements ISharePointService {
       throw new Error(`Failed to download signed document: ${error.message || error}`);
     }
   }
+
+
+  public async getContractDriveItemId(fileUrl: string): Promise<string> {
+    try {
+      console.log('[SharePoint] Getting drive item ID for:', fileUrl);
+
+      const file = this.sp.web.getFileByServerRelativePath(fileUrl);
+      const listItem = await file.getItem();
+
+      //FIX: Cast to any to access UniqueId property
+      const uniqueId = (listItem as any).UniqueId || '';
+
+      if (!uniqueId) {
+        console.warn('[SharePoint] No UniqueId found for file:', fileUrl);
+        return '';
+      }
+
+      console.log('[SharePoint] Drive Item ID:', uniqueId);
+      return uniqueId;
+
+    } catch (error: any) {
+      console.error('[SharePoint] Error getting drive item ID:', error);
+      return ''; // Return empty instead of throwing - this is non-critical
+    }
+  }
+
+
+  public async createSignatureToken(params: ISignatureTokenParams): Promise<string> {
+    try {
+      const tokensListTitle = 'Signature Tokens';
+      console.log('[SharePoint] Creating signature token for:', params.signerEmail);
+
+      // Generate a cryptographically safe random token ID
+      const tokenId = this.generateTokenId();
+
+      // Token expires in 7 days
+      const expires = new Date();
+      expires.setDate(expires.getDate() + 7);
+
+      await this.sp.web.lists
+        .getByTitle(tokensListTitle)
+        .items
+        .add({
+          Title: tokenId,          // Title doubles as a display label
+          TokenID: tokenId,
+          ContractID: params.contractId,
+          ContractName: params.contractName,
+          FileName: params.fileName,
+          SignerEmail: params.signerEmail,
+          SignerName: params.signerName,
+          SignerID: params.signerId,
+          DriveItemID: params.driveItemId || '',
+          Expires: expires.toISOString(),
+          Used: false,
+        });
+
+      console.log('[SharePoint] ✓ Signature token created:', tokenId, 'expires:', expires.toISOString());
+      return tokenId;
+    } catch (error: any) {
+      console.error('[SharePoint] ✗ Error creating signature token:', error);
+      if (error.message && error.message.includes('does not exist')) {
+        throw new Error(
+          `"Signature Tokens" list not found. ` +
+          `Create it in SharePoint with columns: TokenID, ContractID, ContractName, ` +
+          `FileName, SignerEmail, SignerName, SignerID, DriveItemID, Expires, Used.`
+        );
+      }
+      throw new Error(`Failed to create signature token: ${error.message || error}`);
+    }
+  }
+
+ public async getSignatureTokens(): Promise<Array<{
+  id: string;
+  tokenId: string;
+  contractId: number;
+  contractName: string;
+  signerEmail: string;
+  signerName: string;
+  used: boolean;
+  expires: string;
+  signedDate?: string;
+}>> {
+  try {
+    console.log('[SharePoint] Fetching signature tokens...');
+
+    const items = await this.sp.web.lists
+      .getByTitle('Signature Tokens')
+      .items
+      .select(
+        'Id',
+        'TokenID',
+        'ContractID',
+        'ContractName',
+        'SignerEmail',
+        'SignerName',
+        'Used',
+        'Expires',
+        'SignedDate'
+      )
+      .orderBy('Created', false)
+      .top(500)();
+
+    console.log('[SharePoint] Found', items.length, 'tokens');
+
+    return items.map(item => ({
+      id: item.Id?.toString() || '',
+      tokenId: item.TokenID || '',
+      contractId: item.ContractID || 0,
+      contractName: item.ContractName || '',
+      signerEmail: item.SignerEmail || '',
+      signerName: item.SignerName || '',
+      used: item.Used === true,
+      expires: item.Expires || '',
+      signedDate: item.SignedDate || undefined,
+    }));
+  } catch (error: any) {
+    console.error('[SharePoint] Error fetching tokens:', error);
+    
+    // If list doesn't exist yet, return empty array (don't throw)
+    if (error.message && error.message.includes('does not exist')) {
+      console.warn('[SharePoint] Signature Tokens list not found - returning empty array');
+      return [];
+    }
+    
+    throw new Error(`Failed to fetch signature tokens: ${error.message || error}`);
+  }
+}
+
+  /** Generates a URL-safe random token (48 hex chars = 24 random bytes) */
+  private generateTokenId(): string {
+    const array = new Uint8Array(24);
+    crypto.getRandomValues(array);
+    return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
+  }
+
+
 }

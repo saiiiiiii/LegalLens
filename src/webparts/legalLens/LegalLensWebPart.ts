@@ -76,6 +76,8 @@ export default class LegalLensWebPart extends BaseClientSideWebPart<ILegalLensWe
         environmentMessage: this._getEnvironmentMessage(),
         hasTeamsContext: !!this.context.sdks.microsoftTeams,
         userDisplayName: this.context.pageContext.user.displayName,
+        userEmail: this.context.pageContext.user.email,
+        context: this.context,
         documentIntelligenceEndpoint: this.properties.enableDocumentAnalysis
           ? (this.properties.documentIntelligenceEndpoint || '') : '',
         documentIntelligenceKey: this.properties.enableDocumentAnalysis
