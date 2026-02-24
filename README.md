@@ -90,7 +90,7 @@ Create a **List** named **Signature Tokens** and add these columns:
 
 ### Prerequisites
 
-- Azure subscription with a Function App (Node.js 18+, Linux, Consumption plan)
+- Azure subscription with a Function App (Node.js 22, Linux, Consumption plan)
 - Entra ID (Azure AD) app registration with the following **Application** permissions (admin consent required):
 
 | Permission | Type | Purpose |
@@ -109,9 +109,9 @@ Set these in `local.settings.json` (local) or **Function App → Settings → En
 {
   "TENANT_ID":               "your-entra-tenant-id",
   "CLIENT_ID":               "your-app-registration-client-id",
-  "CLIENT_SECRET":           "your-app-client-secret",
   "SHAREPOINT_SITE_URL":     "https://tenant.sharepoint.com/sites/YourSite",
-  "SHAREPOINT_SITE_ID":      "tenant.sharepoint.com,,",
+  "CLIENT_SECRET":           "your-app-client-secret",
+  "SHAREPOINT_SITE_ID":      "tenant.sharepoint.com,CONTRACTS_LIBRARY_ID,SIGNED_DOCS_LIBRARY_ID",
   "CONTRACTS_LIBRARY_ID":    "",
   "SIGNED_DOCS_LIBRARY_ID":  "",
   "TOKENS_LIST_ID":          "",
@@ -137,7 +137,8 @@ func azure functionapp publish
 
 ### GET `/api/validate/{tokenId}`
 
-Validates a signing token. Called by `sign.html` on load.
+Validates a signing token. Called by [sign.html](./legallens-signatures/sign.html)  on load.
+
 
 **Response:**
 ```json
@@ -205,7 +206,7 @@ Sends a signing invitation email via Gmail. Called automatically when an interna
 
 ## Vendor Signing Flow (`sign.html`)
 
-The standalone signing page lives at `public/sign.html` and is hosted as a static file.
+The standalone signing page lives at [sign.html](./legallens-signatures/sign.html) and is hosted as a static file.
 
 **Signing URL format:**
 ```
