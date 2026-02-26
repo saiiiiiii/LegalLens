@@ -25,6 +25,7 @@ import { DefaultButton, PrimaryButton, IconButton } from '@fluentui/react/lib/Bu
 import { Icon } from '@fluentui/react/lib/Icon';
 import { MessageBar, MessageBarType } from '@fluentui/react/lib/MessageBar';
 import { Spinner, SpinnerSize } from '@fluentui/react/lib/Spinner';
+import * as QRCode from 'qrcode';
 
 export interface IESignatureViewProps {
   contracts: IContract[];
@@ -82,6 +83,10 @@ export const ESignatureView: React.FC<IESignatureViewProps> = ({
   const [uploadImg, setUploadImg] = React.useState<string | null>(null);
   const [canvasEmpty, setCanvasEmpty] = React.useState(true);
   const [signedPdf, setSignedPdf] = React.useState<any>(null);
+
+const [qrCodeData, setQrCodeData] = React.useState<string | null>(null);
+const [showQRModal, setShowQRModal] = React.useState(false);
+
 
   // ─── PDF preview modal state ─────────────────────────────────────────────
   const [pdfPreview, setPdfPreview] = React.useState<{
@@ -161,7 +166,7 @@ export const ESignatureView: React.FC<IESignatureViewProps> = ({
   /**
    * Invite external signer via email
    */
-  const inviteExternalSigner = async (signer: ISigner) => {
+ const inviteExternalSigner = async (signer: ISigner) => {
   if (!contract || !signer.email || !signer.name) {
     showModal('Missing Information', 'Please enter signer name and email before sending the invitation.', 'warning'); return;
     return;
@@ -193,6 +198,21 @@ export const ESignatureView: React.FC<IESignatureViewProps> = ({
     await signatureTokens.refresh();
 
     const signUrl = `${SIGNING_PAGE_URL}?token=${tokenId}`;
+
+    try {
+      const qrDataUrl = await QRCode.toDataURL(signUrl, {
+        width: 300,
+        margin: 2,
+        color: {
+          dark: '#6366f1',
+          light: '#ffffff',
+        },
+      });
+      setQrCodeData(qrDataUrl);
+      setShowQRModal(true);
+    } catch (qrError) {
+      console.error('[ESignature] QR generation error:', qrError);
+    }
 
     console.log('[ESignature] ✓ Token created:', tokenId);
     console.log('[ESignature] Signing URL:', signUrl);
@@ -243,7 +263,8 @@ export const ESignatureView: React.FC<IESignatureViewProps> = ({
           contractName: params.contractName,
           signingUrl:   params.signUrl,
           expiresAt:    params.expiresAt,
-          emailHtml:    generateEmailHTML(params),
+          // emailHtml intentionally omitted — sendInvite.ts builds the
+          // Outlook-compatible template with QR code centered via CID attachment
         }),
       });
 
