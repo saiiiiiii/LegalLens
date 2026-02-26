@@ -5,15 +5,7 @@ try { mammoth = require('mammoth'); } catch { mammoth = null; }
 
 export class DocumentConverter {
 
-  /**
-   * Convert any supported file buffer to a PDF with a blank signature cover page
-   * prepended as page 1.
-   *
-   * @param buffer      Raw file bytes
-   * @param fileName    Original filename (used to detect format)
-   * @param contractName  Display name for the signature page header
-   * @param signers     List of { name, title, email } for signature lines
-   */
+
   async toPDFWithSignaturePage(
     buffer: Buffer,
     fileName: string,
@@ -27,10 +19,13 @@ export class DocumentConverter {
     if (ext === 'pdf') {
       bodyPDF = await PDFDocument.load(buffer);
     } else if (ext === 'txt') {
-      bodyPDF = await this.textToPDF(buffer.toString('utf-8'));
+      const rawText = buffer.toString('utf-8');
+      const safeText = this.sanitizeForWinAnsi(rawText);
+      bodyPDF = await this.textToPDF(safeText);
     } else if (ext === 'docx') {
       const text = await this.docxToText(buffer);
-      bodyPDF = await this.textToPDF(text);
+      const safeText = this.sanitizeForWinAnsi(text);
+      bodyPDF = await this.textToPDF(safeText);
     } else {
       throw new Error(`Unsupported file format: .${ext}. Supported: pdf, txt, docx`);
     }
@@ -51,6 +46,26 @@ export class DocumentConverter {
     return Buffer.from(bytes);
   }
 
+  private sanitizeForWinAnsi(text: string): string {
+    return text
+      .replace(/\uFFFD/g, '?')
+      .replace(/[\u2018\u2019]/g, "'")
+      .replace(/[\u201C\u201D]/g, '"')
+      .replace(/[\u2013\u2014]/g, '-')
+      .replace(/\u2026/g, '...')
+      .replace(/[\u2022\u2023\u2043\u25E6\u2219]/g, '*')
+      .replace(/\u00A0/g, ' ')
+      .replace(/\u00AD/g, '')
+      .replace(/\u2122/g, '(TM)')
+      .replace(/\u00AE/g, '(R)')
+      .replace(/\u00A9/g, '(c)')
+      .replace(/\u20AC/g, 'EUR')
+      .replace(/\u00A3/g, 'GBP')
+      .replace(/\u00A5/g, 'JPY')
+      .replace(/[^\x00-\xFF]/g, '')
+      .replace(/\x00/g, '');
+  }
+
 
   private async buildSignaturePage(
     contractName: string,
@@ -58,15 +73,15 @@ export class DocumentConverter {
   ): Promise<PDFDocument> {
 
     const doc = await PDFDocument.create();
-    const page = doc.addPage([612, 792]);
+    const page = doc.addPage([612, 792]); 
     const { width, height } = page.getSize();
 
     const fontBold = await doc.embedFont(StandardFonts.HelveticaBold);
     const fontReg  = await doc.embedFont(StandardFonts.Helvetica);
 
-    const indigo: [number, number, number] = [0.388, 0.4, 0.945];
-    const darkText: [number, number, number] = [0.059, 0.09, 0.16];
-    const muted: [number, number, number] = [0.39, 0.45, 0.56];
+    const indigo: [number, number, number]      = [0.388, 0.4, 0.945];
+    const darkText: [number, number, number]    = [0.059, 0.09, 0.16];
+    const muted: [number, number, number]       = [0.39, 0.45, 0.56];
     const lightBorder: [number, number, number] = [0.88, 0.9, 0.95];
 
     page.drawRectangle({
@@ -94,18 +109,19 @@ export class DocumentConverter {
       color: rgb(...muted),
       opacity: 0.9,
     });
-    page.drawText(contractName, {
+    const safeContractName = this.sanitizeForWinAnsi(contractName).substring(0, 80);
+    page.drawText(safeContractName, {
       x: 40, y: height - 134,
       size: 15, font: fontBold,
       color: rgb(...darkText),
     });
 
-    const tableTop = height - 170;
-    const tableLeft = 40;
-    const tableWidth = width - 80;
+    const tableTop     = height - 170;
+    const tableLeft    = 40;
+    const tableWidth   = width - 80;
     const nameColWidth = 200;
-    const sigColWidth = tableWidth - nameColWidth;
-    const rowHeight = 120;
+    const sigColWidth  = tableWidth - nameColWidth;
+    const rowHeight    = 120;
 
     page.drawRectangle({
       x: tableLeft, y: tableTop,
@@ -137,7 +153,7 @@ export class DocumentConverter {
 
       page.drawLine({
         start: { x: tableLeft + nameColWidth, y: rowTop + rowHeight },
-        end: { x: tableLeft + nameColWidth, y: rowTop },
+        end:   { x: tableLeft + nameColWidth, y: rowTop },
         thickness: 1.5,
         color: rgb(...lightBorder),
       });
@@ -145,23 +161,25 @@ export class DocumentConverter {
       const nameX = tableLeft + 15;
       const nameY = rowTop + rowHeight - 25;
 
-      page.drawText(signer.name, {
+      const safeName = this.sanitizeForWinAnsi(signer.name).substring(0, 40);
+      page.drawText(safeName, {
         x: nameX, y: nameY,
         size: 13, font: fontBold,
         color: rgb(...darkText),
       });
 
       if (signer.title) {
-        page.drawText(signer.title, {
+        const safeTitle = this.sanitizeForWinAnsi(signer.title).substring(0, 40);
+        page.drawText(safeTitle, {
           x: nameX, y: nameY - 18,
           size: 10, font: fontReg,
           color: rgb(...muted),
         });
       }
 
-      const sigBoxX = tableLeft + nameColWidth + 15;
-      const sigBoxY = rowTop + 15;
-      const sigBoxWidth = sigColWidth - 30;
+      const sigBoxX      = tableLeft + nameColWidth + 15;
+      const sigBoxY      = rowTop + 15;
+      const sigBoxWidth  = sigColWidth - 30;
       const sigBoxHeight = rowHeight - 30;
 
       page.drawRectangle({
@@ -169,7 +187,7 @@ export class DocumentConverter {
         width: sigBoxWidth, height: sigBoxHeight,
         borderColor: rgb(...lightBorder),
         borderWidth: 1,
-        color: rgb(0.98, 0.99, 1), 
+        color: rgb(0.98, 0.99, 1),
       });
 
       page.drawText('Signature will appear here', {
@@ -182,7 +200,7 @@ export class DocumentConverter {
     });
 
     const footerY = 60;
-    
+
     page.drawLine({
       start: { x: 40, y: footerY + 24 },
       end:   { x: width - 40, y: footerY + 24 },
@@ -207,7 +225,7 @@ export class DocumentConverter {
       color: rgb(0.97, 0.98, 1),
     });
 
-    page.drawText('Powered by LegalLens · Budvik', {
+    page.drawText('Powered by LegalLens - Budvik', {
       x: 40, y: 16,
       size: 8, font: fontReg,
       color: rgb(...muted),
@@ -224,8 +242,8 @@ export class DocumentConverter {
 
 
   private async textToPDF(text: string): Promise<PDFDocument> {
-    const doc  = await PDFDocument.create();
-    const font = await doc.embedFont(StandardFonts.Courier);
+    const doc      = await PDFDocument.create();
+    const font     = await doc.embedFont(StandardFonts.Courier);
     const fontSize = 10;
     const lineH    = fontSize * 1.5;
     const margin   = 50;
@@ -241,34 +259,43 @@ export class DocumentConverter {
       let line = '';
       for (const word of raw.split(' ')) {
         const test = line ? `${line} ${word}` : word;
-        if (font.widthOfTextAtSize(test, fontSize) > usableW) {
-          allLines.push(line);
-          line = word;
-        } else {
-          line = test;
+        try {
+          if (font.widthOfTextAtSize(test, fontSize) > usableW) {
+            allLines.push(line);
+            line = word;
+          } else {
+            line = test;
+          }
+        } catch {
+          console.error('[DocumentConverter] Skipping unprintable word');
         }
       }
       if (line) allLines.push(line);
     }
 
     for (let i = 0; i < allLines.length; i += linesPerPage) {
-      const page = doc.addPage([pageW, pageH]);
+      const page  = doc.addPage([pageW, pageH]);
       const chunk = allLines.slice(i, i + linesPerPage);
       chunk.forEach((ln, j) => {
         if (!ln) return;
-        page.drawText(ln, {
-          x: margin,
-          y: pageH - margin - j * lineH,
-          size: fontSize,
-          font,
-          color: rgb(0.1, 0.1, 0.1),
-        });
+        try {
+          page.drawText(ln, {
+            x: margin,
+            y: pageH - margin - j * lineH,
+            size: fontSize,
+            font,
+            color: rgb(0.1, 0.1, 0.1),
+          });
+        } catch (e) {
+          console.error('[DocumentConverter] drawText error on line:', ln.substring(0, 30), e);
+        }
       });
     }
 
     if (doc.getPageCount() === 0) doc.addPage([612, 792]);
     return doc;
   }
+
 
   private async docxToText(buffer: Buffer): Promise<string> {
     if (!mammoth) {

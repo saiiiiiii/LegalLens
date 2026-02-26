@@ -97,7 +97,7 @@ export class PDFService {
         y: badgeY + 4,
         size: 7, 
         font: fontBold,
-        color: rgb(1, 1, 1), 
+        color: rgb(1, 1, 1),
       });
 
       const timestamp = new Date().toISOString()
@@ -132,8 +132,8 @@ export class PDFService {
         y: pageBadgeY,
         width: pageBadgeWidth, 
         height: pageBadgeHeight,
-        color: rgb(0.94, 0.97, 1),
-        borderColor: rgb(0.388, 0.4, 0.945),
+        color: rgb(0.94, 0.97, 1), 
+        borderColor: rgb(0.388, 0.4, 0.945), 
         borderWidth: 1,
       });
 

@@ -14,8 +14,9 @@
     "package-solution": "gulp bundle --ship && gulp package-solution --ship"
   },
   "dependencies": {
-    "@fluentui/react": "^8.118.0",
-    "@fluentui/react-icons": "^2.0.319",
+    "@fingerprintjs/fingerprintjs": "^5.0.1",
+    "@fluentui/react": "8.118.0",
+    "@fluentui/react-icons": "^2.0.318",
     "@microsoft/sp-core-library": "1.22.0",
     "@microsoft/sp-lodash-subset": "1.22.0",
     "@microsoft/sp-office-ui-fabric-core": "1.22.0",
@@ -25,8 +26,10 @@
     "@pnp/logging": "^4.8.0",
     "@pnp/queryable": "^4.8.0",
     "@pnp/sp": "^4.8.0",
-    "jspdf": "^4.1.0",
+    "axios": "^1.13.5",
+    "jspdf": "^4.2.0",
     "jszip": "^3.10.1",
+    "qrcode": "^1.5.4",
     "react": "17.0.1",
     "react-dom": "17.0.1"
   },
@@ -37,6 +40,7 @@
     "@microsoft/sp-build-web": "1.22.0",
     "@microsoft/sp-module-interfaces": "1.22.0",
     "@rushstack/eslint-config": "2.5.1",
+    "@types/qrcode": "^1.5.6",
     "@types/react": "17.0.45",
     "@types/react-dom": "17.0.17",
     "@types/webpack-env": "~1.15.2",

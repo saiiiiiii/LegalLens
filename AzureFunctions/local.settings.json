@@ -13,7 +13,13 @@
     "TOKENS_LIST_ID": "TOKENS_LIST_ID",
     "SENDER_EMAIL": "If Domain available please use (SENDER_EMAIL) otherwise add gmail account below account",
     "GMAIL_USER": "GMAIL_USER_ID (sai@gmail.com)",
-    "GMAIL_APP_PASSWORD": "GMAIL_APP_PASSWORD (App password generated from google account)"
+    "GMAIL_APP_PASSWORD": "GMAIL_APP_PASSWORD (App password generated from google account)",
+    "NOTIFICATION_EMAIL": "**Email address to receive notifications, can be same as sender email**",
+    "ENABLE_NOTIFICATIONS": "true",
+    "ENABLE_OTP": "true",
+    "ENABLE_SECURITY_LOGGING": "true",
+    "IPINFO_API_KEY": "**IPINFO_API_KEY for fetching user location from IP address, optional if you want to log user location in security audit list**",
+    "SECURITY_AUDIT_LIST_ID": "SECURITY_AUDIT_LIST_ID (Optional, if you want to log security events like OTP verification, signature completion etc.)"
   },
   "Host": {
     "CORS": "*",

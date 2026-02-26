@@ -80,7 +80,7 @@ export async function downloadDocument(
     const mimeType   = getMimeType(token.fileName);
     const isViewable = mimeType === 'application/pdf' || mimeType.startsWith('text/');
     const disposition = isViewable
-      ? `inline; filename="${token.fileName}"`       
+      ? `inline; filename="${token.fileName}"`        
       : `attachment; filename="${token.fileName}"`;   
 
     context.log(`[DownloadDocument] Serving ${mimeType}  disposition: ${disposition}`);

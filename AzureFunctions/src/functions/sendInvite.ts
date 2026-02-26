@@ -1,5 +1,6 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
 import * as nodemailer from 'nodemailer';
+import * as QRCode    from 'qrcode';
 
 interface ISendInviteRequest {
   signerEmail:  string;
@@ -17,10 +18,10 @@ export async function sendInvite(
   context.log('[SendInvite] Request received');
 
   const headers = {
-    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Origin':  '*',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type',
-    'Content-Type': 'application/json',
+    'Content-Type':                 'application/json',
   };
 
   if (request.method === 'OPTIONS') return { status: 200, headers };
@@ -36,139 +37,255 @@ export async function sendInvite(
       };
     }
 
-    const gmailUser     = process.env.GMAIL_USER;
-    const gmailPassword = process.env.GMAIL_APP_PASSWORD;
-
-    if (!gmailUser || !gmailPassword) {
+    const gmailUser = process.env.GMAIL_USER;
+    const gmailPass = process.env.GMAIL_APP_PASSWORD;
+    if (!gmailUser || !gmailPass) {
       return {
         status: 500, headers,
-        jsonBody: {
-          error: 'Gmail not configured.',
-          fix: 'Add GMAIL_USER and GMAIL_APP_PASSWORD to Azure Function App environment variables.',
-        },
+        jsonBody: { error: 'Gmail not configured. Set GMAIL_USER and GMAIL_APP_PASSWORD.' },
       };
     }
 
     const transporter = nodemailer.createTransport({
       service: 'gmail',
-      auth: {
-        user: gmailUser,
-        pass: gmailPassword.replace(/\s/g, ''), // strip spaces if copy-pasted
-      },
+      auth: { user: gmailUser, pass: gmailPass.replace(/\s/g, '') },
     });
 
-    const html = emailHtml || buildEmailHTML({ signerName, signerEmail, contractName, signingUrl, expiresAt });
+    let qrBuffer: Buffer | null = null;
+    try {
+      qrBuffer = await QRCode.toBuffer(signingUrl, {
+        width: 260, margin: 2,
+        color: { dark: '#1e293b', light: '#ffffff' },
+        type: 'png',
+      });
+      context.log('[SendInvite] QR PNG ready:', qrBuffer.length, 'bytes');
+    } catch (e) {
+      context.warn('[SendInvite] QR generation failed (non-fatal):', e);
+    }
 
-    context.log(`[SendInvite] Sending from ${gmailUser} → ${signerEmail}`);
+    const html = emailHtml || buildInviteHTML({ signerName, contractName, signingUrl, expiresAt, hasQR: !!qrBuffer });
+
+    const attachments: nodemailer.SendMailOptions['attachments'] = [];
+    if (qrBuffer) {
+      attachments.push({
+        filename:    'qrcode.png',
+        content:     qrBuffer,
+        contentType: 'image/png',
+        cid:         'qrcode@legallens',   
+      });
+    }
 
     const info = await transporter.sendMail({
-      from:    `"LegalLens E-Signature" <${gmailUser}>`,
-      to:      `"${signerName}" <${signerEmail}>`,
-      subject: `Please Sign: "${contractName}"`,
+      from:        `"LegalLens E-Signature" <${gmailUser}>`,
+      to:          `"${signerName}" <${signerEmail}>`,
+      subject:     `Signature Required: "${contractName}"`,
       html,
+      attachments,
     });
+    context.log('[SendInvite] Sent. MessageId:', info.messageId);
 
-    context.log(`[SendInvite] Email sent. MessageId: ${info.messageId}`);
-
-    return {
-      status: 200, headers,
-      jsonBody: { success: true, message: `Invitation sent to ${signerEmail}` },
-    };
+    return { status: 200, headers, jsonBody: { success: true, message: `Invitation sent to ${signerEmail}` } };
 
   } catch (error: any) {
     context.error('[SendInvite] Error:', error);
     const msg: string = error.message || '';
-
     if (msg.includes('Invalid login') || msg.includes('Username and Password')) {
       return {
         status: 500, headers,
         jsonBody: {
           error: 'Gmail login failed.',
-          fix: '1) Make sure 2-Step Verification is ON in your Google account. 2) Generate a fresh App Password at myaccount.google.com/apppasswords. 3) Set GMAIL_APP_PASSWORD in Azure Function environment variables (no spaces).',
+          fix: '1) Enable 2-Step Verification on your Google account. 2) Create an App Password at myaccount.google.com/apppasswords. 3) Set GMAIL_APP_PASSWORD (no spaces).',
           detail: msg,
         },
       };
     }
-    if (msg.includes('self signed') || msg.includes('certificate')) {
-      return {
-        status: 500, headers,
-        jsonBody: { error: 'TLS error. Try setting GMAIL_APP_PASSWORD again.', detail: msg },
-      };
-    }
-
     return { status: 500, headers, jsonBody: { error: msg } };
   }
 }
 
-function buildEmailHTML(p: {
-  signerName: string;
-  signerEmail: string;
+function buildInviteHTML(p: {
+  signerName:   string;
   contractName: string;
-  signingUrl: string;
-  expiresAt: string;
+  signingUrl:   string;
+  expiresAt:    string;
+  hasQR:        boolean;
 }): string {
-  const expiry = new Date(p.expiresAt).toLocaleDateString('en-US', {
-    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
-  });
+
+  const expiry = (() => {
+    try {
+      return new Date(p.expiresAt).toLocaleDateString('en-US', {
+        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+      });
+    } catch { return p.expiresAt; }
+  })();
+
+  const MSO_HEAD = `<!--[if mso]><noscript><xml><o:OfficeDocumentSettings>
+<o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml></noscript><![endif]-->`;
 
   return `<!DOCTYPE html>
-<html>
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
-<body style="margin:0;padding:0;background:#f1f5f9;font-family:'Segoe UI',Arial,sans-serif;">
-<div style="max-width:580px;margin:32px auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+  ${MSO_HEAD}
+</head>
+<body style="margin:0;padding:0;background-color:#f1f5f9;">
+<table width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#f1f5f9">
+<tr><td align="center" style="padding:32px 16px;">
 
-  <div style="background:linear-gradient(135deg,#6366f1,#8b5cf6);padding:30px 36px;">
-    <div style="font-size:11px;color:rgba(255,255,255,0.7);font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;">LegalLens E-Signature</div>
-    <div style="font-size:24px;font-weight:800;color:#fff;">Signature Required</div>
-  </div>
+  <!--[if mso]><table width="600" cellpadding="0" cellspacing="0"><tr><td><![endif]-->
+  <table width="600" cellpadding="0" cellspacing="0" border="0"
+         style="max-width:600px;width:100%;background-color:#ffffff;border:1px solid #e2e8f0;">
 
-  <div style="padding:32px 36px;">
-    <p style="color:#1e293b;font-size:15px;margin:0 0 14px;">Dear <strong>${p.signerName}</strong>,</p>
-    <p style="color:#475569;font-size:14px;line-height:1.6;margin:0 0 22px;">
-      You have been requested to review and electronically sign the following document:
-    </p>
+    <!-- HEADER -->
+    <tr>
+      <td align="center" bgcolor="#6366f1"
+          style="background-color:#6366f1;padding:28px 36px;">
+        <p style="font-size:11px;color:#c7d2fe;font-weight:700;
+                  letter-spacing:1.2px;text-transform:uppercase;
+                  margin:0 0 8px 0;font-family:Arial,sans-serif;">
+          LegalLens E-Signature
+        </p>
+        <h1 style="color:#ffffff;margin:0;font-size:24px;
+                   font-weight:700;font-family:Arial,sans-serif;">
+          Signature Required
+        </h1>
+      </td>
+    </tr>
 
-    <div style="background:#f8fafc;border:1px solid #e2e8f0;border-left:4px solid #6366f1;border-radius:8px;padding:16px 20px;margin:0 0 26px;">
-      <div style="font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:4px;">Document</div>
-      <div style="font-size:17px;font-weight:700;color:#1e293b;">${p.contractName}</div>
-    </div>
+    <!-- GREETING -->
+    <tr>
+      <td style="padding:32px 36px 0 36px;">
+        <p style="color:#1e293b;font-size:15px;margin:0 0 12px 0;font-family:Arial,sans-serif;">
+          Dear <strong>${p.signerName}</strong>,
+        </p>
+        <p style="color:#475569;font-size:14px;line-height:1.65;
+                  margin:0 0 24px 0;font-family:Arial,sans-serif;">
+          You have been requested to review and electronically sign the following document:
+        </p>
+      </td>
+    </tr>
 
-    <div style="text-align:center;margin:0 0 26px;">
-      <a href="${p.signingUrl}"
-         style="display:inline-block;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;
-                text-decoration:none;font-weight:700;font-size:16px;padding:15px 40px;
-                border-radius:10px;box-shadow:0 4px 14px rgba(99,102,241,0.35);">
-        Review &amp; Sign Document &rarr;
-      </a>
-    </div>
+    <!-- DOCUMENT CARD -->
+    <tr>
+      <td style="padding:0 36px 24px 36px;">
+        <table width="100%" cellpadding="0" cellspacing="0" border="0"
+               style="background-color:#f8fafc;border:1px solid #e2e8f0;
+                      border-left:4px solid #6366f1;">
+          <tr>
+            <td style="padding:16px 20px;">
+              <p style="font-size:11px;color:#64748b;text-transform:uppercase;
+                        letter-spacing:0.6px;margin:0 0 4px 0;font-family:Arial,sans-serif;">
+                Document
+              </p>
+              <p style="font-size:17px;font-weight:700;color:#1e293b;
+                        margin:0;font-family:Arial,sans-serif;">
+                ${p.contractName}
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
 
-    <p style="color:#64748b;font-size:12px;text-align:center;margin:0 0 22px;line-height:1.6;">
-      This link expires on <strong>${expiry}</strong>.<br>
-      No account needed &mdash; the signing page is publicly accessible.
-    </p>
+    <!-- SIGN BUTTON -->
+    <tr>
+      <td align="center" style="padding:0 36px 28px 36px;">
+        <table cellpadding="0" cellspacing="0" border="0">
+          <tr>
+            <td bgcolor="#6366f1" style="background-color:#6366f1;padding:15px 44px;">
+              <a href="${p.signingUrl}"
+                 style="color:#ffffff;text-decoration:none;font-weight:700;
+                        font-size:16px;font-family:Arial,sans-serif;">
+                Review &amp; Sign Document &rarr;
+              </a>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
 
-    <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:13px 16px;">
-      <p style="color:#166534;font-size:12px;margin:0;line-height:1.6;">
-        <strong>Secure &amp; single-use link</strong> &mdash; This invitation was sent specifically
-        to <strong>${p.signerName}</strong>. The link expires automatically after signing.
-      </p>
-    </div>
-  </div>
+    ${p.hasQR ? `
+    <!-- QR CODE — centered, prominent, uses CID attachment (not data: URL) -->
+    <!-- src="cid:qrcode@legallens" resolves to the PNG buffer attached by nodemailer -->
+    <!-- This is the ONLY approach that displays in Gmail AND Outlook AND Apple Mail -->
+    <tr>
+      <td align="center" bgcolor="#f8fafc"
+          style="background-color:#f8fafc;padding:28px 36px;
+                 border-top:1px solid #e2e8f0;border-bottom:1px solid #e2e8f0;">
+        <p style="font-size:14px;font-weight:700;color:#1e293b;
+                  margin:0 0 4px 0;font-family:Arial,sans-serif;">
+          Prefer to sign on your phone?
+        </p>
+        <p style="font-size:13px;color:#64748b;margin:0 0 18px 0;font-family:Arial,sans-serif;">
+          Open your camera and scan the QR code below
+        </p>
+        <img src="cid:qrcode@legallens"
+             alt="QR code to open signing page on mobile"
+             width="260" height="260"
+             style="display:block;margin:0 auto;border:1px solid #e2e8f0;"/>
+        <p style="font-size:11px;color:#94a3b8;margin:14px 0 0 0;font-family:Arial,sans-serif;">
+          If you cannot scan, click the button above instead
+        </p>
+      </td>
+    </tr>
+    ` : ''}
 
-  <div style="background:#f8fafc;padding:16px 36px;border-top:1px solid #e2e8f0;text-align:center;">
-    <p style="color:#94a3b8;font-size:11px;margin:0;line-height:1.6;">
-      Sent via LegalLens &middot; Powered by Budvik<br>
-      If you did not expect this email, you can safely ignore it.
-    </p>
-  </div>
-</div>
+    <!-- EXPIRY -->
+    <tr>
+      <td align="center" style="padding:22px 36px 0 36px;">
+        <p style="color:#64748b;font-size:12px;margin:0;line-height:1.6;
+                  font-family:Arial,sans-serif;">
+          This link expires on <strong>${expiry}</strong>.<br/>
+          No account needed &mdash; the signing page is publicly accessible.
+        </p>
+      </td>
+    </tr>
+
+    <!-- SECURITY NOTE -->
+    <tr>
+      <td style="padding:20px 36px 32px 36px;">
+        <table width="100%" cellpadding="0" cellspacing="0" border="0"
+               style="background-color:#f0fdf4;border:1px solid #bbf7d0;">
+          <tr>
+            <td style="padding:12px 16px;">
+              <p style="color:#166534;font-size:12px;margin:0;
+                        line-height:1.6;font-family:Arial,sans-serif;">
+                <strong>Secure &amp; single-use link</strong> &mdash; This invitation was
+                sent specifically to <strong>${p.signerName}</strong>.
+                The link expires automatically after signing.
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+
+    <!-- FOOTER -->
+    <tr>
+      <td bgcolor="#f8fafc" align="center"
+          style="background-color:#f8fafc;padding:16px 36px;border-top:1px solid #e2e8f0;">
+        <p style="color:#94a3b8;font-size:11px;margin:0;
+                  line-height:1.6;font-family:Arial,sans-serif;">
+          Sent via LegalLens &middot; Powered by Budvik<br/>
+          If you did not expect this email, you can safely ignore it.
+        </p>
+      </td>
+    </tr>
+
+  </table>
+  <!--[if mso]></td></tr></table><![endif]-->
+
+</td></tr>
+</table>
 </body>
 </html>`;
 }
 
 app.http('sendInvite', {
-  methods: ['POST', 'OPTIONS'],
+  methods:   ['POST', 'OPTIONS'],
   authLevel: 'anonymous',
-  route: 'sendInvite',
-  handler: sendInvite,
+  route:     'sendInvite',
+  handler:   sendInvite,
 });

@@ -5,7 +5,6 @@ import 'isomorphic-fetch';
 export class GraphService {
   private client: Client;
   private siteId: string;
-
   private driveIdCache: Map<string, string> = new Map();
 
   constructor() {
@@ -26,11 +25,11 @@ export class GraphService {
       },
     });
   }
+
   private async resolveListDriveId(listGuidOrDriveId: string): Promise<string> {
     if (listGuidOrDriveId.startsWith('b!')) {
       return listGuidOrDriveId;
     }
-
 
     const cached = this.driveIdCache.get(listGuidOrDriveId);
     if (cached) {
@@ -50,7 +49,7 @@ export class GraphService {
     console.log('[Graph] Resolved drive ID:', driveId);
     return driveId;
   }
-  
+
   async getListItem(listId: string, itemId: string): Promise<any> {
     try {
       const item = await this.client
@@ -90,11 +89,17 @@ export class GraphService {
     }
   }
 
-  /**
-   * Download a file by its Graph item ID.
-   * @param libraryId  List GUID or real drive ID from env var
-   * @param itemId     Graph item ID returned by getFileByPath()
-   */
+  async createListItem(siteId: string, listId: string, fields: any): Promise<any> {
+    try {
+      return await this.client
+        .api(`/sites/${siteId}/lists/${listId}/items`)
+        .post({ fields });
+    } catch (error) {
+      console.error('[Graph] Error creating list item:', error);
+      throw error;
+    }
+  }
+
   async downloadFile(libraryId: string, itemId: string): Promise<Buffer> {
     try {
       const driveId = await this.resolveListDriveId(libraryId);
@@ -103,7 +108,6 @@ export class GraphService {
       const nodeFetch = require('node-fetch');
       const { ClientSecretCredential } = require('@azure/identity');
 
-      // Get fresh access token every time
       const cred = new ClientSecretCredential(
         process.env.TENANT_ID!,
         process.env.CLIENT_ID!,
@@ -133,18 +137,11 @@ export class GraphService {
     }
   }
 
-  /**
-   * Find a file by name in the document library root.
-   * Returns Graph item metadata (including .id for subsequent calls).
-   * @param libraryId  List GUID or real drive ID from env var
-   * @param fileName   Filename only — e.g. "Document.docx"
-   */
   async getFileByPath(libraryId: string, fileName: string): Promise<any> {
     try {
       const driveId = await this.resolveListDriveId(libraryId);
       console.log('[Graph] Searching for file:', fileName, 'in drive:', driveId);
 
-      // direct path lookup (fastest)
       try {
         const response = await this.client
           .api(`/drives/${driveId}/root:/${encodeURIComponent(fileName)}`)
@@ -155,7 +152,6 @@ export class GraphService {
         console.log('[Graph] Direct path failed, trying search...');
       }
 
-      // OData filter on root children
       try {
         const searchResponse = await this.client
           .api(`/drives/${driveId}/root/children`)
@@ -170,7 +166,6 @@ export class GraphService {
         console.log('[Graph] Filter search failed, trying full list...');
       }
 
-      //  list all root children and match by name (last resort)
       const allItems = await this.client
         .api(`/drives/${driveId}/root/children`)
         .get();
@@ -191,14 +186,7 @@ export class GraphService {
     }
   }
 
-  /**
-   * Upload a file to the root of a document library.
-   * @param libraryId  List GUID or real drive ID from env var
-   * @param fileName   Target filename (no path prefix needed)
-   * @param content    File bytes
-   * @returns Graph item ID of the uploaded file
-   */
-  async uploadFile(libraryId: string, fileName: string, content: Buffer): Promise<string> {
+  async uploadFile(libraryId: string, fileName: string, content: Buffer): Promise<any> {
     try {
       const driveId = await this.resolveListDriveId(libraryId);
       console.log('[Graph] Uploading file:', fileName, 'size:', content.length, 'drive:', driveId);
@@ -212,14 +200,14 @@ export class GraphService {
         .put(content);
 
       console.log('[Graph] File uploaded:', fileName, 'ID:', response.id);
-      return response.id;
+      return response;
     } catch (error: any) {
       console.error('[Graph] Error uploading file:', error);
       throw new Error(`Failed to upload file: ${error.message}`);
     }
   }
 
-  private async uploadLargeFile(driveId: string, fileName: string, content: Buffer): Promise<string> {
+  private async uploadLargeFile(driveId: string, fileName: string, content: Buffer): Promise<any> {
     console.log('[Graph] Creating upload session for large file:', fileName);
 
     const session = await this.client
@@ -254,7 +242,7 @@ export class GraphService {
     const result = await fetch(uploadUrl);
     const fileInfo = await result.json() as any;
     console.log('[Graph] Large file upload complete:', fileInfo.id);
-    return fileInfo.id;
+    return fileInfo;
   }
 
   async updateFileMetadata(libraryId: string, itemId: string, metadata: any): Promise<void> {
