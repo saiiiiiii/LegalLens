@@ -36,17 +36,19 @@ function RiskScoreCard({ score }: { score: number }): React.ReactElement {
       style={{ background: `linear-gradient(135deg, ${riskScoreBgColor(score)}, rgba(0,0,0,0.1))` }}
     >
       <Text block className={styles.riskScoreLabel}>Overall Risk Score</Text>
-      <Text block className={styles.riskScoreNumber} style={{ color: riskScoreTextColor(score) }}>
-        {score}
-      </Text>
-      <Text block className={styles.riskScoreTotal}>/ 100</Text>
+      <Stack horizontal verticalAlign="end" horizontalAlign="center">
+        <Text block className={styles.riskScoreNumber} style={{ color: riskScoreTextColor(score) }}>
+          {score}
+        </Text>
+        <Text block className={styles.riskScoreTotal}>/ 100</Text>
+      </Stack>
       <Stack horizontal verticalAlign="center" horizontalAlign="center" className={styles.riskScoreStatus} tokens={{ childrenGap: 6 }}>
         {score >= 70 ? (
-          <><ErrorCircleFilled style={{ fontSize: '14px', color: '#ef4444' }} /><Text>High Risk</Text></>
+          <><ErrorCircleFilled style={{ fontSize: '14px', color: '#ef4444' }} /><Text className={styles.riskScoreStatusText}>High Risk</Text></>
         ) : score >= 40 ? (
-          <><WarningFilled style={{ fontSize: '14px', color: '#f59e0b' }} /><Text>Medium Risk</Text></>
+          <><WarningFilled style={{ fontSize: '14px', color: '#f59e0b' }} /><Text className={styles.riskScoreStatusText}>Medium Risk</Text></>
         ) : (
-          <><CheckmarkCircleFilled style={{ fontSize: '14px', color: '#10b981' }} /><Text>Low Risk</Text></>
+          <><CheckmarkCircleFilled style={{ fontSize: '14px', color: '#10b981' }} /><Text className={styles.riskScoreStatusText}>Low Risk</Text></>
         )}
       </Stack>
     </div>
