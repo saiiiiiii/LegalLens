@@ -15,4 +15,6 @@ export interface ILegalLensProps {
   context: any;
   documentIntelligenceEndpoint?: string;
   documentIntelligenceKey?: string;
+  showTranslateTab: boolean;
+  showESignatureTab: boolean;
 }

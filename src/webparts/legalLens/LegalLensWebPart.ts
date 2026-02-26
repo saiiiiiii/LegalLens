@@ -32,6 +32,8 @@ export interface ILegalLensWebPartProps {
   documentIntelligenceKey: string;
   enableDocumentAnalysis: boolean;
   translationLanguages: ILang[];
+  showTranslateTab: boolean;
+  showESignatureTab: boolean;
 }
 
 export default class LegalLensWebPart extends BaseClientSideWebPart<ILegalLensWebPartProps> {
@@ -102,7 +104,9 @@ export default class LegalLensWebPart extends BaseClientSideWebPart<ILegalLensWe
         documentIntelligenceEndpoint: this.properties.enableDocumentAnalysis
           ? (this.properties.documentIntelligenceEndpoint || '') : '',
         documentIntelligenceKey: this.properties.enableDocumentAnalysis
-          ? (this.properties.documentIntelligenceKey || '') : ''
+          ? (this.properties.documentIntelligenceKey || '') : '',
+        showTranslateTab: !!this.properties.showTranslateTab,
+        showESignatureTab: !!this.properties.showESignatureTab
       }
     );
 
@@ -193,6 +197,21 @@ export default class LegalLensWebPart extends BaseClientSideWebPart<ILegalLensWe
                   description: 'Document Intelligence API key',
                   multiline: false,
                   disabled: !this.properties.enableDocumentAnalysis
+                })
+              ]
+            },
+            {
+              groupName: 'Navigation',
+              groupFields: [
+                PropertyPaneToggle('showTranslateTab', {
+                  label: 'Show Translate tab',
+                  onText: 'Visible',
+                  offText: 'Hidden'
+                }),
+                PropertyPaneToggle('showESignatureTab', {
+                  label: 'Show E-Signature tab',
+                  onText: 'Visible',
+                  offText: 'Hidden'
                 })
               ]
             },

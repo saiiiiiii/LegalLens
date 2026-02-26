@@ -139,13 +139,13 @@ export default class LegalLens extends React.Component<ILegalLensProps, ILegalLe
 
           <nav className={styles.headerNav}>
             {[
-              { key: 'library', label: 'Library', highlight: false },
-              { key: 'upload', label: 'Upload & Analyze', highlight: true },
-              { key: 'classify', label: 'Classification', highlight: false },
-              { key: 'translate', label: 'TranslatePro', highlight: false },
-              { key: 'alerts', label: 'Alerts', highlight: false },
-              { key: 'esignature', label: 'E-Signature', highlight: true }
-            ].map(tab => (
+              { key: 'library', label: 'Library', highlight: false, visible: true },
+              { key: 'upload', label: 'Upload & Analyze', highlight: true, visible: true },
+              { key: 'classify', label: 'Classification', highlight: false, visible: true },
+              { key: 'translate', label: 'TranslatePro', highlight: false, visible: this.props.showTranslateTab },
+              { key: 'alerts', label: 'Alerts', highlight: false, visible: true },
+              { key: 'esignature', label: 'E-Signature', highlight: true, visible: this.props.showESignatureTab }
+            ].filter(tab => tab.visible).map(tab => (
               <button
                 key={tab.key}
                 className={styles.navBtn}
