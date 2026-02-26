@@ -5,8 +5,8 @@
 }
 
 .langBar {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--ll-bg-card);
+  border: 1px solid var(--ll-bd-card);
   border-radius: 8px;
   padding: 8px 14px;
   display: flex;
@@ -32,19 +32,19 @@
 
 .langName {
   font-size: 11px;
-  color: #e2e8f0;
+  color: var(--ll-cl-text);
   font-weight: 600;
 }
 
 .langNameActive {
-  color: #818cf8;
+  color: var(--ll-cl-accent);
 }
 
 .glassCard {
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--ll-bg-card);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--ll-bd-card);
   border-radius: 16px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
   overflow: hidden;
@@ -53,13 +53,13 @@
 
 .summaryHeader {
   padding: 10px 16px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-  background: rgba(255, 255, 255, 0.02);
+  border-bottom: 1px solid var(--ll-bd-subtle);
+  background: var(--ll-bg-card);
 }
 
 .sectionLabel {
   font-size: 8.5px;
-  color: #64748b;
+  color: var(--ll-cl-text-faint);
   letter-spacing: 1.2px;
   text-transform: uppercase;
   font-weight: 600;
@@ -72,13 +72,13 @@
 .bodyText {
   margin: 0;
   font-size: 11px;
-  color: #e2e8f0;
+  color: var(--ll-cl-text);
   line-height: 1.8;
 }
 
 .clauseHeader {
   padding: 12px 20px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid var(--ll-bd-card);
   background: linear-gradient(135deg, rgba(99, 102, 241, 0.05), rgba(139, 92, 246, 0.05));
   backdrop-filter: blur(10px);
   display: flex;
@@ -97,14 +97,14 @@
 }
 
 .clauseRefTranslated {
-  color: #818cf8;
+  color: var(--ll-cl-accent);
   background: rgba(99, 102, 241, 0.12);
   border-color: rgba(99, 102, 241, 0.25);
 }
 
 .clauseTitle {
   font-size: 8.5px;
-  color: #64748b;
+  color: var(--ll-cl-text-faint);
   letter-spacing: 1px;
   text-transform: uppercase;
   font-weight: 600;
@@ -123,7 +123,7 @@
 
 .splitLeft {
   padding: 14px 16px;
-  border-right: 1px solid rgba(255, 255, 255, 0.06);
+  border-right: 1px solid var(--ll-bd-subtle);
 }
 
 .splitRight {
@@ -134,14 +134,14 @@
 .splitLeftText {
   margin: 0;
   font-size: 11px;
-  color: #94a3b8;
+  color: var(--ll-cl-text-muted);
   line-height: 1.75;
 }
 
 .splitRightText {
   margin: 0;
   font-size: 11px;
-  color: #a5b4fc;
+  color: var(--ll-cl-accent-soft);
   line-height: 1.75;
 }
 
@@ -181,18 +181,18 @@
   align-items: center;
   justify-content: center;
   font-size: 16px;
-  color: #818cf8;
+  color: var(--ll-cl-accent);
 }
 
 .qaTitle {
   font-size: 12px;
-  color: #818cf8;
+  color: var(--ll-cl-accent);
   font-weight: 600;
 }
 
 .qaSubtitle {
   font-size: 8.5px;
-  color: #64748b;
+  color: var(--ll-cl-text-faint);
 }
 
 .qaLangSection {
@@ -202,7 +202,7 @@
 
 .qaLangLabel {
   font-size: 9px;
-  color: #64748b;
+  color: var(--ll-cl-text-faint);
   letter-spacing: 1px;
   text-transform: uppercase;
   font-weight: 600;
@@ -226,18 +226,18 @@
   font-size: 24px;
   margin-bottom: 10px;
   opacity: 0.25;
-  color: #94a3b8;
+  color: var(--ll-cl-text-muted);
 }
 
 .qaEmptyTitle {
   font-size: 11px;
-  color: #64748b;
+  color: var(--ll-cl-text-faint);
   margin-bottom: 8px;
 }
 
 .qaEmptyHint {
   font-size: 9.5px;
-  color: #64748b;
+  color: var(--ll-cl-text-faint);
   line-height: 1.6;
 }
 
@@ -272,7 +272,7 @@
 
 .qaMsgMeta {
   font-size: 8px;
-  color: #64748b;
+  color: var(--ll-cl-text-faint);
   margin-bottom: 4px;
   display: flex;
   align-items: center;
@@ -282,14 +282,14 @@
 .qaMsgLangCode {
   font-size: 10px;
   font-weight: 700;
-  color: #64748b;
+  color: var(--ll-cl-text-faint);
 }
 
 .qaMsgRole {
   text-transform: uppercase;
   font-weight: 600;
   letter-spacing: 0.8px;
-  color: #64748b;
+  color: var(--ll-cl-text-faint);
   font-size: 12px;
 }
 
@@ -301,8 +301,8 @@
 }
 
 .qaMsgBubbleBot {
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: var(--ll-bg-card);
+  border: 1px solid var(--ll-bd-subtle);
   border-radius: 10px;
   padding: 10px 14px;
 }
@@ -316,7 +316,7 @@
 
 .qaMsgTextBot {
   font-size: 11px;
-  color: #e2e8f0;
+  color: var(--ll-cl-text);
   line-height: 1.7;
   white-space: pre-wrap;
 }
@@ -324,7 +324,7 @@
 .qaCitedClauses {
   margin-top: 8px;
   font-size: 9px;
-  color: #818cf8;
+  color: var(--ll-cl-accent);
   display: flex;
   align-items: center;
   gap: 4px;
@@ -332,7 +332,7 @@
 
 .qaCitedText {
   font-size: 10px;
-  color: #818cf8;
+  color: var(--ll-cl-accent);
 }
 
 .qaLoadingDot {
@@ -353,7 +353,7 @@
 
 .qaLoadingText {
   font-size: 9px;
-  color: #64748b;
+  color: var(--ll-cl-text-faint);
   margin-left: 6px;
 }
 
@@ -369,8 +369,8 @@
 }
 
 .qaExampleBtn {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--ll-bg-card);
+  border: 1px solid var(--ll-bd-card);
   border-radius: 6px;
   padding: 4px 8px;
   font-size: 9px;
@@ -382,7 +382,7 @@
   &:hover {
     background: rgba(99, 102, 241, 0.1);
     border-color: rgba(99, 102, 241, 0.3);
-    color: #a5b4fc;
+    color: var(--ll-cl-accent-soft);
   }
 
   &:disabled {
@@ -394,7 +394,7 @@
 .qaClearBtn {
   background: rgba(99, 102, 241, 0.1);
   border: 1px solid rgba(99, 102, 241, 0.25);
-  color: #818cf8;
+  color: var(--ll-cl-accent);
   border-radius: 6px;
   padding: 4px 10px;
   cursor: pointer;
@@ -436,7 +436,7 @@
 
 .qaMsgIconBot {
   font-size: 14px;
-  color: #818cf8;
+  color: var(--ll-cl-accent);
 }
 
 .qaInputRow {
@@ -451,11 +451,11 @@
 
 .qaTextInput {
   width: 100%;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--ll-bg-card);
+  border: 1px solid var(--ll-bd-card);
   border-radius: 8px;
   padding: 10px;
-  color: #e2e8f0;
+  color: var(--ll-cl-text);
   font-size: 11px;
   outline: none;
 }
@@ -515,12 +515,12 @@
 
 .viewSubtitle {
   font-size: 11px;
-  color: #64748b;
+  color: var(--ll-cl-text-faint);
 }
 
 .controlPanel {
-  background: rgba(255, 255, 255, 0.025);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--ll-bg-card);
+  border: 1px solid var(--ll-bd-card);
   border-radius: 12px;
   padding: 20px;
   margin-bottom: 18px;
@@ -528,7 +528,7 @@
 
 .controlLabel {
   font-size: 9px;
-  color: #64748b;
+  color: var(--ll-cl-text-faint);
   letter-spacing: 1px;
   text-transform: uppercase;
   font-weight: 600;
@@ -575,17 +575,17 @@
 
 .progressLabel {
   font-size: 10.5px;
-  color: #818cf8;
+  color: var(--ll-cl-accent);
   font-weight: 600;
 }
 
 .progressPct {
   font-size: 9px;
-  color: #64748b;
+  color: var(--ll-cl-text-faint);
 }
 
 .progressTrack {
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--ll-bg-card);
   border-radius: 3px;
   height: 3px;
   overflow: hidden;
@@ -599,10 +599,10 @@
 }
 
 .emptyDoc {
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--ll-bg-card);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--ll-bd-card);
   border-radius: 16px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
   padding: 44px 24px;
@@ -612,18 +612,18 @@
   font-size: 32px;
   margin-bottom: 12px;
   opacity: 0.2;
-  color: #94a3b8;
+  color: var(--ll-cl-text-muted);
 }
 
 .emptyDocTitle {
   font-size: 13px;
-  color: #94a3b8;
+  color: var(--ll-cl-text-muted);
   margin-bottom: 5px;
 }
 
 .emptyDocHint {
   font-size: 10.5px;
-  color: #64748b;
+  color: var(--ll-cl-text-faint);
 }
 
 .controlRow {
@@ -633,11 +633,11 @@
 
 .contractSelect {
   width: 100%;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--ll-bg-card);
+  border: 1px solid var(--ll-bd-card);
   border-radius: 8px;
   padding: 9px 34px 9px 12px;
-  color: #e2e8f0;
+  color: var(--ll-cl-text);
   font-size: 12px;
   outline: none;
   cursor: pointer;

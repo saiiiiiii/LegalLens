@@ -25,7 +25,7 @@
 
 .loadingText {
   font-size: 13px;
-  color: #94a3b8;
+  color: var(--ll-cl-text-muted);
 }
 
 // Error state
@@ -55,7 +55,7 @@
 
 .errorMessage {
   font-size: 13px;
-  color: #94a3b8;
+  color: var(--ll-cl-text-muted);
   margin-bottom: 20px;
 }
 
@@ -97,10 +97,10 @@
 
 // Header
 .appHeader {
-  background: rgba(15, 23, 42, 0.8);
+  background: var(--ll-bg-header);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid var(--ll-bd-card);
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
   padding: 0 24px;
   display: flex;
@@ -118,7 +118,7 @@
 
 .headerIcon {
   font-size: 28px;
-  color: #a5b4fc;
+  color: var(--ll-cl-accent-soft);
   filter: drop-shadow(0 2px 8px rgba(99, 102, 241, 0.4));
 }
 
@@ -155,7 +155,7 @@
 
   &:hover {
     background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(139, 92, 246, 0.15)) !important;
-    color: #fff !important;
+    color: var(--ll-cl-text) !important;
     transform: translateY(-2px);
   }
 }

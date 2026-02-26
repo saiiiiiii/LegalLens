@@ -138,6 +138,8 @@ export default class LegalLensWebPart extends BaseClientSideWebPart<ILegalLensWe
     el.style.setProperty('--neutralLight', palette.neutralLight);
     el.style.setProperty('--neutralLighter', palette.neutralLighter);
     el.style.setProperty('--neutralLighterAlt', palette.neutralLighterAlt);
+    el.style.setProperty('--neutralSecondary', palette.neutralSecondary);
+    el.style.setProperty('--neutralTertiary', palette.neutralTertiary);
     el.style.setProperty('--white', palette.white);
     el.style.setProperty('--black', palette.black);
   }

@@ -22,13 +22,13 @@
 
 .viewSubtitle {
   font-size: 11px;
-  color: #64748b;
+  color: var(--ll-cl-text-faint);
 }
 
 // StatsCards
 .card {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.07);
+  background: var(--ll-bg-card);
+  border: 1px solid var(--ll-bd-card);
   border-radius: 8px;
   padding: 7px 12px;
   min-width: 75px;
@@ -42,7 +42,7 @@
 
 .label {
   font-size: 8px;
-  color: #64748b;
+  color: var(--ll-cl-text-faint);
   letter-spacing: 0.5px;
   text-transform: uppercase;
   margin-top: 1px;
@@ -50,24 +50,24 @@
 
 // ContractTable
 .tableWrap {
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--ll-bg-card);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--ll-bd-card);
   border-radius: 12px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
   overflow: hidden;
 
   :global(.ms-DetailsHeader) {
     padding-top: 0;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    border-bottom: 1px solid var(--ll-bd-card);
     background: linear-gradient(135deg, rgba(99, 102, 241, 0.05), rgba(139, 92, 246, 0.05));
     backdrop-filter: blur(10px);
   }
 
   :global(.ms-DetailsHeader-cell) {
     font-size: 8px;
-    color: #64748b;
+    color: var(--ll-cl-text-faint);
     letter-spacing: 1.2px;
     text-transform: uppercase;
     font-weight: 600;
@@ -79,12 +79,12 @@
   }
 
   :global(.ms-DetailsRow) {
-    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    border-bottom: 1px solid var(--ll-bd-subtle);
     min-height: 52px;
     background: transparent;
 
     &:hover {
-      background: rgba(255, 255, 255, 0.02);
+      background: var(--ll-bg-card);
     }
   }
 
@@ -96,13 +96,13 @@
     height: 28px;
     border: none;
     background: transparent;
-    color: #64748b;
+    color: var(--ll-cl-text-faint);
     border-radius: 6px;
     cursor: pointer;
     font-size: 16px;
     &:hover {
       background: rgba(99, 102, 241, 0.15);
-      color: #a5b4fc;
+      color: var(--ll-cl-accent-soft);
     }
   }
 
@@ -114,26 +114,26 @@
 
 .contractName {
   font-size: 12px;
-  color: #e2e8f0;
+  color: var(--ll-cl-text);
   font-weight: 500;
   margin-bottom: 1px;
 }
 
 .contractExpiry {
   font-size: 9px;
-  color: #64748b;
+  color: var(--ll-cl-text-faint);
 }
 
 .metaText {
   font-size: 10.5px;
-  color: #94a3b8;
+  color: var(--ll-cl-text-muted);
 }
 
 .riskTrack {
   width: 24px;
   height: 3px;
   border-radius: 2px;
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--ll-bg-card);
   overflow: hidden;
 }
 
@@ -166,11 +166,11 @@
 .emptyState {
   padding: 40px;
   text-align: center;
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--ll-bg-card);
   backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--ll-bd-card);
   border-radius: 16px;
-  color: #64748b;
+  color: var(--ll-cl-text-faint);
 }
 
 .emptyIcon {
@@ -183,7 +183,7 @@
 .emptyText {
   font-size: 13px;
   margin-bottom: 8px;
-  color: #64748b;
+  color: var(--ll-cl-text-faint);
 }
 
 // DocumentOverview
@@ -199,7 +199,7 @@
 
 .overviewSection {
   padding: 12px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid var(--ll-bd-subtle);
 
   &:last-child {
     border-bottom: none;
@@ -210,15 +210,15 @@
   flex: 2;
   min-width: 200px;
   .riskAnalysis {
-    background: hsla(0, 0%, 100%, .03);
-    border: 1px solid hsla(0, 0%, 100%, .08);
+    background: var(--ll-bg-card);
+    border: 1px solid var(--ll-bd-card);
     border-radius: 12px;
     padding: 16px;
     margin-bottom: 20px;
   }
   .documentInfo {
-    background: hsla(0, 0%, 100%, .03);
-    border: 1px solid hsla(0, 0%, 100%, .08);
+    background: var(--ll-bg-card);
+    border: 1px solid var(--ll-bd-card);
     border-radius: 12px;
     padding: 16px;
   }
@@ -228,8 +228,8 @@
   flex: 1;
   min-width: 0;
   .documentOverview {
-    background: hsla(0, 0%, 100%, .03);
-    border: 1px solid hsla(0, 0%, 100%, .08);
+    background: var(--ll-bg-card);
+    border: 1px solid var(--ll-bd-card);
     border-radius: 12px;
     padding: 16px;
   }
@@ -247,7 +247,7 @@
 
 .overviewFieldLabel {
   font-size: 9px;
-  color: #64748b;
+  color: var(--ll-cl-text-faint);
   letter-spacing: 1px;
   text-transform: uppercase;
   font-weight: 600;
@@ -256,7 +256,7 @@
 
 .overviewFieldValue {
   font-size: 12px;
-  color: #e2e8f0;
+  color: var(--ll-cl-text);
   font-weight: 500;
 }
 
@@ -272,7 +272,7 @@
 
 .overviewTag {
   font-size: 10px;
-  color: #a5b4fc;
+  color: var(--ll-cl-accent-soft);
   background: rgba(99, 102, 241, 0.1);
   border: 1px solid rgba(99, 102, 241, 0.2);
   border-radius: 4px;
@@ -282,7 +282,7 @@
 .overviewSectionTitle {
   font-size: 11px;
   font-weight: 700;
-  color: #a5b4fc;
+  color: var(--ll-cl-accent-soft);
   letter-spacing: 1px;
   text-transform: uppercase;
 }
@@ -291,7 +291,7 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  color: #a5b4fc;
+  color: var(--ll-cl-accent-soft);
   text-decoration: none;
 
   &:hover {
@@ -306,19 +306,19 @@
 
 .overviewSummary {
   font-size: 11px;
-  color: #94a3b8;
+  color: var(--ll-cl-text-muted);
   line-height: 1.7;
   margin-top: 4px;
 }
 
 .clauseValue {
   font-size: 11px;
-  color: #94a3b8;
+  color: var(--ll-cl-text-muted);
 }
 
 .riskFactorDesc {
   font-size: 11px;
-  color: #94a3b8;
+  color: var(--ll-cl-text-muted);
   margin-bottom: 0px;
   line-height: 1.6;
 }
