@@ -154,13 +154,9 @@ export const TranslateView: React.FC<ITranslateViewProps> = ({ contracts, aiFoun
                   <button
                     key={l.code}
                     onClick={() => setSelectedLang(l.code)}
-                    className={styles.langBtn}
-                    style={{
-                      background: selectedLang === l.code ? 'rgba(99,102,241,0.15)' : 'rgba(255,255,255,0.06)',
-                      border: `1px solid ${selectedLang === l.code ? 'rgba(99,102,241,0.4)' : 'rgba(255,255,255,0.1)'}`
-                    }}
+                    className={`${styles.langBtn}${selectedLang === l.code ? ` ${(styles as Record<string, string>).langBtnSelected}` : ''}`}
                   >
-                    <div className={styles.langBtnLabel} style={{ color: selectedLang === l.code ? '#fff' : '#94a3b8' }}>{l.label}</div>
+                    <div className={styles.langBtnLabel}>{l.label}</div>
                   </button>
                 ))}
               </div>

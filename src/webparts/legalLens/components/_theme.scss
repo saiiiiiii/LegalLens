@@ -22,6 +22,11 @@
     --ll-bg-tag-selected: rgba(6, 182, 212, 0.2);
     --ll-bd-tag-selected: rgba(6, 182, 212, 0.4);
     --ll-cl-tag-selected: #22d3ee;
+
+    // Language selector
+    --ll-bg-lang-selected: rgba(99, 102, 241, 0.15);
+    --ll-bd-lang-selected: rgba(99, 102, 241, 0.4);
+    --ll-cl-lang-selected: #fff;
 }
 
 .themeLight {
@@ -45,6 +50,11 @@
     --ll-bg-tag-selected: rgba(14, 116, 144, 0.16);
     --ll-bd-tag-selected: rgba(14, 116, 144, 0.45);
     --ll-cl-tag-selected: #0e7490;
+
+    // Language selector
+    --ll-bg-lang-selected: rgba(79, 70, 229, 0.1);
+    --ll-bd-lang-selected: rgba(79, 70, 229, 0.4);
+    --ll-cl-lang-selected: #4f46e5;
 }
 
 .themeSite {
@@ -68,4 +78,9 @@
     --ll-bg-tag-selected: rgba(0, 120, 212, 0.16);
     --ll-bd-tag-selected: rgba(0, 120, 212, 0.4);
     --ll-cl-tag-selected: var(--themeDarker, #005a9e);
+
+    // Language selector
+    --ll-bg-lang-selected: rgba(0, 120, 212, 0.1);
+    --ll-bd-lang-selected: rgba(0, 120, 212, 0.4);
+    --ll-cl-lang-selected: var(--themePrimary, #0078d4);
 }

@@ -652,6 +652,17 @@
   text-align: center;
   transition: all 0.2s;
   height: 36px;
+  background: var(--ll-bd-subtle);
+  border: 1px solid var(--ll-bd-card);
+
+  &.langBtnSelected {
+    background: var(--ll-bg-lang-selected);
+    border-color: var(--ll-bd-lang-selected);
+
+    .langBtnLabel {
+      color: var(--ll-cl-lang-selected);
+    }
+  }
 }
 
 .langBtnFlag {
@@ -663,6 +674,7 @@
 .langBtnLabel {
   font-size: 8.5px;
   font-weight: 600;
+  color: var(--ll-cl-text-muted);
 }
 
 .translateBtn {
