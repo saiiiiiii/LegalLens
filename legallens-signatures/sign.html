@@ -24,7 +24,6 @@
 }
 html,body{height:100%;font-family:'DM Sans',system-ui,sans-serif;background:var(--slate-100);color:var(--slate-900);-webkit-font-smoothing:antialiased}
 
-/* ── Topbar ───────────────────────────────────── */
 .topbar{
   height:62px;background:#fff;border-bottom:1px solid var(--slate-200);
   padding:0 28px;display:flex;align-items:center;gap:12px;
@@ -50,10 +49,8 @@ html,body{height:100%;font-family:'DM Sans',system-ui,sans-serif;background:var(
 .step-line{width:24px;height:2px;background:var(--slate-200);transition:background .3s}
 .step-line.done{background:var(--green)}
 
-/* ── Layout ───────────────────────────────────── */
 .layout{display:grid;grid-template-columns:1fr 440px;height:calc(100vh - 62px)}
 
-/* ── PDF Panel ────────────────────────────────── */
 .pdf-panel{
   background:#3a3d40;overflow-y:auto;
   display:flex;flex-direction:column;align-items:center;
@@ -90,12 +87,10 @@ html,body{height:100%;font-family:'DM Sans',system-ui,sans-serif;background:var(
 }
 .pdf-toolbar button:hover{background:rgba(255,255,255,.22)}
 
-/* ── Sign Panel ───────────────────────────────── */
 .sign-panel{background:#fff;border-left:1px solid var(--slate-200);overflow-y:auto;display:flex;flex-direction:column}
 .screen{display:none;flex-direction:column}
 .screen.active{display:flex}
 
-/* Loading / Submitting */
 #screen-loading,#screen-submitting{
   height:100%;align-items:center;justify-content:center;
   gap:14px;color:var(--slate-500);font-size:14px;font-weight:500;
@@ -105,14 +100,12 @@ html,body{height:100%;font-family:'DM Sans',system-ui,sans-serif;background:var(
 @keyframes spin{to{transform:rotate(360deg)}}
 .loading-sub{font-size:12px;color:var(--slate-400)}
 
-/* Error */
 #screen-error{height:100%;align-items:center;justify-content:center;padding:48px 32px;text-align:center;gap:10px;flex-direction:column}
 .err-icon{width:64px;height:64px;border-radius:50%;background:var(--red-bg);border:1px solid var(--red-border);display:flex;align-items:center;justify-content:center;margin-bottom:4px}
 .err-icon svg{width:28px;height:28px;stroke:var(--red);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .err-title{font-size:20px;font-weight:700;font-family:'DM Serif Display',serif;color:var(--slate-800)}
 .err-msg{color:var(--slate-500);font-size:13px;line-height:1.65;max-width:280px}
 
-/* ── Email Screen ─────────────────────────────── */
 #screen-email{min-height:100%}
 .email-hero{
   padding:36px 32px 28px;
@@ -129,14 +122,12 @@ html,body{height:100%;font-family:'DM Sans',system-ui,sans-serif;background:var(
 .email-hero p{font-size:13px;color:var(--slate-500);line-height:1.65}
 .email-body{padding:24px 32px;display:flex;flex-direction:column;gap:18px}
 
-/* Doc summary card */
 .doc-card{background:var(--slate-50);border:1px solid var(--slate-200);border-radius:var(--r);padding:16px;display:flex;flex-direction:column;gap:8px}
 .doc-card-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--slate-400)}
 .doc-card-name{font-size:14px;font-weight:700;color:var(--slate-800);line-height:1.4}
 .doc-meta{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--slate-500)}
 .doc-meta svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;flex-shrink:0}
 
-/* Field */
 .field-group{display:flex;flex-direction:column;gap:6px}
 .field-label{font-size:12px;font-weight:600;color:var(--slate-600);letter-spacing:.3px;text-transform:uppercase}
 .field-input{
@@ -147,7 +138,6 @@ html,body{height:100%;font-family:'DM Sans',system-ui,sans-serif;background:var(
 .field-input:focus{border-color:var(--indigo);box-shadow:0 0 0 3px rgba(91,94,230,.1)}
 .field-input.err{border-color:var(--red);box-shadow:0 0 0 3px rgba(220,38,38,.08)}
 
-/* Inline message */
 .inline-msg{
   display:none;align-items:flex-start;gap:8px;
   padding:10px 12px;border-radius:8px;font-size:12px;line-height:1.5;
@@ -157,7 +147,6 @@ html,body{height:100%;font-family:'DM Sans',system-ui,sans-serif;background:var(
 .inline-msg.error{background:var(--red-bg);border:1px solid var(--red-border);color:var(--red)}
 .inline-msg.info{background:var(--amber-bg);border:1px solid var(--amber-border);color:var(--amber)}
 
-/* Buttons */
 .btn-primary{
   background:linear-gradient(135deg,var(--indigo),var(--purple));color:#fff;
   border:none;border-radius:10px;padding:14px 20px;font-size:14px;font-weight:600;
@@ -170,7 +159,41 @@ html,body{height:100%;font-family:'DM Sans',system-ui,sans-serif;background:var(
 .secure-note{display:flex;align-items:center;justify-content:center;gap:7px;font-size:11px;color:var(--slate-400)}
 .secure-note svg{width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2;flex-shrink:0}
 
-/* ── Sign Screen ──────────────────────────────── */
+#screen-otp{min-height:100%}
+.otp-hero{
+  padding:36px 32px 28px;
+  background:linear-gradient(160deg,#eef0fd 0%,#fff 70%);
+  border-bottom:1px solid var(--slate-100);
+}
+.otp-hero-icon{
+  width:52px;height:52px;border-radius:14px;
+  background:linear-gradient(135deg,var(--indigo),var(--purple));
+  display:flex;align-items:center;justify-content:center;margin-bottom:16px;
+}
+.otp-hero-icon svg{width:26px;height:26px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.otp-hero h2{font-family:'DM Serif Display',serif;font-size:24px;font-weight:400;color:var(--slate-900);margin-bottom:8px;letter-spacing:-.3px}
+.otp-hero p{font-size:13px;color:var(--slate-500);line-height:1.65}
+.otp-body{padding:24px 32px;display:flex;flex-direction:column;gap:18px}
+.otp-digits{display:flex;gap:8px;justify-content:center}
+.otp-digit{
+  width:46px;height:56px;border:1.5px solid var(--slate-200);border-radius:10px;
+  font-size:24px;font-weight:700;text-align:center;font-family:inherit;
+  color:var(--slate-900);background:#fff;outline:none;
+  transition:border-color .2s,box-shadow .2s;caret-color:transparent;
+}
+.otp-digit:focus{border-color:var(--indigo);box-shadow:0 0 0 3px rgba(91,94,230,.1)}
+.otp-digit.filled{border-color:var(--indigo);background:var(--indigo-bg)}
+.otp-digit.err{border-color:var(--red);box-shadow:0 0 0 3px rgba(220,38,38,.08);background:var(--red-bg)}
+.otp-timer{font-size:12px;color:var(--slate-400);text-align:center;font-weight:500}
+.otp-timer strong{color:var(--red)}
+.otp-resend{
+  background:none;border:1px solid var(--slate-200);border-radius:8px;
+  color:var(--slate-600);font-size:12px;font-weight:500;font-family:inherit;
+  padding:8px 16px;cursor:pointer;transition:background .15s;width:fit-content;margin:0 auto;
+}
+.otp-resend:hover{background:var(--slate-100)}
+.otp-resend:disabled{opacity:.4;cursor:not-allowed}
+
 #screen-sign{overflow-y:auto}
 .sign-header{
   padding:20px 24px 16px;
@@ -188,7 +211,6 @@ html,body{height:100%;font-family:'DM Sans',system-ui,sans-serif;background:var(
 .sign-body{padding:20px 24px;display:flex;flex-direction:column;gap:18px}
 .section-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--slate-400)}
 
-/* Signature tabs */
 .sig-tab-bar{display:flex;border-bottom:1px solid var(--slate-200)}
 .sig-tab{
   flex:1;padding:10px 6px;font-size:12px;font-weight:600;font-family:inherit;
@@ -202,7 +224,6 @@ html,body{height:100%;font-family:'DM Sans',system-ui,sans-serif;background:var(
 .sig-tab-panel{display:none;padding-top:14px}
 .sig-tab-panel.active{display:block}
 
-/* Draw */
 .canvas-wrap{
   border:1.5px dashed var(--slate-200);border-radius:10px;background:var(--slate-50);
   overflow:hidden;position:relative;transition:border-color .2s;
@@ -231,7 +252,6 @@ html,body{height:100%;font-family:'DM Sans',system-ui,sans-serif;background:var(
 }
 .btn-clear:hover{background:var(--slate-100)}
 
-/* Themes */
 .theme-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 .theme-btn{
   border:1.5px solid var(--slate-200);border-radius:10px;padding:10px 6px 8px;
@@ -244,7 +264,6 @@ html,body{height:100%;font-family:'DM Sans',system-ui,sans-serif;background:var(
 .theme-canvas-wrap{margin-top:10px;border:1.5px solid var(--slate-200);border-radius:10px;overflow:hidden;display:none}
 #theme-canvas{display:block;width:100%;height:80px}
 
-/* Upload */
 .upload-zone{
   border:1.5px dashed var(--slate-200);border-radius:10px;padding:28px 20px;
   text-align:center;cursor:pointer;transition:all .2s;background:var(--slate-50);
@@ -259,7 +278,6 @@ html,body{height:100%;font-family:'DM Sans',system-ui,sans-serif;background:var(
 .upload-zone span{font-size:11px;color:var(--slate-400)}
 #upload-preview{display:none;max-width:100%;max-height:80px;margin:12px auto 0;border-radius:8px;border:1px solid var(--slate-200);display:block}
 
-/* Validation notice (inline, no alert) */
 .form-notice{
   display:none;align-items:flex-start;gap:8px;
   background:var(--red-bg);border:1px solid var(--red-border);
@@ -268,7 +286,6 @@ html,body{height:100%;font-family:'DM Sans',system-ui,sans-serif;background:var(
 .form-notice.show{display:flex}
 .form-notice svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;flex-shrink:0;margin-top:1px}
 
-/* Consent */
 .consent-box{
   background:var(--green-bg);border:1px solid var(--green-border);
   border-radius:10px;padding:14px;display:flex;gap:10px;align-items:flex-start;
@@ -276,7 +293,6 @@ html,body{height:100%;font-family:'DM Sans',system-ui,sans-serif;background:var(
 .consent-box input[type=checkbox]{margin-top:2px;width:15px;height:15px;flex-shrink:0;cursor:pointer;accent-color:var(--green)}
 .consent-box label{font-size:12px;color:#166534;line-height:1.55;cursor:pointer}
 
-/* Submit button */
 .btn-submit{
   background:linear-gradient(135deg,var(--indigo),var(--purple));color:#fff;
   border:none;border-radius:10px;padding:15px;font-size:15px;font-weight:700;
@@ -290,7 +306,6 @@ html,body{height:100%;font-family:'DM Sans',system-ui,sans-serif;background:var(
 .btn-submit:disabled{opacity:.45;cursor:not-allowed;transform:none;box-shadow:none}
 .btn-submit svg{width:16px;height:16px;stroke:#fff;fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
 
-/* Success */
 #screen-success{height:100%;align-items:center;justify-content:center;padding:48px 32px;text-align:center;gap:14px;flex-direction:column}
 .success-icon{
   width:72px;height:72px;border-radius:50%;
@@ -308,7 +323,6 @@ html,body{height:100%;font-family:'DM Sans',system-ui,sans-serif;background:var(
 }
 .success-file svg{width:15px;height:15px;stroke:var(--slate-400);fill:none;stroke-width:2;flex-shrink:0}
 
-/* Responsive */
 @media(max-width:768px){
   .layout{grid-template-columns:1fr;grid-template-rows:45vh 1fr}
   .topbar-doc,.step-track{display:none}
@@ -333,6 +347,8 @@ html,body{height:100%;font-family:'DM Sans',system-ui,sans-serif;background:var(
     <div class="step-pip active" id="pip-1">1</div>
     <div class="step-line" id="line-1"></div>
     <div class="step-pip" id="pip-2">2</div>
+    <div class="step-line" id="line-2"></div>
+    <div class="step-pip" id="pip-3">3</div>
   </div>
 </div>
 
@@ -481,13 +497,60 @@ html,body{height:100%;font-family:'DM Sans',system-ui,sans-serif;background:var(
       </div>
     </div>
 
-    <!-- Step 2: Sign Document -->
+    <!-- Step 2: OTP Verification -->
+    <div class="screen" id="screen-otp">
+      <div class="otp-hero">
+        <div class="otp-hero-icon">
+          <svg viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+        </div>
+        <h2>Enter Verification Code</h2>
+        <p>A 6-digit code has been sent to <strong id="otp-email-display"></strong>. Enter it below to verify your identity before signing.</p>
+      </div>
+
+      <div class="otp-body">
+
+        <!-- 6 digit boxes -->
+        <div class="otp-digits" id="otp-digits">
+          <input class="otp-digit" maxlength="1" inputmode="numeric" pattern="[0-9]" autocomplete="one-time-code" id="otp-0"/>
+          <input class="otp-digit" maxlength="1" inputmode="numeric" pattern="[0-9]" id="otp-1"/>
+          <input class="otp-digit" maxlength="1" inputmode="numeric" pattern="[0-9]" id="otp-2"/>
+          <input class="otp-digit" maxlength="1" inputmode="numeric" pattern="[0-9]" id="otp-3"/>
+          <input class="otp-digit" maxlength="1" inputmode="numeric" pattern="[0-9]" id="otp-4"/>
+          <input class="otp-digit" maxlength="1" inputmode="numeric" pattern="[0-9]" id="otp-5"/>
+        </div>
+
+        <!-- Error -->
+        <div class="inline-msg error" id="otp-error">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+          <span id="otp-error-text">Incorrect code. Please check and try again.</span>
+        </div>
+
+        <!-- Timer -->
+        <div class="otp-timer" id="otp-timer">Code expires in <strong id="otp-countdown">5:00</strong></div>
+
+        <button class="btn-primary" onclick="verifyOTPCode()">
+          <svg viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+          Verify Code
+        </button>
+
+        <button class="otp-resend" id="otp-resend-btn" onclick="resendOTP()" disabled>
+          Didn't receive it? Resend code
+        </button>
+
+        <div class="secure-note">
+          <svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          One-time code · Expires in 5 minutes · Do not share
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 3: Sign Document -->
     <div class="screen" id="screen-sign">
 
       <div class="sign-header">
         <div class="verified-chip">
           <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
-          Identity Verified
+          Identity &amp; OTP Verified
         </div>
         <div class="sign-doc-name" id="contract-name-sign">—</div>
       </div>
@@ -609,7 +672,7 @@ html,body{height:100%;font-family:'DM Sans',system-ui,sans-serif;background:var(
 </div><!-- /layout -->
 
 <script>
-const API_BASE = 'https://{AzureFunctionAppUrl}/api';
+const API_BASE = 'https://{AzureFunctionUrl}/api';
 pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
 let tokenData        = null;
@@ -631,7 +694,6 @@ const THEMES = [
   { id:'minimal', label:'Minimal', font:'20px "Courier New",monospace',            color:'#374151' },
 ];
 
-// ── Helpers ───────────────────────────────────────────────────────────────
 function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById('screen-' + id).classList.add('active');
@@ -641,7 +703,6 @@ function showError(msg) {
   showScreen('error');
 }
 
-/** Shows inline validation message instead of alert() */
 function showNotice(msg) {
   const el  = document.getElementById('form-notice');
   const txt = document.getElementById('form-notice-text');
@@ -650,25 +711,35 @@ function showNotice(msg) {
   setTimeout(() => el.classList.remove('show'), 5000);
 }
 
-/** Update the two-step progress pips in the topbar */
 function setStep(n) {
   const pip1  = document.getElementById('pip-1');
   const pip2  = document.getElementById('pip-2');
+  const pip3  = document.getElementById('pip-3');
   const line1 = document.getElementById('line-1');
+  const line2 = document.getElementById('line-2');
+  const done  = '<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>';
+
+  pip1.className  = 'step-pip'; pip1.textContent = '1';
+  pip2.className  = 'step-pip'; pip2.textContent = '2';
+  pip3.className  = 'step-pip'; pip3.textContent = '3';
+  line1.className = 'step-line';
+  line2.className = 'step-line';
 
   if (n === 1) {
-    pip1.className  = 'step-pip active'; pip1.textContent = '1';
-    pip2.className  = 'step-pip';        pip2.textContent = '2';
-    line1.className = 'step-line';
-  } else {
-    pip1.className  = 'step-pip done';
-    pip1.innerHTML  = '<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>';
-    pip2.className  = 'step-pip active'; pip2.textContent = '2';
+    pip1.className = 'step-pip active';
+  } else if (n === 2) {
+    pip1.className = 'step-pip done'; pip1.innerHTML = done;
+    pip2.className = 'step-pip active';
     line1.className = 'step-line done';
+  } else {
+    pip1.className = 'step-pip done'; pip1.innerHTML = done;
+    pip2.className = 'step-pip done'; pip2.innerHTML = done;
+    pip3.className = 'step-pip active';
+    line1.className = 'step-line done';
+    line2.className = 'step-line done';
   }
 }
 
-// ── Init ──────────────────────────────────────────────────────────────────
 const params  = new URLSearchParams(location.search);
 const tokenId = params.get('token');
 
@@ -698,21 +769,18 @@ async function loadToken() {
     document.getElementById('topbar-contract').textContent     = t.contractName;
 
     showScreen('email');
-    // Load PDF in background — stays blurred until email verified
     loadPDF();
   } catch (err) {
     showError(err.message || 'Failed to validate token.');
   }
 }
 
-// ── Email Verification ────────────────────────────────────────────────────
 function verifyEmail() {
   const input  = document.getElementById('email-input');
   const errEl  = document.getElementById('email-error');
   const hintEl = document.getElementById('email-hint');
   const val    = input.value.trim();
 
-  // Empty check
   if (!val) {
     input.classList.add('err');
     errEl.querySelector('span').textContent = 'Please enter your email address.';
@@ -720,7 +788,6 @@ function verifyEmail() {
     input.focus(); return;
   }
 
-  // Mismatch check
   if (val.toLowerCase() !== tokenData.token.signerEmail.toLowerCase()) {
     input.classList.add('err');
     errEl.querySelector('span').textContent = 'Email does not match this invitation. Please check and try again.';
@@ -728,21 +795,17 @@ function verifyEmail() {
     input.focus(); return;
   }
 
-  // Matched — unlock PDF + show sign screen
   input.classList.remove('err');
   errEl.classList.remove('show');
   hintEl.classList.remove('show');
 
-  // Unlock PDF panel
-  document.getElementById('pdf-panel').classList.remove('locked');
-  document.getElementById('pdf-gate').style.display = 'none';
-
   setStep(2);
-  showScreen('sign');
+  showScreen('otp');
+  document.getElementById('otp-email-display').textContent = val;
+  sendOTPToEmail(val);
 }
 
-// ── Document Preview (PDF / TXT / DOCX) ──────────────────────────────────
-let docxBlobUrl = null; // stored for DOCX download
+let docxBlobUrl = null;
 
 function showPdfError(msg) {
   document.getElementById('pdf-loading').style.display  = 'none';
@@ -759,7 +822,6 @@ function hideAllViewers() {
 }
 
 async function loadPDF() {
-  // Called in background — stays blurred until email verified
   try {
     const res = await fetch(`${API_BASE}/document/${tokenId}`);
 
@@ -772,7 +834,6 @@ async function loadPDF() {
     const contentType = (res.headers.get('Content-Type') || '').toLowerCase();
     const buf = await res.arrayBuffer();
 
-    // ── PDF ───────────────────────────────────────────────────────────
     if (contentType.includes('pdf')) {
       try {
         pdfDoc = await pdfjsLib.getDocument({ data: new Uint8Array(buf) }).promise;
@@ -789,7 +850,6 @@ async function loadPDF() {
       return;
     }
 
-    // ── Plain text (.txt) ─────────────────────────────────────────────
     if (contentType.includes('text/plain') || contentType.includes('text/')) {
       const text     = new TextDecoder('utf-8').decode(buf);
       const filename = tokenData?.token?.fileName || 'document.txt';
@@ -800,7 +860,6 @@ async function loadPDF() {
       return;
     }
 
-    // ── Word document (.docx / .doc) ──────────────────────────────────
     if (contentType.includes('wordprocessingml') || contentType.includes('msword') || contentType.includes('octet-stream')) {
       const filename = tokenData?.token?.fileName || 'document.docx';
       const blob     = new Blob([buf], { type: contentType });
@@ -811,7 +870,6 @@ async function loadPDF() {
       return;
     }
 
-    // ── Unknown type — show error ─────────────────────────────────────
     showPdfError(`Unsupported file type: ${contentType}. Only PDF, TXT, and DOCX are supported for preview.`);
 
   } catch (fetchErr) {
@@ -854,7 +912,184 @@ async function changeZoom(d) {
   if (pdfDoc) await renderAllPages();
 }
 
-// ── Canvas ────────────────────────────────────────────────────────────────
+let otpCountdownInterval = null;
+let otpResendTimer       = null;
+
+async function sendOTPToEmail(email) {
+  try {
+    const res = await fetch(`${API_BASE}/sendOTP`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({
+        email,
+        tokenId:    tokenId,
+        signerName: tokenData?.token?.signerName || 'User',
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+
+    console.log('[OTP] Sent. Expires in:', data.expiresIn, 's');
+    startOTPCountdown(data.expiresIn || 300);
+    startResendTimer();
+    setTimeout(() => document.getElementById('otp-0')?.focus(), 100);
+  } catch (err) {
+    console.error('[OTP] Send failed:', err);
+    document.getElementById('otp-error-text').textContent =
+      'Failed to send verification code. Please try again.';
+    document.getElementById('otp-error').classList.add('show');
+  }
+}
+
+function startOTPCountdown(seconds) {
+  if (otpCountdownInterval) clearInterval(otpCountdownInterval);
+  let remaining = seconds;
+
+  function tick() {
+    const m = Math.floor(remaining / 60);
+    const s = remaining % 60;
+    const el = document.getElementById('otp-countdown');
+    if (el) el.textContent = `${m}:${s.toString().padStart(2, '0')}`;
+    if (remaining <= 0) {
+      clearInterval(otpCountdownInterval);
+      if (el) el.closest('.otp-timer').innerHTML =
+        '<span style="color:var(--red);font-weight:600">Code expired. Please resend.</span>';
+    }
+    remaining--;
+  }
+  tick();
+  otpCountdownInterval = setInterval(tick, 1000);
+}
+
+function startResendTimer() {
+  const btn = document.getElementById('otp-resend-btn');
+  if (!btn) return;
+  btn.disabled = true;
+  let cooldown = 30;
+
+  function tick() {
+    btn.textContent = `Resend code (${cooldown}s)`;
+    if (cooldown <= 0) {
+      clearInterval(otpResendTimer);
+      btn.disabled = false;
+      btn.textContent = "Didn't receive it? Resend code";
+    }
+    cooldown--;
+  }
+  tick();
+  otpResendTimer = setInterval(tick, 1000);
+}
+
+async function resendOTP() {
+  const email = document.getElementById('email-input').value.trim();
+  clearOTPDigits();
+  document.getElementById('otp-error').classList.remove('show');
+  await sendOTPToEmail(email);
+}
+
+function clearOTPDigits() {
+  for (let i = 0; i < 6; i++) {
+    const el = document.getElementById(`otp-${i}`);
+    if (el) { el.value = ''; el.classList.remove('filled','err'); }
+  }
+}
+
+(function initOTPInputs() {
+  window.addEventListener('DOMContentLoaded', () => {
+    for (let i = 0; i < 6; i++) {
+      const el = document.getElementById(`otp-${i}`);
+      if (!el) continue;
+
+      el.addEventListener('input', function() {
+        this.value = this.value.replace(/\D/g, '');
+        if (this.value) {
+          this.classList.add('filled');
+          const next = document.getElementById(`otp-${i + 1}`);
+          if (next) next.focus();
+          if (i === 5) verifyOTPCode();
+        } else {
+          this.classList.remove('filled');
+        }
+      });
+
+      el.addEventListener('keydown', function(e) {
+        if (e.key === 'Backspace' && !this.value) {
+          const prev = document.getElementById(`otp-${i - 1}`);
+          if (prev) { prev.value = ''; prev.classList.remove('filled'); prev.focus(); }
+        }
+        if (e.key === 'Enter') verifyOTPCode();
+      });
+
+      if (i === 0) {
+        el.addEventListener('paste', function(e) {
+          e.preventDefault();
+          const pasted = (e.clipboardData || window.clipboardData)
+            .getData('text').replace(/\D/g, '').substring(0, 6);
+          for (let j = 0; j < pasted.length; j++) {
+            const box = document.getElementById(`otp-${j}`);
+            if (box) { box.value = pasted[j]; box.classList.add('filled'); }
+          }
+          if (pasted.length === 6) verifyOTPCode();
+        });
+      }
+    }
+  });
+})();
+
+function getOTPCode() {
+  return Array.from({ length: 6 }, (_, i) => {
+    return (document.getElementById(`otp-${i}`)?.value || '');
+  }).join('');
+}
+
+async function verifyOTPCode() {
+  const code  = getOTPCode();
+  const email = document.getElementById('email-input').value.trim();
+  const errEl = document.getElementById('otp-error');
+
+  if (code.length < 6) {
+    document.getElementById('otp-error-text').textContent = 'Please enter all 6 digits.';
+    errEl.classList.add('show');
+    return;
+  }
+
+  errEl.classList.remove('show');
+
+  try {
+    const res = await fetch(`${API_BASE}/verifyOTP`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ email, tokenId, code }),
+    });
+    const data = await res.json();
+
+    if (!res.ok || !data.success) {
+      for (let i = 0; i < 6; i++) {
+        const el = document.getElementById(`otp-${i}`);
+        if (el) el.classList.add('err');
+      }
+      document.getElementById('otp-error-text').textContent =
+        data.error || 'Invalid code. Please try again.';
+      errEl.classList.add('show');
+      return;
+    }
+
+    if (otpCountdownInterval) clearInterval(otpCountdownInterval);
+    if (otpResendTimer)       clearInterval(otpResendTimer);
+
+    document.getElementById('pdf-panel').classList.remove('locked');
+    document.getElementById('pdf-gate').style.display = 'none';
+
+    setStep(3);
+    showScreen('sign');
+
+  } catch (err) {
+    document.getElementById('otp-error-text').textContent =
+      'Could not verify code. Check your connection and try again.';
+    errEl.classList.add('show');
+  }
+}
+
 function initCanvas() {
   const canvas = document.getElementById('sig-canvas');
   const ctx    = canvas.getContext('2d');
@@ -920,7 +1155,6 @@ function clearSig() {
   document.getElementById('theme-canvas-wrap').style.display = 'none';
 }
 
-// ── Tabs ──────────────────────────────────────────────────────────────────
 function switchTab(name, btn) {
   activeTab = name;
   document.querySelectorAll('.sig-tab').forEach(t => t.classList.remove('active'));
@@ -929,7 +1163,6 @@ function switchTab(name, btn) {
   document.getElementById('tab-' + name).classList.add('active');
 }
 
-// ── Themes ────────────────────────────────────────────────────────────────
 function buildThemeGrid() {
   const grid = document.getElementById('theme-grid');
   THEMES.forEach(t => {
@@ -968,7 +1201,6 @@ function drawThemeSig(t) {
   wrap.style.display = 'block';
 }
 
-// ── Upload ────────────────────────────────────────────────────────────────
 function handleDrop(e) {
   e.preventDefault();
   document.getElementById('upload-zone').classList.remove('drag');
@@ -985,7 +1217,6 @@ function readImage(file) {
   r.readAsDataURL(file);
 }
 
-// ── Final Signature ───────────────────────────────────────────────────────
 function getFinalSig() {
   if (activeTab === 'upload') return uploadedSig;
   if (activeTab === 'themes') return selectedThemeSig;
@@ -993,11 +1224,9 @@ function getFinalSig() {
   return document.getElementById('sig-canvas').toDataURL('image/png');
 }
 
-// ── Submit ────────────────────────────────────────────────────────────────
 async function submitSig() {
   const sig = getFinalSig();
 
-  // Validation — inline notices instead of alert()
   if (!sig) {
     showNotice('Please provide your signature before submitting.');
     return;
@@ -1011,7 +1240,7 @@ async function submitSig() {
   showScreen('submitting');
 
   try {
-    const res = await fetch(`${API_BASE}/sign`, {
+    const res = await fetch(`${API_BASE}/submitSignature`, {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
       body:    JSON.stringify({ tokenId, email, signature: sig }),
