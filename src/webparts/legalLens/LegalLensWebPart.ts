@@ -4,12 +4,15 @@ import { Version } from '@microsoft/sp-core-library';
 import {
   type IPropertyPaneConfiguration,
   PropertyPaneTextField,
-  PropertyPaneToggle
+  PropertyPaneToggle,
+  PropertyPaneDropdown,
+  type IPropertyPaneDropdownOption
 } from '@microsoft/sp-property-pane';
 import * as spPropertyPane from '@microsoft/sp-property-pane';
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const PropertyPaneCustomField: any = (spPropertyPane as any)['PropertyPaneCustomField'];
 import { BaseClientSideWebPart } from '@microsoft/sp-webpart-base';
+import { SPHttpClient } from '@microsoft/sp-http';
 
 import * as strings from 'LegalLensWebPartStrings';
 import LegalLens from './components/LegalLens';
@@ -34,13 +37,14 @@ export interface ILegalLensWebPartProps {
 export default class LegalLensWebPart extends BaseClientSideWebPart<ILegalLensWebPartProps> {
   private sharePointService: SharePointService;
   private aiFoundryService: AzureAIFoundryService;
+  private _libraryOptions: IPropertyPaneDropdownOption[] = [];
 
   private get effectiveLangs(): ILang[] {
     return this.properties.translationLanguages || LANGS;
   }
 
   protected onInit(): Promise<void> {
-    return super.onInit().then(() => {
+    return super.onInit().then(async () => {
       const diEndpoint = this.properties.enableDocumentAnalysis
         ? (this.properties.documentIntelligenceEndpoint || '') : '';
       const diKey = this.properties.enableDocumentAnalysis
@@ -59,9 +63,26 @@ export default class LegalLensWebPart extends BaseClientSideWebPart<ILegalLensWe
         diKey
       );
 
+      await this._loadSiteLibraries();
+
       console.log('[WebPart] Services initialized');
       console.log('[WebPart] Document Intelligence:', diEndpoint ? 'Enabled ✓' : 'Disabled - toggle ON in web part settings');
     });
+  }
+
+  private async _loadSiteLibraries(): Promise<void> {
+    try {
+      const url = `${this.context.pageContext.web.absoluteUrl}/_api/web/lists?$filter=BaseTemplate eq 101 and Hidden eq false&$select=Title&$orderby=Title`;
+      const response = await this.context.spHttpClient.get(url, SPHttpClient.configurations.v1);
+      const data = await response.json();
+      this._libraryOptions = (data.value || []).map((l: { Title: string }) => ({
+        key: l.Title,
+        text: l.Title,
+      }));
+    } catch (e) {
+      console.warn('[WebPart] Could not load site libraries:', e);
+      this._libraryOptions = [];
+    }
   }
 
   public render(): void {
@@ -95,6 +116,15 @@ export default class LegalLensWebPart extends BaseClientSideWebPart<ILegalLensWe
     return strings.AppSharePointEnvironment;
   }
 
+  protected onPropertyPaneFieldChanged(propertyPath: string, _oldValue: string, newValue: string): void {
+    if (propertyPath === 'contractLibraryUrl') {
+      const diEndpoint = this.properties.enableDocumentAnalysis ? (this.properties.documentIntelligenceEndpoint || '') : '';
+      const diKey = this.properties.enableDocumentAnalysis ? (this.properties.documentIntelligenceKey || '') : '';
+      this.sharePointService = new SharePointService(this.context, newValue, diEndpoint, diKey);
+      this.render();
+    }
+  }
+
   protected onDispose(): void {
     ReactDom.unmountComponentAtNode(this.domElement);
   }
@@ -117,10 +147,10 @@ export default class LegalLensWebPart extends BaseClientSideWebPart<ILegalLensWe
                 PropertyPaneTextField('description', {
                   label: 'Description'
                 }),
-                PropertyPaneTextField('contractLibraryUrl', {
+                PropertyPaneDropdown('contractLibraryUrl', {
                   label: strings.ContractLibraryUrlFieldLabel,
-                  description: 'Full URL to SharePoint document library (e.g., https://tenant.sharepoint.com/sites/site/Contracts)',
-                  multiline: false
+                  options: this._libraryOptions,
+                  disabled: this._libraryOptions.length === 0
                 })
               ]
             },
