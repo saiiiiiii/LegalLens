@@ -25,10 +25,13 @@
 
 .processingHeading {
   font-family: 'Cinzel', Georgia, serif;
-  font-size: 21px;
-  font-weight: 400;
-  color: var(--ll-cl-text);
-  margin: 0 0 3px;
+  font-size: 24px;
+  font-weight: 600;
+  background: var(--ll-bg-main-title);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: 0.5px;
 }
 
 .processingSubheading {
@@ -202,10 +205,13 @@
 
 .selectHeading {
   font-family: 'Cinzel', Georgia, serif;
-  font-size: 21px;
-  font-weight: 400;
-  color: var(--ll-cl-text);
-  margin: 0 0 3px;
+  font-size: 24px;
+  font-weight: 600;
+  background: var(--ll-bg-main-title);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: 0.5px;
 }
 
 .selectSubheading {
@@ -497,11 +503,11 @@
 .autoTag {
   font-size: 8.5px;
   font-family: monospace;
-  background: rgba(6, 182, 212, 0.1);
-  border: 1px solid rgba(6, 182, 212, 0.2);
+  background: var(--ll-bg-tag);
+  border: 1px solid var(--ll-bd-tag);
   border-radius: 3px;
   padding: 1px 5px;
-  color: #67e8f9;
+  color: var(--ll-cl-tag);
 }
 
 .duplicateFlag {
@@ -579,7 +585,7 @@
 
 .entityPanel {
   background: rgba(6, 182, 212, 0.04);
-  border: 1px solid rgba(6, 182, 212, 0.2);
+  border: 1px solid var(--ll-bg-tag-selected);
   border-radius: 12px;
   padding: 20px;
   max-height: 500px;
@@ -621,7 +627,7 @@
 
 .entityContact {
   font-size: 8.5px;
-  color: #67e8f9;
+  color: var(--ll-cl-tag);
 }
 
 .kvRow {

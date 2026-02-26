@@ -12,6 +12,13 @@
     --ll-bg-card: rgba(255, 255, 255, 0.03);
     --ll-bd-card: rgba(255, 255, 255, 0.1);
     --ll-bd-subtle: rgba(255, 255, 255, 0.06);
+    --ll-bg-tag: rgba(6, 182, 212, 0.08);
+    --ll-bd-tag: rgba(6, 182, 212, 0.18);
+    --ll-cl-tag: #67e8f9;
+    --ll-bg-tag-hover: rgba(6, 182, 212, 0.12);
+    --ll-bg-tag-selected: rgba(6, 182, 212, 0.2);
+    --ll-bd-tag-selected: rgba(6, 182, 212, 0.4);
+    --ll-cl-tag-selected: #22d3ee;
 }
 
 .themeLight {
@@ -26,6 +33,13 @@
     --ll-bg-card: rgba(0, 0, 0, 0.03);
     --ll-bd-card: rgba(0, 0, 0, 0.1);
     --ll-bd-subtle: rgba(0, 0, 0, 0.06);
+    --ll-bg-tag: rgba(14, 116, 144, 0.08);
+    --ll-bd-tag: rgba(14, 116, 144, 0.28);
+    --ll-cl-tag: #0e7490;
+    --ll-bg-tag-hover: rgba(14, 116, 144, 0.14);
+    --ll-bg-tag-selected: rgba(14, 116, 144, 0.16);
+    --ll-bd-tag-selected: rgba(14, 116, 144, 0.45);
+    --ll-cl-tag-selected: #0e7490;
 }
 
 .themeSite {
@@ -40,4 +54,11 @@
     --ll-bg-card: rgba(0, 0, 0, 0.03);
     --ll-bd-card: rgba(0, 0, 0, 0.1);
     --ll-bd-subtle: rgba(0, 0, 0, 0.06);
+    --ll-bg-tag: rgba(0, 120, 212, 0.08);
+    --ll-bd-tag: rgba(0, 120, 212, 0.22);
+    --ll-cl-tag: var(--themePrimary, #0078d4);
+    --ll-bg-tag-hover: rgba(0, 120, 212, 0.14);
+    --ll-bg-tag-selected: rgba(0, 120, 212, 0.16);
+    --ll-bd-tag-selected: rgba(0, 120, 212, 0.4);
+    --ll-cl-tag-selected: var(--themeDarker, #005a9e);
 }
