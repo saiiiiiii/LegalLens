@@ -1,0 +1,21 @@
+// Theme classes — applied to .appWrap root to switch CSS variable sets
+
+.themeDark {
+    --ll-bg-app: linear-gradient(135deg, #0a1628, #0f172a 50%, #1e293b);
+    --ll-bg-main-title: linear-gradient(135deg, #fff 0%, #a5b4fc 100%);
+    --ll-cl-text: #e2e8f0;
+
+}
+
+.themeLight {
+    --ll-bg-app: linear-gradient(135deg, #ffffff, #f1f5f9 50%, #e2e8f0);
+    --ll-bg-main-title: linear-gradient(135deg, #0f172a 0%, #7c3aed 100%);
+    --ll-cl-text: #1e293b;
+}
+
+.themeSite {
+    --ll-bg-app: linear-gradient(135deg, var(--white, #ffffff), var(--neutralLighterAlt, #faf9f8) 50%, var(--themeLighterAlt, #eff6fc));
+    --ll-bg-main-title: var(--themePrimary, #0078d4);
+    --ll-cl-text: #1e293b;
+}
+

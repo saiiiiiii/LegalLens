@@ -6,12 +6,14 @@ import {
   PropertyPaneTextField,
   PropertyPaneToggle,
   PropertyPaneDropdown,
+  PropertyPaneChoiceGroup,
   type IPropertyPaneDropdownOption
 } from '@microsoft/sp-property-pane';
 import * as spPropertyPane from '@microsoft/sp-property-pane';
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const PropertyPaneCustomField: any = (spPropertyPane as any)['PropertyPaneCustomField'];
 import { BaseClientSideWebPart } from '@microsoft/sp-webpart-base';
+import { ThemeProvider, ThemeChangedEventArgs, IReadonlyTheme } from '@microsoft/sp-component-base';
 import { SPHttpClient } from '@microsoft/sp-http';
 
 import * as strings from 'LegalLensWebPartStrings';
@@ -34,18 +36,24 @@ export interface ILegalLensWebPartProps {
   translationLanguages: ILang[];
   showTranslateTab: boolean;
   showESignatureTab: boolean;
+  colorScheme: 'dark' | 'light' | 'site';
 }
 
 export default class LegalLensWebPart extends BaseClientSideWebPart<ILegalLensWebPartProps> {
   private sharePointService: SharePointService;
   private aiFoundryService: AzureAIFoundryService;
   private _libraryOptions: IPropertyPaneDropdownOption[] = [];
+  private _themeProvider: ThemeProvider;
 
   private get effectiveLangs(): ILang[] {
     return this.properties.translationLanguages || LANGS;
   }
 
   protected onInit(): Promise<void> {
+    this._themeProvider = this.context.serviceScope.consume(ThemeProvider.serviceKey);
+    this._themeProvider.themeChangedEvent.add(this, this._onThemeChanged);
+    this._applySiteThemeVars(this._themeProvider.tryGetTheme());
+
     return super.onInit().then(async () => {
       const diEndpoint = this.properties.enableDocumentAnalysis
         ? (this.properties.documentIntelligenceEndpoint || '') : '';
@@ -106,11 +114,32 @@ export default class LegalLensWebPart extends BaseClientSideWebPart<ILegalLensWe
         documentIntelligenceKey: this.properties.enableDocumentAnalysis
           ? (this.properties.documentIntelligenceKey || '') : '',
         showTranslateTab: !!this.properties.showTranslateTab,
-        showESignatureTab: !!this.properties.showESignatureTab
+        showESignatureTab: !!this.properties.showESignatureTab,
+        colorScheme: this.properties.colorScheme || 'dark'
       }
     );
 
     ReactDom.render(element, this.domElement);
+  }
+
+  private _onThemeChanged(args: ThemeChangedEventArgs): void {
+    this._applySiteThemeVars(args.theme);
+    this.render();
+  }
+
+  private _applySiteThemeVars(theme: IReadonlyTheme | undefined): void {
+    const el = this.domElement;
+    if (!theme?.palette) return;
+    const { palette } = theme;
+    el.style.setProperty('--themePrimary', palette.themePrimary);
+    el.style.setProperty('--themeSecondary', palette.themeSecondary);
+    el.style.setProperty('--themeDarker', palette.themeDarker);
+    el.style.setProperty('--neutralPrimary', palette.neutralPrimary);
+    el.style.setProperty('--neutralLight', palette.neutralLight);
+    el.style.setProperty('--neutralLighter', palette.neutralLighter);
+    el.style.setProperty('--neutralLighterAlt', palette.neutralLighterAlt);
+    el.style.setProperty('--white', palette.white);
+    el.style.setProperty('--black', palette.black);
   }
 
   private _getEnvironmentMessage(): string {
@@ -130,6 +159,7 @@ export default class LegalLensWebPart extends BaseClientSideWebPart<ILegalLensWe
   }
 
   protected onDispose(): void {
+    this._themeProvider.themeChangedEvent.remove(this, this._onThemeChanged);
     ReactDom.unmountComponentAtNode(this.domElement);
   }
 
@@ -212,6 +242,14 @@ export default class LegalLensWebPart extends BaseClientSideWebPart<ILegalLensWe
                   label: 'Show E-Signature tab',
                   onText: 'Visible',
                   offText: 'Hidden'
+                }),
+                PropertyPaneChoiceGroup('colorScheme', {
+                  label: 'Color Scheme',
+                  options: [
+                    { key: 'dark', text: 'Dark', iconProps: { officeFabricIconFontName: 'ClearNight' } },
+                    { key: 'light', text: 'Light', iconProps: { officeFabricIconFontName: 'Sunny' } },
+                    { key: 'site', text: 'Site Theme', iconProps: { officeFabricIconFontName: 'Color' } }
+                  ]
                 })
               ]
             },
