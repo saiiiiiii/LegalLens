@@ -49,7 +49,10 @@ export const ClassifyProcessing: React.FC<IClassifyProcessingProps> = ({
       <Stack tokens={{ childrenGap: 20 }}>
         <Stack horizontal horizontalAlign="space-between" verticalAlign="end" wrap tokens={{ childrenGap: 12 }}>
           <Stack>
-            <Text className={styles.processingHeading}>Live Classification</Text>
+            <Stack horizontal verticalAlign="center" tokens={{ childrenGap: 10 }}>
+              <Text className={styles.processingHeading}>Live Classification</Text>
+              <Text className={styles.aiBadge}>AI POWERED</Text>
+            </Stack>
             <Text className={styles.processingSubheading}>
               Knowledge Agent classifies document in real-time
             </Text>

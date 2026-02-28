@@ -19,7 +19,10 @@ export const ClassifySelect: React.FC<IClassifySelectProps> = ({
     return (
       <>
         <Stack className={styles.selectHeadingWrap}>
-          <Text className={styles.selectHeading}>Document Classification</Text>
+          <Stack horizontal verticalAlign="center" tokens={{ childrenGap: 10 }}>
+            <Text className={styles.selectHeading}>Document Classification</Text>
+            <Text className={styles.aiBadge}>AI POWERED</Text>
+          </Stack>
           <Text className={styles.selectSubheading}>
             AI-powered classification · Select document and classification type
           </Text>

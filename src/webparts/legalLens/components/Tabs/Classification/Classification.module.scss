@@ -1,4 +1,9 @@
 @use '../../_select' as *;
+@use '../../_badge' as *;
+
+.aiBadge {
+  @include aiBadge;
+}
 
 .confidenceScore {
   background: var(--ll-bg-card);

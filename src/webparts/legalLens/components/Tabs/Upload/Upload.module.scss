@@ -1,5 +1,6 @@
 // Upload & Analyze View
 @use '../../_select' as *;
+@use '../../_badge' as *;
 
 .viewWrap {
   animation: fadeIn 0.35s ease;
@@ -31,13 +32,7 @@
 }
 
 .aiBadge {
-  font-size: 8px;
-  font-weight: 700;
-  letter-spacing: 1px;
-  background: linear-gradient(135deg, #ef4444, #f59e0b);
-  color: #fff;
-  border-radius: 4px;
-  padding: 2px 7px;
+  @include aiBadge;
 }
 
 .viewSubtitle {
