@@ -1,4 +1,6 @@
 // LibraryView
+@use '../../_typography' as *;
+
 .loadingWrap {
   min-height: 400px;
 }
@@ -17,14 +19,7 @@
 }
 
 .viewTitle {
-  font-family: 'Cinzel', Georgia, serif;
-  font-size: 24px;
-  font-weight: 600;
-  background: var(--ll-bg-main-title);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  letter-spacing: 0.5px;
+  @include tabTitle;
   margin: 0 0 3px;
 }
 

@@ -1,0 +1,34 @@
+@use '../../_typography' as *;
+.stepHeader {
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--ll-bd-subtle);
+}
+
+.stepHeaderTitleRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.stepHeaderBackBtn {
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--ll-bd-card);
+  background: var(--ll-bg-card);
+  color: var(--ll-cl-text-muted);
+  font-size: 11px;
+  cursor: pointer;
+  font-weight: 600;
+  outline: none;
+}
+
+.stepHeaderTitle {
+  @include tabTitle;
+}
+
+.stepHeaderSubtitle {
+  margin: 0;
+  font-size: 11px;
+  color: var(--ll-cl-text-muted);
+}

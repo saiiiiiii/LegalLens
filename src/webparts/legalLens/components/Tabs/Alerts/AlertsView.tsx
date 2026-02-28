@@ -17,7 +17,7 @@ export const AlertsView: React.FC<IAlertsViewProps> = ({ contracts }) => {
     return (
       <Stack className={styles.alertsContainer}>
         <Stack className={styles.header}>
-          <Text variant="xLarge" className={styles.title}>Alerts & Conflicts</Text>
+          <Text variant="xLarge" block className={styles.title}>Alerts & Conflicts</Text>
           <Text variant="small" className={styles.subtitle}>
             Auto-detected from your contracts: expiry monitoring, risk analysis, duplicate detection
           </Text>

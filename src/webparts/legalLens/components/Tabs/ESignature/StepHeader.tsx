@@ -1,4 +1,6 @@
 import * as React from 'react';
+import { Text } from '@fluentui/react';
+import styles from './ESignature.module.scss';
 
 export interface IStepHeaderProps {
   title: string;
@@ -8,36 +10,18 @@ export interface IStepHeaderProps {
 
 export const StepHeader: React.FC<IStepHeaderProps> = ({ title, subtitle, onBack }) => {
   return (
-    <div style={{
-      marginBottom: 20,
-      paddingBottom: 16,
-      borderBottom: '1px solid rgba(255,255,255,0.08)',
-    }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 6 }}>
+    <div className={styles.stepHeader}>
+      <div className={styles.stepHeaderTitleRow}>
         {onBack && (
-          <button
-            onClick={onBack}
-            style={{
-              padding: '6px 10px',
-              borderRadius: 6,
-              border: '1px solid rgba(255,255,255,0.1)',
-              background: 'rgba(255,255,255,0.03)',
-              color: '#94a3b8',
-              fontSize: 11,
-              cursor: 'pointer',
-              fontWeight: 600,
-            }}
-          >
+          <button className={styles.stepHeaderBackBtn} onClick={onBack}>
             ← Back
           </button>
         )}
-        <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: '#e2e8f0' }}>
-          {title}
-        </h2>
+        <Text block className={styles.stepHeaderTitle}>{title}</Text>
       </div>
-      <p style={{ margin: 0, fontSize: 12, color: '#94a3b8' }}>
+      <Text variant="small" className={styles.stepHeaderSubtitle}>
         {subtitle}
-      </p>
+      </Text>
     </div>
   );
 };

@@ -1,3 +1,5 @@
+@use '../../_typography' as *;
+
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(20px); }
   to { opacity: 1; transform: translateY(0); }
@@ -12,14 +14,8 @@
 }
 
 .title {
-  font-family: 'Cinzel', Georgia, serif !important;
-  font-size: 24px;
-  font-weight: 600;
-  background: var(--ll-bg-main-title);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  letter-spacing: 0.5px;
+  @include tabTitle;
+  width: 250px;
   margin: 0 0 3px;
 }
 

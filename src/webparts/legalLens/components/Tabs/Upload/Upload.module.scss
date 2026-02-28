@@ -1,6 +1,7 @@
 // Upload & Analyze View
 @use '../../_select' as *;
 @use '../../_badge' as *;
+@use '../../_typography' as *;
 
 .viewWrap {
   animation: fadeIn 0.35s ease;
@@ -20,14 +21,7 @@
 }
 
 .viewTitle {
-  font-family: 'Cinzel', Georgia, serif;
-  font-size: 24px;
-  font-weight: 600;
-  background: var(--ll-bg-main-title);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  letter-spacing: 0.5px;
+  @include tabTitle;
   margin: 0;
 }
 

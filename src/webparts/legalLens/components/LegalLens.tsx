@@ -7,6 +7,7 @@ import {
   LocalLanguage24Regular,
   Alert24Regular,
   ScalesRegular,
+  Signature24Regular,
 } from '@fluentui/react-icons';
 import { LibraryView } from './Tabs/Library/LibraryView';
 import { ILegalLensState } from './ILegalLensState';
@@ -162,6 +163,7 @@ export default class LegalLens extends React.Component<ILegalLensProps, ILegalLe
                 {tab.key === 'classify' && <DocumentSearch24Regular className={styles.navIcon} />}
                 {tab.key === 'translate' && <LocalLanguage24Regular className={styles.navIcon} />}
                 {tab.key === 'alerts' && <Alert24Regular className={styles.navIcon} />}
+                {tab.key === 'esignature' && <Signature24Regular className={styles.navIcon} />}
                 {tab.label}
               </button>
             ))}
