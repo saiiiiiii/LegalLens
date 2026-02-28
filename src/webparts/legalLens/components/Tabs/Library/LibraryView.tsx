@@ -36,10 +36,7 @@ export const LibraryView: React.FC<ILibraryViewProps> = ({ sharePointService, ai
         <Spinner
           size={SpinnerSize.large}
           label="Loading contracts..."
-          styles={{
-            root: { color: '#818cf8' },
-            label: { color: '#e2e8f0' }
-          }}
+          className={styles.spinner}
         />
       </Stack>
     );

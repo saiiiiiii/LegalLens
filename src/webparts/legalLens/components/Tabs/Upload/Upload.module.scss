@@ -192,6 +192,22 @@
   justify-content: center;
   font-size: 9px;
   transition: all 0.3s;
+  border: 2px solid var(--ll-bd-card);
+  background: transparent;
+
+  &.stepDotDone {
+    border-color: #10b981;
+    background: #10b981;
+  }
+}
+
+.stepText {
+  font-size: 11px;
+  color: var(--ll-cl-text-faint);
+
+  &.stepTextDone {
+    color: var(--ll-cl-text);
+  }
 }
 
 .stepCheck {

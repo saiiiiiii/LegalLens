@@ -6,7 +6,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #060d1a;
+  background: var(--ll-bg-app);
 }
 
 .loadingCenter {
@@ -25,13 +25,13 @@
 
 .loadingText {
   font-size: 13px;
-  color: var(--ll-cl-text-muted);
+  color: var(--ll-cl-text);
 }
 
 // Error state
 .errorWrap {
   padding: 40px 24px;
-  background: #060d1a;
+  background: var(--ll-bg-app);
   border-radius: 12px;
 }
 
@@ -55,7 +55,7 @@
 
 .errorMessage {
   font-size: 13px;
-  color: var(--ll-cl-text-muted);
+  color: var(--ll-cl-text);
   margin-bottom: 20px;
 }
 

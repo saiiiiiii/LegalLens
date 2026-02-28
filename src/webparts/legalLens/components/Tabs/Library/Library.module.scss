@@ -3,6 +3,14 @@
   min-height: 400px;
 }
 
+.spinner {
+  color: var(--ll-cl-accent);
+
+  :global(.ms-Spinner-label) {
+    color: var(--ll-cl-text-muted);
+  }
+}
+
 .headerRow {
   margin-bottom: 20px;
   flex-wrap: wrap;
