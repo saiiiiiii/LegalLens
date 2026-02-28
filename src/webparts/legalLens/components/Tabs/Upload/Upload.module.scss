@@ -1,4 +1,5 @@
 // Upload & Analyze View
+@use '../../_select' as *;
 
 .viewWrap {
   animation: fadeIn 0.35s ease;
@@ -21,7 +22,7 @@
   font-family: 'Cinzel', Georgia, serif;
   font-size: 24px;
   font-weight: 600;
-  background: linear-gradient(135deg, #fff 0%, #a5b4fc 100%);
+  background: var(--ll-bg-main-title);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -42,7 +43,7 @@
 .viewSubtitle {
   margin: 0;
   font-size: 11px;
-  color: #64748b;
+  color: var(--ll-cl-text-faint);
 }
 
 // Error banner
@@ -73,38 +74,38 @@
   font-size: 64px;
   margin-bottom: 16px;
   opacity: 0.3;
-  color: #818cf8;
+  color: var(--ll-cl-accent);
 }
 
 .dropZoneTitle {
   font-size: 14px;
-  color: #e2e8f0;
+  color: var(--ll-cl-text);
   font-weight: 600;
   margin-bottom: 8px;
 }
 
 .dropZoneHint {
   font-size: 11px;
-  color: #64748b;
+  color: var(--ll-cl-text-faint);
   margin-bottom: 16px;
 }
 
 .dropZoneNote {
   font-size: 10px;
-  color: #64748b;
+  color: var(--ll-cl-text-faint);
 }
 
 .orDivider {
   margin: 24px 0;
   text-align: center;
-  color: #64748b;
+  color: var(--ll-cl-text-faint);
   font-size: 11px;
 }
 
 .libraryLabel {
   display: block;
   font-size: 10px;
-  color: #64748b;
+  color: var(--ll-cl-text-faint);
   margin-bottom: 8px;
   font-weight: 600;
   letter-spacing: 0.5px;
@@ -112,32 +113,24 @@
 }
 
 .librarySelect {
-  width: 100%;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-  padding: 10px 14px;
-  color: #e2e8f0;
-  font-size: 12px;
-  outline: none;
-  cursor: pointer;
+  @include llSelect;
 }
 
 // Analyzing view
 
 .analyzingCard {
   padding: 24px;
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--ll-bg-card);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--ll-bd-card);
   border-radius: 16px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--ll-box-shadow);
 }
 
 .analyzingTitle {
   font-size: 13px;
-  color: #e2e8f0;
+  color: var(--ll-cl-text);
   font-weight: 600;
   margin-bottom: 16px;
 }
@@ -154,19 +147,19 @@
 
 .progressLabel {
   font-size: 11px;
-  color: #64748b;
+  color: var(--ll-cl-text-faint);
 }
 
 .progressPercent {
   font-size: 11px;
-  color: #818cf8;
+  color: var(--ll-cl-accent);
   font-weight: 600;
 }
 
 .progressTrack {
   width: 100%;
   height: 8px;
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--ll-bg-card);
   border-radius: 4px;
   overflow: hidden;
 }
@@ -199,6 +192,22 @@
   justify-content: center;
   font-size: 9px;
   transition: all 0.3s;
+  border: 2px solid var(--ll-bd-card);
+  background: transparent;
+
+  &.stepDotDone {
+    border-color: #10b981;
+    background: #10b981;
+  }
+}
+
+.stepText {
+  font-size: 11px;
+  color: var(--ll-cl-text-faint);
+
+  &.stepTextDone {
+    color: var(--ll-cl-text);
+  }
 }
 
 .stepCheck {
@@ -226,11 +235,11 @@
 
 .successHint {
   font-size: 9px;
-  color: #64748b;
+  color: var(--ll-cl-text-faint);
 }
 
 .riskScoreCard {
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--ll-bd-card);
   border-radius: 12px;
   margin-bottom: 20px;
   text-align: center;
@@ -239,7 +248,7 @@
 
 .riskScoreLabel {
   font-size: 12px;
-  color: #64748b;
+  color: var(--ll-cl-text-faint);
   margin-bottom: 8px;
   font-weight: 600;
   letter-spacing: 1px;
@@ -254,33 +263,33 @@
 
 .riskScoreTotal {
   font-size: 18px;
-  color: #94a3b8;
+  color: var(--ll-cl-text-muted);
 }
 
 .riskScoreStatus {
   margin-top: 8px;
   font-size: 11px;
-  color: #e2e8f0;
+  color: var(--ll-cl-text);
   display: flex;
   align-items: center;
   gap: 6px;
   justify-content: center;
   .riskScoreStatusText {
-    color: #94a3b8;
+    color: var(--ll-cl-text-muted);
   }
 }
 
 .sectionTitle {
   font-size: 14px;
-  color: #fff;
+  color: var(--ll-cl-text);
   font-weight: 600;
   margin-bottom: 12px;
 }
 
 .riskFactorCard {
   padding: 20px;
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: var(--ll-bg-card);
+  border: 1px solid var(--ll-bd-subtle);
   border-radius: 8px;
   margin-bottom: 10px;
 }
@@ -302,7 +311,7 @@
 
 .riskFactorSeverity {
   font-size: 12px;
-  color: #fff;
+  color: var(--ll-cl-text);
   font-weight: 600;
   margin-bottom: 4px;
   text-transform: uppercase;
@@ -310,7 +319,7 @@
 
 .riskFactorDesc {
   font-size: 11px;
-  color: #94a3b8;
+  color: var(--ll-cl-text-muted);
   margin-bottom: 8px;
   line-height: 1.6;
 }
@@ -325,8 +334,8 @@
 
 .clauseRow {
   padding: 12px 16px;
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: var(--ll-bg-card);
+  border: 1px solid var(--ll-bd-subtle);
   border-radius: 8px;
   margin-bottom: 8px;
   display: flex;
@@ -340,7 +349,7 @@
 
 .clauseTitle {
   font-size: 11px;
-  color: #e2e8f0;
+  color: var(--ll-cl-text);
   font-weight: 600;
   margin-bottom: 2px;
 }

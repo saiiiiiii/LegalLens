@@ -114,8 +114,10 @@ export default class LegalLens extends React.Component<ILegalLensProps, ILegalLe
       );
     }
 
+    const themeClass = { dark: styles.themeDark, light: styles.themeLight, site: styles.themeSite }[this.props.colorScheme] ?? styles.themeDark;
+
     return (
-      <div className={`legallens-wp ${styles.appWrap}`}>
+      <div className={`legallens-wp ${styles.appWrap} ${themeClass}`}>
         <style>{`
           @keyframes fadeIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
           @keyframes slideUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}

@@ -32,16 +32,10 @@ export const UploadAnalyzing: React.FC<IUploadAnalyzingProps> = ({
         { step: 'Calculating risk score', done: analyzingProgress > 80 },
       ].map((item, i) => (
         <Stack key={i} horizontal verticalAlign="center" className={styles.stepRow} tokens={{ childrenGap: 8 }}>
-          <div
-            className={styles.stepDot}
-            style={{
-              border: '2px solid ' + (item.done ? '#10b981' : 'rgba(255,255,255,0.2)'),
-              background: item.done ? '#10b981' : 'transparent',
-            }}
-          >
+          <div className={`${styles.stepDot}${item.done ? ` ${styles.stepDotDone}` : ''}`}>
             {item.done && <Text className={styles.stepCheck}>✓</Text>}
           </div>
-          <Text style={{ fontSize: '11px', color: item.done ? '#e2e8f0' : '#64748b' }}>
+          <Text className={`${styles.stepText}${item.done ? ` ${styles.stepTextDone}` : ''}`}>
             {item.step}
           </Text>
         </Stack>

@@ -115,16 +115,9 @@ export const MultilingualQA: React.FC<IMultilingualQAProps> = ({ contract, aiFou
               <button
                 key={l.code}
                 onClick={() => handleLanguageChange(l.code)}
-                className={styles.qaLangBtnQA}
-                style={{
-                  background: qaLanguage === l.code ? 'rgba(99,102,241,0.15)' : 'rgba(255,255,255,0.04)',
-                  border: `1px solid ${qaLanguage === l.code ? 'rgba(99,102,241,0.4)' : 'rgba(255,255,255,0.1)'}`
-                }}
+                className={`${styles.qaLangBtnQA}${qaLanguage === l.code ? ` ${(styles as Record<string, string>).qaLangBtnSelected}` : ''}`}
               >
-                <div
-                  className={styles.qaLangBtnLabel}
-                  style={{ color: qaLanguage === l.code ? '#fff' : '#94a3b8' }}
-                >{l.label}</div>
+                <div className={styles.qaLangBtnLabel}>{l.label}</div>
               </button>
             ))}
           </div>

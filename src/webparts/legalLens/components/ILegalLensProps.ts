@@ -17,4 +17,5 @@ export interface ILegalLensProps {
   documentIntelligenceKey?: string;
   showTranslateTab: boolean;
   showESignatureTab: boolean;
+  colorScheme: 'dark' | 'light' | 'site';
 }
