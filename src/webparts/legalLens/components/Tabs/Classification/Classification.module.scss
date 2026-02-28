@@ -1,3 +1,5 @@
+@use '../../_select' as *;
+
 .confidenceScore {
   background: var(--ll-bg-card);
   border: 1px solid var(--ll-bd-subtle);
@@ -247,20 +249,7 @@
 }
 
 .selectDropdown {
-  width: 100%;
-  background: var(--ll-bg-card);
-  border: 1px solid var(--ll-bd-card);
-  border-radius: 8px;
-  padding: 10px 14px;
-  color: var(--ll-cl-text);
-  font-size: 12px;
-  outline: none;
-  cursor: pointer;
-
-  option {
-    background: #1e293b;
-    color: var(--ll-cl-text);
-  }
+  @include llSelect;
 }
 
 .typeCard {

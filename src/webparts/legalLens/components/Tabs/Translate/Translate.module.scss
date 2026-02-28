@@ -1,4 +1,5 @@
 // TranslatedDocument
+@use '../../_select' as *;
 
 .docWrap {
   margin-bottom: 24px;
@@ -416,6 +417,17 @@
   outline: none;
   text-align: center;
   height: 36px;
+  background: var(--ll-bd-subtle);
+  border: 1px solid var(--ll-bd-card);
+
+  &.qaLangBtnSelected {
+    background: var(--ll-bg-lang-selected);
+    border-color: var(--ll-bd-lang-selected);
+
+    .qaLangBtnLabel {
+      color: var(--ll-cl-lang-selected);
+    }
+  }
 }
 
 .qaLangBtnFlag {
@@ -427,6 +439,7 @@
 .qaLangBtnLabel {
   font-size: 9px;
   font-weight: 600;
+  color: var(--ll-cl-text-muted);
 }
 
 .qaMsgIconUser {
@@ -632,15 +645,8 @@
 }
 
 .contractSelect {
-  width: 100%;
-  background: var(--ll-bg-card);
-  border: 1px solid var(--ll-bd-card);
-  border-radius: 8px;
+  @include llSelect;
   padding: 9px 34px 9px 12px;
-  color: var(--ll-cl-text);
-  font-size: 12px;
-  outline: none;
-  cursor: pointer;
 }
 
 .langBtn {

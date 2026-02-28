@@ -57,9 +57,9 @@ export const UploadSelect: React.FC<IUploadSelectProps> = ({
             }
           }}
         >
-          <option value="-1" style={{ background: '#1e293b', color: '#e2e8f0' }}>Choose contract from library...</option>
+          <option value="-1">Choose contract from library...</option>
           {contracts.map((c, i) => (
-            <option key={i} value={i} style={{ background: '#1e293b', color: '#e2e8f0' }}>{c.name}</option>
+            <option key={i} value={i}>{c.name}</option>
           ))}
         </select>
       </Stack>

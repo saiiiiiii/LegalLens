@@ -142,7 +142,7 @@ export const TranslateView: React.FC<ITranslateViewProps> = ({ contracts, aiFoun
                 className={styles.contractSelect}
               >
                 {contracts.map((c, i) => (
-                  <option key={i} value={i} style={{ background: '#1e293b', color: '#e2e8f0' }}>{c.name}</option>
+                  <option key={i} value={i}>{c.name}</option>
                 ))}
               </select>
             </Stack>

@@ -27,6 +27,11 @@
     --ll-bg-lang-selected: rgba(99, 102, 241, 0.15);
     --ll-bd-lang-selected: rgba(99, 102, 241, 0.4);
     --ll-cl-lang-selected: #fff;
+
+    // dropdown
+    --ll-bg-dropdown: #1e293b;
+    --ll-bd-dropdown: rgba(255, 255, 255, 0.1);
+    --ll-cl-dropdown: #e2e8f0;
 }
 
 .themeLight {
@@ -55,6 +60,11 @@
     --ll-bg-lang-selected: rgba(79, 70, 229, 0.1);
     --ll-bd-lang-selected: rgba(79, 70, 229, 0.4);
     --ll-cl-lang-selected: #4f46e5;
+
+    // dropdown
+    --ll-bg-dropdown: #e2e8f0;
+    --ll-bd-dropdown: rgba(255, 255, 255, 0.1);
+    --ll-cl-dropdown: #0f172a;
 }
 
 .themeSite {
@@ -83,4 +93,8 @@
     --ll-bg-lang-selected: rgba(0, 120, 212, 0.1);
     --ll-bd-lang-selected: rgba(0, 120, 212, 0.4);
     --ll-cl-lang-selected: var(--themePrimary, #0078d4);
+    
+    --ll-bg-dropdown: var(--neutralLighterAlt, #faf9f8);
+    --ll-bd-dropdown: rgba(255, 255, 255, 0.1);
+    --ll-cl-dropdown: var(--themeDarker, #005a9e);
 }
