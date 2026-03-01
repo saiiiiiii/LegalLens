@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { DefaultButton } from '@fluentui/react/lib/Button';
-import styles from './TagFilter.module.scss';
+import styles from './Library.module.scss';
 
 export interface ITagFilterProps {
   topTags: Array<{ tag: string; count: number }>;
