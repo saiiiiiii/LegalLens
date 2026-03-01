@@ -1,7 +1,5 @@
 // LibraryView
-@use '../../mixins/_typography' as *;
-@use '../../mixins/_buttons' as *;
-@use '../../mixins/_cards' as *;
+@use '../../mixins' as *;
 
 .backBtn {
   @include backBtn;

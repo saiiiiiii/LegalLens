@@ -1,5 +1,5 @@
 @use 'theme';
-@use 'mixins/typography' as *;
+@use './mixins' as *;
 
 // Loading state
 .loadingWrap {
