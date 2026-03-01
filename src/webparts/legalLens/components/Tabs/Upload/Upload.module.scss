@@ -1,7 +1,7 @@
 // Upload & Analyze View
-@use '../../_select' as *;
-@use '../../_badge' as *;
-@use '../../_typography' as *;
+@use '../../mixins/_select' as *;
+@use '../../mixins/_badge' as *;
+@use '../../mixins/_typography' as *;
 
 .viewWrap {
   animation: fadeIn 0.35s ease;

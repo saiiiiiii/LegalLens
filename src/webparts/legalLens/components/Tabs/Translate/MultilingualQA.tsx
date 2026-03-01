@@ -19,8 +19,6 @@ export interface IMultilingualQAProps {
   langs: ILang[];
 }
 
-const getLangCode = (lang: string): string => lang.toUpperCase();
-
 export const MultilingualQA: React.FC<IMultilingualQAProps> = ({ contract, aiFoundryService, langs }) => {
     const [qaLanguage, setQaLanguage] = React.useState('en');
     const [qaHistory, setQaHistory] = React.useState<IQAMessage[]>([]);
@@ -115,7 +113,7 @@ export const MultilingualQA: React.FC<IMultilingualQAProps> = ({ contract, aiFou
               <button
                 key={l.code}
                 onClick={() => handleLanguageChange(l.code)}
-                className={`${styles.qaLangBtnQA}${qaLanguage === l.code ? ` ${(styles as Record<string, string>).qaLangBtnSelected}` : ''}`}
+                className={`${styles.qaLangBtnQA}${qaLanguage === l.code ? ` ${styles.qaLangBtnSelected}` : ''}`}
               >
                 <div className={styles.qaLangBtnLabel}>{l.label}</div>
               </button>
@@ -150,7 +148,6 @@ export const MultilingualQA: React.FC<IMultilingualQAProps> = ({ contract, aiFou
                     </div>
                     <Stack grow={1}>
                       <div className={styles.qaMsgMeta}>
-                        <Text className={styles.qaMsgLangCode}>{getLangCode(msg.language)}</Text>
                         <Text className={styles.qaMsgRole}>{isUser ? 'You' : 'Agent'}</Text>
                       </div>
                       <Stack className={isUser ? styles.qaMsgBubbleUser : styles.qaMsgBubbleBot}>
@@ -215,11 +212,6 @@ export const MultilingualQA: React.FC<IMultilingualQAProps> = ({ contract, aiFou
               onClick={handleSubmit}
               disabled={!qaInput.trim() || qaLoading}
               className={styles.qaSubmitBtn}
-              style={{
-                background: qaInput.trim() && !qaLoading ? 'linear-gradient(135deg,#6366f1,#8b5cf6)' : 'rgba(255,255,255,0.05)',
-                color: qaInput.trim() && !qaLoading ? '#fff' : '#64748b',
-                cursor: qaInput.trim() && !qaLoading ? 'pointer' : 'not-allowed',
-              }}
             >
               {qaLoading ? 'Asking...' : 'Ask'}
             </button>

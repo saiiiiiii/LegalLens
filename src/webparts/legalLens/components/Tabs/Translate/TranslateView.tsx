@@ -154,7 +154,7 @@ export const TranslateView: React.FC<ITranslateViewProps> = ({ contracts, aiFoun
                   <button
                     key={l.code}
                     onClick={() => setSelectedLang(l.code)}
-                    className={`${styles.langBtn}${selectedLang === l.code ? ` ${(styles as Record<string, string>).langBtnSelected}` : ''}`}
+                    className={`${styles.langBtn}${selectedLang === l.code ? ` ${styles.langBtnSelected}` : ''}`}
                   >
                     <div className={styles.langBtnLabel}>{l.label}</div>
                   </button>
@@ -165,13 +165,7 @@ export const TranslateView: React.FC<ITranslateViewProps> = ({ contracts, aiFoun
             <button
               onClick={runTranslation}
               disabled={translating || !!cached}
-              className={styles.translateBtn}
-              style={{
-                background: cached ? 'rgba(16,185,129,0.1)' : translating ? 'rgba(99,102,241,0.15)' : 'linear-gradient(135deg,#6366f1,#8b5cf6)',
-                border: cached ? '1px solid rgba(16,185,129,0.3)' : translating ? '1px solid rgba(99,102,241,0.3)' : 'none',
-                color: cached ? '#10b981' : translating ? '#818cf8' : '#fff',
-                cursor: translating || cached ? 'default' : 'pointer'
-              }}
+              className={`${styles.translateBtn} ${cached ? `${styles.translateBtnCached}` : translating ? `${styles.translateBtnTranslating}` : ''}`}
             >
               {translating ? <>⏳ Translating...</> : cached ? <>✓ Cached</> : <>🌐 Translate</>}
             </button>

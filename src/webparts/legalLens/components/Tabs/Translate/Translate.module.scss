@@ -1,7 +1,7 @@
 // TranslatedDocument
-@use '../../_select' as *;
-@use '../../_badge' as *;
-@use '../../_typography' as *;
+@use '../../mixins/_select' as *;
+@use '../../mixins/_badge' as *;
+@use '../../mixins/_typography' as *;
 
 .docWrap {
   margin-bottom: 24px;
@@ -485,6 +485,14 @@
   white-space: nowrap;
   flex-shrink: 0;
   min-width: 70px;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: #fff;
+  cursor: pointer;
+  &:disabled {
+    background: rgba(255, 255, 255, 0.05);
+    color: #64748b;
+    cursor: not-allowed;
+  }
 }
 
 @keyframes pulse {
@@ -683,4 +691,22 @@
   white-space: nowrap;
   width: 120px;
   justify-content: center;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  border: none;
+  color: #fff;
+  cursor: pointer;
+
+  &.translateBtnTranslating {
+    background: rgba(99, 102, 241, 0.15);
+    border: 1px solid rgba(99, 102, 241, 0.3);
+    color: #818cf8;
+    cursor: default;
+  }
+
+  &.translateBtnCached {
+    background: rgba(16, 185, 129, 0.1);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    color: #10b981;
+    cursor: default;
+  }
 }

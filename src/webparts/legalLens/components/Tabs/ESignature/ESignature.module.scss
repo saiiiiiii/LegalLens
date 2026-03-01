@@ -1,5 +1,5 @@
-@use '../../_typography' as *;
-@use '../../_buttons' as *;
+@use '../../mixins/_typography' as *;
+@use '../../mixins/_buttons' as *;
 
 .stepHeader {
   margin-bottom: 20px;

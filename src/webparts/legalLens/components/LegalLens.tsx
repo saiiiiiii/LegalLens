@@ -87,7 +87,7 @@ export default class LegalLens extends React.Component<ILegalLensProps, ILegalLe
   };
 
   public render(): React.ReactElement<ILegalLensProps> {
-    const { view, loading, error } = this.state;
+    const { loading, error } = this.state;
 
     if (loading) {
       return (
@@ -134,41 +134,7 @@ export default class LegalLens extends React.Component<ILegalLensProps, ILegalLe
           }
         `}</style>
 
-        <header className={styles.appHeader}>
-          <div className={styles.headerLogo}>
-            <ScalesRegular className={styles.headerIcon} />
-            <span className={styles.headerTitle}>LegalLens</span>
-          </div>
-
-          <nav className={styles.headerNav}>
-            {[
-              { key: 'library', label: 'Library', highlight: false, visible: true },
-              { key: 'upload', label: 'Upload & Analyze', highlight: true, visible: true },
-              { key: 'classify', label: 'Classification', highlight: false, visible: true },
-              { key: 'translate', label: 'TranslatePro', highlight: false, visible: this.props.showTranslateTab },
-              { key: 'alerts', label: 'Alerts', highlight: false, visible: true },
-              { key: 'esignature', label: 'E-Signature', highlight: true, visible: this.props.showESignatureTab }
-            ].filter(tab => tab.visible).map(tab => (
-              <button
-                key={tab.key}
-                className={styles.navBtn}
-                onClick={() => this.setState({ view: tab.key as any })}
-                style={{
-                  background: view === tab.key ? (tab.highlight ? 'rgba(99,102,241,0.12)' : 'rgba(16,185,129,0.1)') : 'transparent',
-                  color: view === tab.key ? (tab.highlight ? '#818cf8' : '#10b981') : '#64748b',
-                }}
-              >
-                {tab.key === 'library' && <Library24Regular className={styles.navIcon} />}
-                {tab.key === 'upload' && <ArrowUpload24Regular className={styles.navIcon} />}
-                {tab.key === 'classify' && <DocumentSearch24Regular className={styles.navIcon} />}
-                {tab.key === 'translate' && <LocalLanguage24Regular className={styles.navIcon} />}
-                {tab.key === 'alerts' && <Alert24Regular className={styles.navIcon} />}
-                {tab.key === 'esignature' && <Signature24Regular className={styles.navIcon} />}
-                {tab.label}
-              </button>
-            ))}
-          </nav>
-        </header>
+        {this.renderHeader()}
 
         <main className={styles.appMain}>
           <div className={styles.appContent}>
@@ -176,6 +142,43 @@ export default class LegalLens extends React.Component<ILegalLensProps, ILegalLe
           </div>
         </main>
       </div>
+    );
+  }
+
+  private renderHeader(): React.ReactElement {
+    const { view } = this.state;
+    return (
+      <header className={styles.appHeader}>
+        <div className={styles.headerLogo}>
+          <ScalesRegular className={styles.headerIcon} />
+          <span className={styles.headerTitle}>LegalLens</span>
+        </div>
+
+        <nav className={styles.headerNav}>
+          {[
+            { key: 'library', label: 'Library', highlight: false, visible: true },
+            { key: 'upload', label: 'Upload & Analyze', highlight: true, visible: true },
+            { key: 'classify', label: 'Classification', highlight: false, visible: true },
+            { key: 'translate', label: 'TranslatePro', highlight: false, visible: this.props.showTranslateTab },
+            { key: 'alerts', label: 'Alerts', highlight: false, visible: true },
+            { key: 'esignature', label: 'E-Signature', highlight: true, visible: this.props.showESignatureTab }
+          ].filter(tab => tab.visible).map(tab => (
+            <button
+              key={tab.key}
+              className={`${styles.navBtn}${view === tab.key ? ` ${tab.highlight ? styles.navBtnActiveHighlight : styles.navBtnActive}` : ''}`}
+              onClick={() => this.setState({ view: tab.key as any })}
+            >
+              {tab.key === 'library' && <Library24Regular className={styles.navIcon} />}
+              {tab.key === 'upload' && <ArrowUpload24Regular className={styles.navIcon} />}
+              {tab.key === 'classify' && <DocumentSearch24Regular className={styles.navIcon} />}
+              {tab.key === 'translate' && <LocalLanguage24Regular className={styles.navIcon} />}
+              {tab.key === 'alerts' && <Alert24Regular className={styles.navIcon} />}
+              {tab.key === 'esignature' && <Signature24Regular className={styles.navIcon} />}
+              {tab.label}
+            </button>
+          ))}
+        </nav>
+      </header>
     );
   }
 

@@ -1,4 +1,4 @@
-@use '../../_typography' as *;
+@use '../../mixins/_typography' as *;
 
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(20px); }
