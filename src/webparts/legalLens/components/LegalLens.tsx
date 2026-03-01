@@ -6,6 +6,7 @@ import {
   DocumentSearch24Regular,
   LocalLanguage24Regular,
   Alert24Regular,
+  Alert24Filled,
   ScalesRegular,
   Signature24Regular,
 } from '@fluentui/react-icons';
@@ -155,28 +156,41 @@ export default class LegalLens extends React.Component<ILegalLensProps, ILegalLe
         </div>
 
         <nav className={styles.headerNav}>
-          {[
-            { key: 'library', label: 'Library', highlight: false, visible: true },
-            { key: 'upload', label: 'Upload & Analyze', highlight: true, visible: true },
-            { key: 'classify', label: 'Classification', highlight: false, visible: true },
-            { key: 'translate', label: 'TranslatePro', highlight: false, visible: this.props.showTranslateTab },
-            { key: 'alerts', label: 'Alerts', highlight: false, visible: true },
-            { key: 'esignature', label: 'E-Signature', highlight: true, visible: this.props.showESignatureTab }
-          ].filter(tab => tab.visible).map(tab => (
+          <div className={styles.navGroup}>
+            {[
+              { key: 'library', label: 'Library', highlight: false, visible: true },
+              { key: 'upload', label: 'Upload & Analyze', highlight: true, visible: true },
+              { key: 'classify', label: 'Classification', highlight: false, visible: true },
+              { key: 'translate', label: 'TranslatePro', highlight: false, visible: this.props.showTranslateTab },
+              { key: 'esignature', label: 'E-Signature', highlight: true, visible: this.props.showESignatureTab }
+            ].filter(tab => tab.visible).map(tab => (
+              <button
+                key={tab.key}
+                className={`${styles.navBtn}${view === tab.key ? ` ${tab.highlight ? styles.navBtnActiveHighlight : styles.navBtnActive}` : ''}`}
+                onClick={() => this.setState({ view: tab.key as any })}
+              >
+                {tab.key === 'library' && <Library24Regular className={styles.navIcon} />}
+                {tab.key === 'upload' && <ArrowUpload24Regular className={styles.navIcon} />}
+                {tab.key === 'classify' && <DocumentSearch24Regular className={styles.navIcon} />}
+                {tab.key === 'translate' && <LocalLanguage24Regular className={styles.navIcon} />}
+                {tab.key === 'esignature' && <Signature24Regular className={styles.navIcon} />}
+                {tab.label}
+              </button>
+            ))}
+          </div>
+          <div className={styles.navGroup}>
             <button
-              key={tab.key}
-              className={`${styles.navBtn}${view === tab.key ? ` ${tab.highlight ? styles.navBtnActiveHighlight : styles.navBtnActive}` : ''}`}
-              onClick={() => this.setState({ view: tab.key as any })}
+              className={`${styles.navBtn} ${styles.navBtnAlert}${view === 'alerts' ? ` ${styles.navBtnActive}` : ''}`}
+              onClick={() => this.setState({ view: 'alerts' as any })}
+              title="Alerts"
             >
-              {tab.key === 'library' && <Library24Regular className={styles.navIcon} />}
-              {tab.key === 'upload' && <ArrowUpload24Regular className={styles.navIcon} />}
-              {tab.key === 'classify' && <DocumentSearch24Regular className={styles.navIcon} />}
-              {tab.key === 'translate' && <LocalLanguage24Regular className={styles.navIcon} />}
-              {tab.key === 'alerts' && <Alert24Regular className={styles.navIcon} />}
-              {tab.key === 'esignature' && <Signature24Regular className={styles.navIcon} />}
-              {tab.label}
+              {
+                view === 'alerts' ?
+                  <Alert24Filled className={styles.navIcon} /> :
+                  <Alert24Regular className={styles.navIcon} />
+              }
             </button>
-          ))}
+          </div>
         </nav>
       </header>
     );
