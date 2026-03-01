@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Text } from '@fluentui/react';
+import { Stack, Text } from '@fluentui/react';
 import styles from './ESignature.module.scss';
 
 export interface IStepHeaderProps {
@@ -11,14 +11,14 @@ export interface IStepHeaderProps {
 export const StepHeader: React.FC<IStepHeaderProps> = ({ title, subtitle, onBack }) => {
   return (
     <div className={styles.stepHeader}>
-      <div className={styles.stepHeaderTitleRow}>
+      <Stack horizontal horizontalAlign='space-between' verticalAlign="center" tokens={{ childrenGap: 12 }}>
+        <Text block className={styles.stepHeaderTitle}>{title}</Text>
         {onBack && (
           <button className={styles.stepHeaderBackBtn} onClick={onBack}>
             ← Back
           </button>
         )}
-        <Text block className={styles.stepHeaderTitle}>{title}</Text>
-      </div>
+      </Stack>
       <Text variant="small" className={styles.stepHeaderSubtitle}>
         {subtitle}
       </Text>

@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Stack, Text, Spinner, SpinnerSize, MessageBar, MessageBarType, ActionButton } from '@fluentui/react';
+import { Stack, Text, Spinner, SpinnerSize, MessageBar, MessageBarType } from '@fluentui/react';
 import { ISharePointService } from '../../../services/SharePointService';
 import { useContracts } from '../../../hooks/useContracts';
 import { IContract } from '../../../models/IContract';
@@ -61,14 +61,15 @@ export const LibraryView: React.FC<ILibraryViewProps> = ({ sharePointService, ai
 
   if (selectedContract) {
     return (
-      <Stack style={{ animation: 'fadeIn 0.35s ease' }} tokens={{ childrenGap: 16 }}>
-        <ActionButton
-          iconProps={{ iconName: 'Back' }}
-          onClick={() => setSelectedContract(null)}
-          styles={{ root: { color: '#818cf8', padding: 0 }, icon: { color: '#818cf8' } }}
-        >
-          Back to Library
-        </ActionButton>
+      <Stack tokens={{ childrenGap: 16 }} style={{ animation: 'fadeIn 0.35s ease' }}>
+        <Stack horizontal horizontalAlign='space-between' style={{ marginBottom: 12 }}>
+          <h2 className={styles.viewTitle}>
+            Document Overview
+          </h2>
+          <button className={styles.backBtn} onClick={() => setSelectedContract(null)}>
+            ← Back to Library
+          </button>
+        </Stack>
         <DocumentOverview contract={selectedContract} aiFoundryService={aiFoundryService} langs={langs}/>
       </Stack>
     );

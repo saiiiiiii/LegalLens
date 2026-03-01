@@ -1,5 +1,11 @@
 // LibraryView
 @use '../../_typography' as *;
+@use '../../_buttons' as *;
+
+.backBtn {
+  @include backBtn;
+  width: 150px;
+}
 
 .loadingWrap {
   min-height: 400px;
