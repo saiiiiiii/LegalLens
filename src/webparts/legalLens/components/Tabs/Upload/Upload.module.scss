@@ -2,6 +2,7 @@
 @use '../../mixins/_select' as *;
 @use '../../mixins/_badge' as *;
 @use '../../mixins/_typography' as *;
+@use '../../mixins/_cards' as *;
 
 .viewWrap {
   animation: fadeIn 0.35s ease;
@@ -92,13 +93,9 @@
 }
 
 .libraryLabel {
+  @include sectionLabel(10px, 0.5px);
   display: block;
-  font-size: 10px;
-  color: var(--ll-cl-text-faint);
   margin-bottom: 8px;
-  font-weight: 600;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
 }
 
 .librarySelect {
@@ -108,13 +105,8 @@
 // Analyzing view
 
 .analyzingCard {
+  @include glassCard;
   padding: 24px;
-  background: var(--ll-bg-card);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border: 1px solid var(--ll-bd-card);
-  border-radius: 16px;
-  box-shadow: var(--ll-box-shadow);
 }
 
 .analyzingTitle {
@@ -236,12 +228,8 @@
 }
 
 .riskScoreLabel {
-  font-size: 12px;
-  color: var(--ll-cl-text-faint);
+  @include sectionLabel(12px);
   margin-bottom: 8px;
-  font-weight: 600;
-  letter-spacing: 1px;
-  text-transform: uppercase;
 }
 
 .riskScoreNumber {

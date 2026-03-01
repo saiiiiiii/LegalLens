@@ -1,6 +1,7 @@
 // LibraryView
 @use '../../mixins/_typography' as *;
 @use '../../mixins/_buttons' as *;
+@use '../../mixins/_cards' as *;
 
 .backBtn {
   @include backBtn;
@@ -50,21 +51,13 @@
 }
 
 .label {
-  font-size: 8px;
-  color: var(--ll-cl-text-faint);
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
+  @include sectionLabel(8px, 0.5px);
   margin-top: 1px;
 }
 
 // ContractTable
 .tableWrap {
-  background: var(--ll-bg-card);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border: 1px solid var(--ll-bd-card);
-  border-radius: 12px;
-  box-shadow: var(--ll-box-shadow);
+  @include glassCard(12px);
   overflow: hidden;
 
   :global(.ms-DetailsHeader) {
@@ -173,12 +166,9 @@
 }
 
 .emptyState {
+  @include glassCard;
   padding: 40px;
   text-align: center;
-  background: var(--ll-bg-card);
-  backdrop-filter: blur(10px);
-  border: 1px solid var(--ll-bd-card);
-  border-radius: 16px;
   color: var(--ll-cl-text-faint);
 }
 
@@ -255,11 +245,7 @@
 }
 
 .overviewFieldLabel {
-  font-size: 9px;
-  color: var(--ll-cl-text-faint);
-  letter-spacing: 1px;
-  text-transform: uppercase;
-  font-weight: 600;
+  @include sectionLabel;
   margin-bottom: 3px;
 }
 
@@ -357,11 +343,7 @@
 }
 
 .filterLabel {
-  font-size: 8.5px;
-  color: var(--ll-cl-text-faint);
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  @include sectionLabel(8.5px, 0.5px);
 }
 
 .clearBtn {

@@ -1,4 +1,12 @@
 // Shared typography mixins
+@mixin sectionLabel($size: 9px, $spacing: 1px) {
+  font-size: $size;
+  color: var(--ll-cl-text-faint);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: $spacing;
+}
+
 @mixin tabTitle($size: 24px) {
   font-family: 'Cinzel', Georgia, serif;
   font-size: $size;
