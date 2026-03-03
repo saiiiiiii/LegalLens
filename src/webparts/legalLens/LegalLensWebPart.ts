@@ -233,7 +233,7 @@ export default class LegalLensWebPart extends BaseClientSideWebPart<ILegalLensWe
               ]
             },
             {
-              groupName: 'Navigation',
+              groupName: 'Tabs & Theme',
               groupFields: [
                 PropertyPaneToggle('showTranslateTab', {
                   label: 'Show Translate tab',
