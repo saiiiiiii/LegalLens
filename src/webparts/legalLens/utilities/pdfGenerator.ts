@@ -18,7 +18,6 @@ export async function generateSignedPDF(
   // ─── SIGNATURE TABLE AT TOP ───
   const tableStartY = yPos;
   const nameColWidth = 60;
-  const sigColWidth = contentWidth - nameColWidth;
   const rowHeight = 35;
   const headerHeight = 10;
 

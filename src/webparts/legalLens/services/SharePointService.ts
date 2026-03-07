@@ -117,7 +117,7 @@ export class SharePointService implements ISharePointService {
 
       for (let i = 0; i < items.length; i++) {
         const item = items[i];
-        const contract = this.mapItemToContract(item, i);
+        const contract = this.mapItemToContract(item);
 
         if (item.FileRef) {
           try {
@@ -230,6 +230,7 @@ export class SharePointService implements ISharePointService {
           decompressed = await this.zlibDecompress(contentBytes);
         } catch (e) {
           decompressed = contentBytes;
+          console.warn('[SharePoint] decompression error:', e.message);
         }
         const content = new TextDecoder('latin1').decode(decompressed);
         const btBlocks = content.match(/BT[\s\S]*?ET/g) || [];
@@ -254,7 +255,7 @@ export class SharePointService implements ISharePointService {
           }
         }
       } catch (e: any) {
-        console.warn('[SharePoint] Stream error:', e.message);
+        console.warn('[SharePoint] decompression error:', e.message);
       }
     }
 
@@ -318,7 +319,7 @@ export class SharePointService implements ISharePointService {
       }
 
 
-      let textContent = documentXml
+      const textContent = documentXml
         .replace(/<w:p[^>]*>/g, '\n\n')
         .replace(/<w:br[^>]*\/>/g, '\n')
         .replace(/<w:t[^>]*>/g, '')
@@ -429,7 +430,7 @@ export class SharePointService implements ISharePointService {
   }
 
 
-  private mapItemToContract(item: any, index: number): IContract {
+  private mapItemToContract(item: any): IContract {
     const parties = this.parseMultiValue(item.Parties);
     const tags = this.parseMultiValue(item.Tags);
     const clauses = this.generateSampleClauses(item.ContractType || 'General Agreement');

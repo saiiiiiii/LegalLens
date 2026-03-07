@@ -73,7 +73,7 @@ export const TranslateView: React.FC<ITranslateViewProps> = ({ contracts, aiFoun
 
         try {
             const transSummary = await aiFoundryService.translate(
-                contract.summary, selectedLangObj.name, contract.name
+                contract.summary, selectedLangObj.name
             );
 
             if (mountedRef.current) setTranslateProgress(1);
@@ -82,7 +82,7 @@ export const TranslateView: React.FC<ITranslateViewProps> = ({ contracts, aiFoun
             for (let i = 0; i < contract.clauses.length; i++) {
                 const c = contract.clauses[i];
                 const translated = await aiFoundryService.translate(
-                    `${c.title}: ${c.text}`, selectedLangObj.name, contract.name
+                    `${c.title}: ${c.text}`, selectedLangObj.name
                 );
                 transClauses.push({ ref: c.ref, translated });
 

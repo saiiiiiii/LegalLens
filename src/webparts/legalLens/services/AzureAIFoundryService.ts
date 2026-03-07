@@ -6,7 +6,7 @@ import { IMultilingualAnswer } from '../models/IMultilingualAnswer';
 export interface IAzureAIFoundryService {
   analyzeContract(fileBlob: Blob, fileName: string): Promise<IContractAnalysis>;
   classifyDocument(fileBlob: Blob, fileName: string, classificationType: string): Promise<IClassificationResult>;
-  translate(text: string, targetLangName: string, contractName: string): Promise<string>;
+  translate(text: string, targetLangName: string): Promise<string>;
   askQuestionMultilingual(question: string, questionLangName: string, contract: any, conversationHistory: any[]): Promise<IMultilingualAnswer>;
   extractTextFromFile(file: File | Blob): Promise<string>;
   callAI(prompt: string, maxTokens: number): Promise<string>;
@@ -201,7 +201,7 @@ Respond with JSON only:
     }
   }
 
-  public async translate(text: string, targetLangName: string, contractName: string): Promise<string> {
+  public async translate(text: string, targetLangName: string): Promise<string> {
     const prompt = `Translate this legal contract text to ${targetLangName}.
 
 Keep clause references (§) unchanged.
@@ -383,6 +383,7 @@ ${contractInfo}`;
           decompressed = await this.zlibDecompress(contentBytes);
         } catch (e) {
           decompressed = contentBytes;
+          console.warn('[AzureAI] Decompressing error:', e.message);
         }
 
         const content = new TextDecoder('latin1').decode(decompressed);
@@ -409,7 +410,7 @@ ${contractInfo}`;
           }
         }
       } catch (e: any) {
-        console.warn('[AzureAI] Stream processing error:', e.message);
+        console.warn('[AzureAI] Decompressing error:', e.message);
       }
     }
 
