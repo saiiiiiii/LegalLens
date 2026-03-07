@@ -1,7 +1,8 @@
 import * as React from 'react';
+import styles from './ESignature.module.scss';
 import { IContract } from '../../../models/IContract';
 import { ISharePointService } from '../../../services/SharePointService';
-import { ISigner, ISignatureField, SignatureStep } from '../../../models/ISignature';
+import { ISigner, ISignatureField } from '../../../models/ISignature';
 import {
   PEN_COLORS,
   SIGNATURE_FONTS,
@@ -18,12 +19,8 @@ import { generateSignedPDF } from '../../../utilities/pdfGenerator';
 import { StepHeader } from './StepHeader';
 import { SignatureTable } from './SignatureTable';
 import { useSignatureTokens } from '../../../hooks/useSignatureTokens';
-import {
-  Modal, IModalStyles,
-} from '@fluentui/react/lib/Modal';
 import { DefaultButton, PrimaryButton, IconButton } from '@fluentui/react/lib/Button';
 import { Icon } from '@fluentui/react/lib/Icon';
-import { MessageBar, MessageBarType } from '@fluentui/react/lib/MessageBar';
 import { Spinner, SpinnerSize } from '@fluentui/react/lib/Spinner';
 import * as QRCode from 'qrcode';
 
@@ -44,8 +41,7 @@ export const ESignatureView: React.FC<IESignatureViewProps> = ({
   contracts,
   sharePointService,
   userDisplayName,
-  userEmail,
-  context,
+  userEmail
 }) => {
   // Initialize hooks
   const workflow = useSignatureWorkflow(userDisplayName);
@@ -70,8 +66,7 @@ export const ESignatureView: React.FC<IESignatureViewProps> = ({
     addSigner,
     removeSigner,
     updateSigner,
-    reset,
-    makeId,
+    reset
   } = workflow;
 
   // Signature pad state
@@ -1106,23 +1101,9 @@ const [showQRModal, setShowQRModal] = React.useState(false);
       </div>
 
       {/* Document list */}
-      <div style={{ 
-        display: 'flex', 
-        flexDirection: 'column', 
-        gap: 10, 
-        maxHeight: 520, 
-        overflowY: 'auto' 
-      }}>
+      <div className={styles.contractList}>
         {displayContracts.length === 0 && (
-          <div style={{
-            padding: 40,
-            textAlign: 'center',
-            color: '#64748b',
-            fontSize: 12,
-            background: 'rgba(255,255,255,0.02)',
-            borderRadius: 12,
-            border: '1px dashed rgba(255,255,255,0.1)',
-          }}>
+          <div className={styles.contractListEmpty}>
             {viewMode === 'unsigned'
               ? 'All documents have been signed!'
               : viewMode === 'inprogress'
@@ -1160,6 +1141,11 @@ const [showQRModal, setShowQRModal] = React.useState(false);
           return (
             <div
               key={c.id}
+              className={[
+                styles.contractCard,
+                isCompleted ? styles.contractCardCompleted : '',
+                isInProgress && !isCompleted ? styles.contractCardInProgress : '',
+              ].filter(Boolean).join(' ')}
               onClick={() => {
                 if (isCompleted) return; // actions handled by View/Download buttons
                 if (isInProgress) {
@@ -1172,77 +1158,57 @@ const [showQRModal, setShowQRModal] = React.useState(false);
                   selectContract(c);
                 }
               }}
-              style={{
-                padding: '14px 16px',
-                borderRadius: 12,
-                cursor: isCompleted ? 'default' : 'pointer',
-                background: isCompleted ? 'rgba(16,185,129,0.04)' : 'rgba(255,255,255,0.02)',
-                border: isCompleted
-                  ? '1px solid rgba(16,185,129,0.25)'
-                  : isInProgress
-                  ? '1px solid rgba(245,158,11,0.3)'
-                  : '1px solid rgba(255,255,255,0.08)',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 12,
-                transition: 'all 0.2s',
-              }}
-              onMouseEnter={e => {
-                if (!isCompleted) e.currentTarget.style.background = isInProgress ? 'rgba(245,158,11,0.08)' : 'rgba(99,102,241,0.08)';
-              }}
-              onMouseLeave={e => {
-                if (!isCompleted) e.currentTarget.style.background = 'rgba(255,255,255,0.02)';
-              }}
             >
               {/* Status icon */}
               <Icon
                 iconName={isCompleted ? 'CheckboxComposite' : isInProgress ? 'Clock' : 'Document'}
-                style={{ fontSize: 26, color: isCompleted ? '#10b981' : isInProgress ? '#f59e0b' : '#6366f1', flexShrink: 0 }}
+                className={styles.contractCardIcon}
+                style={{ color: isCompleted ? '#10b981' : isInProgress ? '#f59e0b' : '#6366f1' }}
               />
 
               {/* Main info */}
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3, flexWrap: 'wrap' }}>
-                  <div style={{ fontSize: 13, color: '#e2e8f0', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              <div className={styles.contractCardInfo}>
+                <div className={styles.contractCardNameRow}>
+                  <div className={styles.contractCardName}>
                     {c.name}
                   </div>
                   {isCompleted && (
-                    <span style={{ padding: '2px 8px', borderRadius: 4, fontSize: 9, fontWeight: 700, background: 'rgba(16,185,129,0.15)', color: '#10b981', border: '1px solid rgba(16,185,129,0.3)', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                    <span className={`${styles.contractBadge} ${styles.contractBadgeSigned}`}>
                       SIGNED
                     </span>
                   )}
                   {isInProgress && !isCompleted && (
-                    <span style={{ padding: '2px 8px', borderRadius: 4, fontSize: 9, fontWeight: 700, background: 'rgba(245,158,11,0.15)', color: '#f59e0b', border: '1px solid rgba(245,158,11,0.3)', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                    <span className={`${styles.contractBadge} ${styles.contractBadgeInProgress}`}>
                       {hasActiveTokens && tokenStatus
                         ? `PENDING (${tokenStatus.pendingTokens} vendor${tokenStatus.pendingTokens > 1 ? 's' : ''})`
                         : progress ? `IN PROGRESS (${progress.signed}/${progress.total})` : 'IN PROGRESS'}
                     </span>
                   )}
                 </div>
-                <div style={{ fontSize: 10, color: '#64748b' }}>
+                <div className={styles.contractCardMeta}>
                   {c.type} · {c.parties.slice(0, 2).join(', ')}
                   {tokenStatus && (
-                    <span style={{ marginLeft: 8, color: tokenStatus.pendingTokens > 0 ? '#f59e0b' : '#10b981' }}>
+                    <span className={tokenStatus.pendingTokens > 0 ? styles.contractMetaAmber : styles.contractMetaGreen}>
                       · {tokenStatus.completedTokens}/{tokenStatus.totalTokens} vendor signatures
                     </span>
                   )}
                   {isInProgressDraft && draft && (
-                    <span style={{ marginLeft: 8, color: '#f59e0b' }}>· Saved {new Date(draft.savedAt).toLocaleDateString()}</span>
+                    <span className={styles.contractMetaAmber}>· Saved {new Date(draft.savedAt).toLocaleDateString()}</span>
                   )}
                   {isCompleted && signedDocRecord?.signedAt && (
-                    <span style={{ marginLeft: 8, color: '#10b981' }}>
+                    <span className={styles.contractMetaGreen}>
                       · Signed {new Date(signedDocRecord.signedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                     </span>
                   )}
                   {isCompleted && signedDocRecord?.signerNames && (
-                    <span style={{ marginLeft: 8, color: '#64748b' }}>· by {signedDocRecord.signerNames}</span>
+                    <span className={styles.contractMetaMuted}>· by {signedDocRecord.signerNames}</span>
                   )}
                 </div>
               </div>
 
               {/* ── Action buttons ── */}
               {isCompleted && signedDocRecord ? (
-                <div style={{ display: 'flex', gap: 6, flexShrink: 0 }} onClick={e => e.stopPropagation()}>
+                <div className={styles.contractCardActions} onClick={e => e.stopPropagation()}>
 
                   {/* VIEW */}
                   <button
@@ -1252,16 +1218,7 @@ const [showQRModal, setShowQRModal] = React.useState(false);
                       url: `${window.location.origin}${signedDocRecord.fileRef}`,
                       title: signedDocRecord.fileName || c.name,
                     })}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: 5,
-                      padding: '7px 12px', borderRadius: 8,
-                      border: '1px solid rgba(99,102,241,0.35)',
-                      background: 'rgba(99,102,241,0.1)',
-                      color: '#818cf8', fontSize: 11, fontWeight: 600,
-                      cursor: 'pointer', transition: 'all 0.15s',
-                    }}
-                    onMouseEnter={e => { e.currentTarget.style.background = 'rgba(99,102,241,0.22)'; e.currentTarget.style.color = '#a5b4fc'; }}
-                    onMouseLeave={e => { e.currentTarget.style.background = 'rgba(99,102,241,0.1)'; e.currentTarget.style.color = '#818cf8'; }}
+                    className={`${styles.contractBtn} ${styles.contractBtnView}`}
                   >
                     <Icon iconName='View' style={{ fontSize: 13 }}/> View
                   </button>
@@ -1278,18 +1235,7 @@ const [showQRModal, setShowQRModal] = React.useState(false);
                         showModal('Download Failed', err.message, 'error');
                       }
                     }}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: 5,
-                      padding: '7px 12px', borderRadius: 8,
-                      border: '1px solid rgba(16,185,129,0.35)',
-                      background: isDownloading ? 'rgba(16,185,129,0.04)' : 'rgba(16,185,129,0.1)',
-                      color: isDownloading ? '#64748b' : '#10b981',
-                      fontSize: 11, fontWeight: 600,
-                      cursor: isDownloading ? 'not-allowed' : 'pointer',
-                      transition: 'all 0.15s', opacity: isDownloading ? 0.6 : 1,
-                    }}
-                    onMouseEnter={e => { if (!isDownloading) { e.currentTarget.style.background = 'rgba(16,185,129,0.22)'; e.currentTarget.style.color = '#34d399'; } }}
-                    onMouseLeave={e => { if (!isDownloading) { e.currentTarget.style.background = 'rgba(16,185,129,0.1)'; e.currentTarget.style.color = '#10b981'; } }}
+                    className={`${styles.contractBtn} ${styles.contractBtnDownload} ${isDownloading ? styles.contractBtnDownloadDisabled : ''}`}
                   >
                     {isDownloading
                       ? <><Spinner size={SpinnerSize.small} style={{ marginRight: 4 }}/> Downloading...</>
@@ -1298,7 +1244,7 @@ const [showQRModal, setShowQRModal] = React.useState(false);
                   </button>
                 </div>
               ) : !isCompleted && !isInProgress ? (
-                <div style={{ padding: '5px 12px', borderRadius: 6, fontSize: 9, fontWeight: 700, background: 'rgba(99,102,241,0.12)', color: '#818cf8', flexShrink: 0 }}>
+                <div className={styles.contractBadgeSelect}>
                   SELECT
                 </div>
               ) : null}
@@ -1323,84 +1269,47 @@ const [showQRModal, setShowQRModal] = React.useState(false);
           onBack={() => setStep('select')}
         />
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 20 }}>
+        <div className={styles.signerList}>
           {signers.map((signer, index) => (
             <div
               key={signer.id}
-              style={{
-                padding: 16,
-                borderRadius: 10,
-                background: 'rgba(255,255,255,0.02)',
-                border: '1px solid rgba(255,255,255,0.08)',
-              }}
+              className={styles.signerCard}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-                <span style={{ fontSize: 11, fontWeight: 600, color: '#94a3b8' }}>
+              <div className={styles.signerCardHeader}>
+                <span className={styles.signerCardLabel}>
                   Signer #{index + 1}
                 </span>
                 {signers.length > 1 && (
                   <button
                     onClick={() => removeSigner(signer.id)}
-                    style={{
-                      marginLeft: 'auto',
-                      padding: '4px 10px',
-                      borderRadius: 6,
-                      border: '1px solid rgba(239,68,68,0.3)',
-                      background: 'rgba(239,68,68,0.08)',
-                      color: '#ef4444',
-                      fontSize: 10,
-                      cursor: 'pointer',
-                      fontWeight: 600,
-                    }}
+                    className={styles.signerCardRemoveBtn}
                   >
                     <Icon iconName='Cancel' style={{fontSize:10}}/> Remove
                   </button>
                 )}
               </div>
-              
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+
+              <div className={styles.signerCardGrid}>
                 <input
                   type="text"
                   placeholder="Full Name *"
                   value={signer.name}
                   onChange={e => updateSigner(signer.id, { name: e.target.value })}
-                  style={{
-                    padding: '10px 12px',
-                    borderRadius: 8,
-                    border: '1px solid rgba(255,255,255,0.1)',
-                    background: 'rgba(255,255,255,0.03)',
-                    color: '#e2e8f0',
-                    fontSize: 12,
-                  }}
+                  className={styles.signerInput}
                 />
                 <input
                   type="text"
                   placeholder="Title"
                   value={signer.title}
                   onChange={e => updateSigner(signer.id, { title: e.target.value })}
-                  style={{
-                    padding: '10px 12px',
-                    borderRadius: 8,
-                    border: '1px solid rgba(255,255,255,0.1)',
-                    background: 'rgba(255,255,255,0.03)',
-                    color: '#e2e8f0',
-                    fontSize: 12,
-                  }}
+                  className={styles.signerInput}
                 />
                 <input
                   type="email"
                   placeholder="Email *"
                   value={signer.email}
                   onChange={e => updateSigner(signer.id, { email: e.target.value })}
-                  style={{
-                    padding: '10px 12px',
-                    borderRadius: 8,
-                    border: '1px solid rgba(255,255,255,0.1)',
-                    background: 'rgba(255,255,255,0.03)',
-                    color: '#e2e8f0',
-                    fontSize: 12,
-                    gridColumn: '1 / -1',
-                  }}
+                  className={`${styles.signerInput} ${styles.signerInputFull}`}
                 />
               </div>
 
@@ -1408,24 +1317,7 @@ const [showQRModal, setShowQRModal] = React.useState(false);
               {signer.email && signer.email !== userEmail && signer.name && (
                 <button
                   onClick={() => inviteExternalSigner(signer)}
-                  style={{
-                    marginTop: 12,
-                    padding: '10px 16px',
-                    borderRadius: 6,
-                    border: 'none',
-                    background: 'linear-gradient(135deg, #10b981, #059669)',
-                    color: 'white',
-                    fontSize: 12,
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 8,
-                    width: '100%',
-                    justifyContent: 'center',
-                  }}
-                  onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
-                  onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
+                  className={styles.signerSendBtn}
                 >
                   <Icon iconName='Send' style={{marginRight:6}}/> Send Signature Link to {signer.name}
                 </button>

@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { IEnvelope, ISigner, makeId } from './IEnvelope';
+import { IEnvelope } from './IEnvelope';
 import { ISharePointService } from '../../../services/SharePointService';
 
 export interface IDocumentSignerProps {
@@ -34,7 +34,7 @@ function typeSigToDataUrl(text: string, fontCss: string, color: string): string 
 }
 
 export const DocumentSigner: React.FC<IDocumentSignerProps> = ({
-  envelope, userDisplayName, sharePointService, onSigned, onBack,
+  envelope, sharePointService, onSigned, onBack,
 }) => {
   const [activeSigner, setActiveSigner] = React.useState<number>(0);
   const [signatures, setSignatures] = React.useState<Record<number, string>>({});
