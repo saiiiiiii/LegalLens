@@ -15,16 +15,24 @@ AI-powered contract management and e-signature platform built on SharePoint Onli
 
 ## Features
 
-- **Contract Library View**: Auto-classified contracts with risk scoring, status tracking, and metadata enrichment
-- **TranslatePro** — AI-powered translation (English, German, Spanish) with clause-level preservation
-- **Q&A Agent** — Interactive contract analysis powered by Azure AI Foundry
-- **Audit Trail** — All signing events timestamped and logged; Application Insights monitoring
-- **SharePoint Integration**: Reads contracts directly from SharePoint document libraries
-- **Real-time Processing**: Live translation and Q&A with progress indicators
-- **Document Preview** — PDF rendered page-by-page; plain-text files displayed inline; Word documents offered as download before signing
-- **E-Signature** — Multi-signer workflow; internal staff sign via the web part, external vendors sign via a secure one-time link (no SharePoint login required)
+- **SharePoint Integration:** Reads contracts directly from SharePoint document libraries
+- **Contract Library View and Document Overview:** Browse all uploaded contracts in one place; open any contract to view its metadata, status, and AI-powered insights such as risk score and key clause highlights
+- **Contract Classification and Analysis:** AI-powered classification of uploaded contracts with risk scoring, clause extraction, and metadata enrichment
+- **Q&A Agent:** Chat-like AI-powered tool for asking questions about contracts in your preferred language. Always includes English; additional languages are configurable via web part properties
+- **E-Signature:** Multi-signer workflow; internal staff sign via the web part, external vendors sign via a secure one-time link (no SharePoint login required)
+  - **Document Preview:** PDF rendered page-by-page; plain-text files displayed inline; Word documents offered as download before signing
+  - **Audit Trail:** All signing events timestamped and logged; Application Insights monitoring
 
 ## SharePoint Document Library Setup
+
+> **Quick setup:** Run the included PowerShell script to create all libraries, lists, and columns automatically:
+> ```powershell
+> .\assets\Setup-LegalLens-SharePoint.ps1 -SiteUrl "https://contoso.sharepoint.com/sites/YourSite" -ClientId "your-client-id"
+> ```
+> The script creates the **Contracts** library, **Signed Documents** library, and **Signature Tokens** list with all required columns and views. Manual setup is described below for reference.
+
+<details>
+<summary>Create SharePoint Libraries and Lists manually</summary>
 
 ### 1. Create Contract Library
 
@@ -54,7 +62,7 @@ AI-powered contract management and e-signature platform built on SharePoint Onli
 2. Create a new Document Library named "Signed Documents"
 3. Add the following columns to the library:
 
-### Required Columns
+#### Required Columns
 
 | Column Name | Type | Description |
 |------------|------|-------------|
@@ -62,7 +70,7 @@ AI-powered contract management and e-signature platform built on SharePoint Onli
 | ContractType | Single line of text | Contract Type |
 | Status | Single line of text | Completed or In-Progress of Contract E-Signature |
 | Parties | Single line of text | Parties involved in Documents E-Signatures |
-| Tags | Single lines of text | Tags of E-Signature |
+| Tags | Single line of text | Tags of E-Signature |
 | RiskScore | Number | Risk score from 0-100 |
 
 ### 3. Signature Tokens List
@@ -85,6 +93,8 @@ Create a **List** named **Signature Tokens** and add these columns:
 | SignedDate | Date and Time | Timestamp of signature submission |
 
 ---
+
+</details>
 
 ## Azure Functions Setup
 
@@ -126,10 +136,12 @@ Set these in `local.settings.json` (local) or **Function App → Settings → En
 
 ### Deploy
 
+```bash
 cd AzureFunctions
 npm install
 npm run build
 func azure functionapp publish
+```
 
 ---
 
@@ -224,7 +236,7 @@ https://yourdomain.com/sign.html?token=<tokenId>
 7. `POST /api/sign` → Azure Function merges signature into PDF → uploads signed PDF to SharePoint → marks token as used
 8. Success screen shown
 
-### Configure Web Part Properties
+## Configure Web Part Properties
 
 After deploying the `.sppkg` to your App Catalog, edit the web part properties in SharePoint:
 
