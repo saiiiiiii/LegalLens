@@ -32,6 +32,8 @@ param(
 $LibraryDescription = "Contract repository for LegalLens AI analysis"
 $SignedLibraryName = "Signed Documents"
 $SignedLibraryDescription = "E-signature document repository for LegalLens"
+$TokensListName = "Signature Tokens"
+$TokensListDescription = "E-signature token tracking list for LegalLens"
 
 
 # STEP 1: Connect to SharePoint
@@ -353,7 +355,103 @@ Add-CustomField -ListName $SignedLibraryName -FieldName "RiskScore" -DisplayName
 }
 
 
-# STEP 6: Configure Library Settings
+# STEP 6: Create Signature Tokens List
+Write-Host ""
+Write-Host "============================================" -ForegroundColor Cyan
+Write-Host "Creating Signature Tokens List" -ForegroundColor Cyan
+Write-Host "============================================" -ForegroundColor Cyan
+Write-Host ""
+
+$existingTokensList = Get-PnPList -Identity $TokensListName -ErrorAction SilentlyContinue
+
+if ($existingTokensList) {
+    Write-Host "List '$TokensListName' already exists!" -ForegroundColor Yellow
+    $response = Read-Host "Do you want to add missing columns to existing list? (Y/N)"
+
+    if ($response -ne "Y" -and $response -ne "y") {
+        Write-Host "Skipping '$TokensListName' setup" -ForegroundColor Yellow
+    } else {
+        Write-Host "Using existing list" -ForegroundColor Green
+        Write-Host ""
+    }
+} else {
+    Write-Host "Creating list: $TokensListName" -ForegroundColor Yellow
+
+    try {
+        New-PnPList -Title $TokensListName -Template GenericList -OnQuickLaunch
+        Set-PnPList -Identity $TokensListName -Description $TokensListDescription
+        Write-Host "List created successfully!" -ForegroundColor Green
+        Write-Host ""
+    } catch {
+        Write-Host "Failed to create '$TokensListName' list!" -ForegroundColor Red
+        Write-Host "Error: $_" -ForegroundColor Red
+    }
+}
+
+# Signature Tokens Columns
+Write-Host "============================================" -ForegroundColor Cyan
+Write-Host "Creating Signature Tokens Columns" -ForegroundColor Cyan
+Write-Host "============================================" -ForegroundColor Cyan
+
+# TokenID (Single line of text)
+Write-Host ""
+Write-Host "1. TokenID" -ForegroundColor Cyan
+Add-CustomField -ListName $TokensListName -FieldName "TokenID" -DisplayName "TokenID" -FieldType "Text"
+
+# ContractID (Number)
+Write-Host ""
+Write-Host "2. ContractID" -ForegroundColor Cyan
+Add-CustomField -ListName $TokensListName -FieldName "ContractID" -DisplayName "ContractID" -FieldType "Number"
+
+# ContractName (Single line of text)
+Write-Host ""
+Write-Host "3. ContractName" -ForegroundColor Cyan
+Add-CustomField -ListName $TokensListName -FieldName "ContractName" -DisplayName "ContractName" -FieldType "Text"
+
+# FileName (Single line of text)
+Write-Host ""
+Write-Host "4. FileName" -ForegroundColor Cyan
+Add-CustomField -ListName $TokensListName -FieldName "FileName" -DisplayName "FileName" -FieldType "Text"
+
+# SignerEmail (Single line of text)
+Write-Host ""
+Write-Host "5. SignerEmail" -ForegroundColor Cyan
+Add-CustomField -ListName $TokensListName -FieldName "SignerEmail" -DisplayName "SignerEmail" -FieldType "Text"
+
+# SignerName (Single line of text)
+Write-Host ""
+Write-Host "6. SignerName" -ForegroundColor Cyan
+Add-CustomField -ListName $TokensListName -FieldName "SignerName" -DisplayName "SignerName" -FieldType "Text"
+
+# SignerID (Single line of text)
+Write-Host ""
+Write-Host "7. SignerID" -ForegroundColor Cyan
+Add-CustomField -ListName $TokensListName -FieldName "SignerID" -DisplayName "SignerID" -FieldType "Text"
+
+# DriveItemID (Single line of text)
+Write-Host ""
+Write-Host "8. DriveItemID" -ForegroundColor Cyan
+Add-CustomField -ListName $TokensListName -FieldName "DriveItemID" -DisplayName "DriveItemID" -FieldType "Text"
+
+# Expires (Date and Time)
+Write-Host ""
+Write-Host "9. Expires" -ForegroundColor Cyan
+Add-CustomField -ListName $TokensListName -FieldName "Expires" -DisplayName "Expires" -FieldType "DateTime"
+
+# Used (Yes/No)
+Write-Host ""
+Write-Host "10. Used" -ForegroundColor Cyan
+Add-CustomField -ListName $TokensListName -FieldName "Used" -DisplayName "Used" -FieldType "Boolean" -FieldProperties @{
+    DefaultValue = "0"
+}
+
+# SignedDate (Date and Time)
+Write-Host ""
+Write-Host "11. SignedDate" -ForegroundColor Cyan
+Add-CustomField -ListName $TokensListName -FieldName "SignedDate" -DisplayName "SignedDate" -FieldType "DateTime"
+
+
+# STEP 7: Configure Library Settings
 Write-Host ""
 Write-Host "============================================" -ForegroundColor Cyan
 Write-Host "Configuring Library Settings" -ForegroundColor Cyan
@@ -377,16 +475,17 @@ try {
 }
 
 
-# STEP 7: Summary
+# STEP 8: Summary
 Write-Host ""
 Write-Host "============================================" -ForegroundColor Cyan
 Write-Host "Setup Complete!" -ForegroundColor Green
 Write-Host "============================================" -ForegroundColor Cyan
 Write-Host ""
 
-Write-Host "Libraries Created/Updated: $LibraryName, $SignedLibraryName" -ForegroundColor Green
+Write-Host "Libraries/Lists Created/Updated: $LibraryName, $SignedLibraryName, $TokensListName" -ForegroundColor Green
 Write-Host "Contracts Columns: 10 fields" -ForegroundColor Green
 Write-Host "Signed Documents Columns: 5 fields" -ForegroundColor Green
+Write-Host "Signature Tokens Columns: 11 fields" -ForegroundColor Green
 Write-Host "Custom Views: 3 views created (Contracts)" -ForegroundColor Green
 Write-Host "Library Settings: Configured" -ForegroundColor Green
 Write-Host ""
@@ -419,19 +518,39 @@ Write-Host "  5. Risk Score         (Number: 0-100)" -ForegroundColor White
 Write-Host ""
 
 Write-Host "============================================" -ForegroundColor Cyan
+Write-Host "$TokensListName - Column Summary" -ForegroundColor Cyan
+Write-Host "============================================" -ForegroundColor Cyan
+Write-Host ""
+Write-Host "  1. Title          (Text: Token display label)" -ForegroundColor White
+Write-Host "  2. TokenID        (Text: Cryptographic token, 48 hex chars)" -ForegroundColor White
+Write-Host "  3. ContractID     (Number: SharePoint list item ID)" -ForegroundColor White
+Write-Host "  4. ContractName   (Text: Display name of the contract)" -ForegroundColor White
+Write-Host "  5. FileName       (Text: Filename in Contracts library)" -ForegroundColor White
+Write-Host "  6. SignerEmail    (Text: Recipient email)" -ForegroundColor White
+Write-Host "  7. SignerName     (Text: Recipient display name)" -ForegroundColor White
+Write-Host "  8. SignerID       (Text: Internal signer identifier)" -ForegroundColor White
+Write-Host "  9. DriveItemID    (Text: Graph drive item ID)" -ForegroundColor White
+Write-Host " 10. Expires        (DateTime: Token expiry)" -ForegroundColor White
+Write-Host " 11. Used           (Yes/No: Marked true after signing)" -ForegroundColor White
+Write-Host " 12. SignedDate     (DateTime: Timestamp of signature)" -ForegroundColor White
+Write-Host ""
+
+Write-Host "============================================" -ForegroundColor Cyan
 Write-Host "Next Steps" -ForegroundColor Cyan
 Write-Host "============================================" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "1. Upload sample contracts to the '$LibraryName' library" -ForegroundColor Yellow
 Write-Host "2. Upload signed documents to the '$SignedLibraryName' library" -ForegroundColor Yellow
 Write-Host "3. Update web part properties with library name: '$LibraryName'" -ForegroundColor Yellow
-Write-Host "4. Deploy LegalLens web part to your site" -ForegroundColor Yellow
-Write-Host "5. Test the AI analysis features" -ForegroundColor Yellow
+Write-Host "4. Deploy Azure Functions and update TOKENS_LIST_ID in local.settings.json" -ForegroundColor Yellow
+Write-Host "5. Deploy LegalLens web part to your site" -ForegroundColor Yellow
+Write-Host "6. Test the AI analysis and e-signature features" -ForegroundColor Yellow
 Write-Host ""
 
-Write-Host "Library URLs:" -ForegroundColor Cyan
+Write-Host "Library/List URLs:" -ForegroundColor Cyan
 Write-Host "  $SiteUrl/$LibraryName" -ForegroundColor White
 Write-Host "  $SiteUrl/Signed%20Documents" -ForegroundColor White
+Write-Host "  $SiteUrl/Lists/Signature%20Tokens" -ForegroundColor White
 Write-Host ""
 
 Write-Host " Setup complete! You can now use LegalLens." -ForegroundColor Green
