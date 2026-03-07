@@ -96,9 +96,39 @@ Create a **List** named **Signature Tokens** and add these columns:
 
 </details>
 
-## Azure Functions Setup
+## Configure Web Part Properties
 
-### Prerequisites
+After deploying the `.sppkg` to your App Catalog, edit the web part properties in SharePoint:
+
+| Property | Description |
+|----------|-------------|
+| Contract Library | Dropdown — select the SharePoint document library containing your contracts |
+| Azure AI Foundry Endpoint | e.g. `https://your-project.openai.azure.com` |
+| Azure AI Foundry API Key | API key for your AI Foundry deployment |
+| Azure AI Foundry Deployment | Model name, e.g. `gpt-4o` |
+| Enable Document Analysis | Toggle — enables Azure Document Intelligence for PDF text extraction |
+| Document Intelligence Endpoint | e.g. `https://your-di.cognitiveservices.azure.com` |
+| Document Intelligence Key | API key for Document Intelligence |
+| Translation Languages | Configure additional languages for the Q&A Agent (English is always included) |
+| Show Translate Tab | Toggle — show or hide the Q&A Agent tab |
+| Show E-Signature Tab | Toggle — show or hide the E-Signature tab |
+| Color Scheme | Choose between Dark, Light, or inherit from site theme |
+
+### Build & Deploy
+
+```bash
+cd LegalLensWebPart
+npm install
+gulp build
+gulp bundle --ship
+gulp package-solution --ship
+```
+
+## E-Signature Configuration
+
+### Azure Functions Setup
+
+#### Prerequisites
 
 - Azure subscription with a Function App (Node.js 22, Linux, Consumption plan)
 - Entra ID (Azure AD) app registration with the following **Application** permissions (admin consent required):
@@ -111,7 +141,7 @@ Create a **List** named **Signature Tokens** and add these columns:
 
 > **Note:** The solution uses Gmail (nodemailer) for email delivery by default, which avoids new-tenant reputation issues. `Mail.Send` is only needed if you switch to Microsoft Graph mail.
 
-### Environment Variables
+#### Environment Variables
 
 Set these in `local.settings.json` (local) or **Function App → Settings → Environment Variables** (Azure):
 
@@ -132,7 +162,7 @@ Set these in `local.settings.json` (local) or **Function App → Settings → En
 
 **Gmail App Password:** Go to [myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords), create an app password named "LegalLens", and paste the 16-character code (no spaces) into `GMAIL_APP_PASSWORD`. Requires 2-Step Verification to be enabled on the Gmail account.
 
-**SharePoint IDs:** Run the helper script `get-drive-ids.js` after filling in the other variables to retrieve the correct list/library GUIDs.
+**SharePoint IDs:** Run the helper script `AzureFunctions/get-drive-ids.js` after filling in the other variables to retrieve the correct list/library GUIDs.
 
 ### Deploy
 
@@ -143,14 +173,15 @@ npm run build
 func azure functionapp publish
 ```
 
----
+### Monitoring
 
-## API Reference
+Application Insights is automatically configured for Azure Functions.
 
-### GET `/api/validate/{tokenId}`
+### API Reference
+
+#### GET `/api/validate/{tokenId}`
 
 Validates a signing token. Called by [sign.html](./legallens-signatures/sign.html)  on load.
-
 
 **Response:**
 ```json
@@ -170,9 +201,7 @@ Validates a signing token. Called by [sign.html](./legallens-signatures/sign.htm
 }
 ```
 
----
-
-### GET `/api/document/{tokenId}`
+#### GET `/api/document/{tokenId}`
 
 Downloads the contract file. Serves the correct `Content-Type` per file extension:
 
@@ -183,9 +212,8 @@ Downloads the contract file. Serves the correct `Content-Type` per file extensio
 | `.docx` | `application/vnd.openxmlformats-officedocument.wordprocessingml.document` | Download prompt |
 | `.doc` | `application/msword` | Download prompt |
 
----
 
-### POST `/api/sign`
+#### POST `/api/sign`
 
 Submits the vendor's signature.
 
@@ -208,15 +236,11 @@ Submits the vendor's signature.
 }
 ```
 
----
-
-### POST `/api/invite` *(internal — called by the web part)*
+#### POST `/api/invite` *(internal — called by the web part)*
 
 Sends a signing invitation email via Gmail. Called automatically when an internal user creates a signature request in the web part.
 
----
-
-## Vendor Signing Flow (`sign.html`)
+### Vendor Signing Flow (`sign.html`)
 
 The standalone signing page lives at [sign.html](./legallens-signatures/sign.html) and is hosted as a static file.
 
@@ -236,33 +260,7 @@ https://yourdomain.com/sign.html?token=<tokenId>
 7. `POST /api/sign` → Azure Function merges signature into PDF → uploads signed PDF to SharePoint → marks token as used
 8. Success screen shown
 
-## Configure Web Part Properties
-
-After deploying the `.sppkg` to your App Catalog, edit the web part properties in SharePoint:
-
-| Property | Description |
-|----------|-------------|
-| Contract Library URL | Full URL to your Contracts document library |
-| Azure AI Foundry Endpoint | e.g. `https://your-project.openai.azure.com` |
-| Azure AI Foundry API Key | API key for your AI Foundry deployment |
-| Azure AI Foundry Deployment | Model name, e.g. `gpt-4o` |
-| Enable Document Analysis | Toggle — enables Azure Document Intelligence for PDF text extraction |
-| Document Intelligence Endpoint | e.g. `https://your-di.cognitiveservices.azure.com` |
-| Document Intelligence Key | API key for Document Intelligence |
-
-### Build & Deploy
-
-```bash
-cd LegalLensWebPart
-npm install
-gulp build
-gulp bundle --ship
-gulp package-solution --ship
-```
-
----
-
-## Security
+### Security
 
 - **Vendors never access SharePoint** — all document operations go through Azure Functions using Application permissions (Client Credentials flow)
 - **One-time tokens** — each signing link works exactly once; the token is marked `Used = true` after submission
@@ -270,15 +268,7 @@ gulp package-solution --ship
 - **Time-limited** — tokens expire after 7 days by default
 - **No user credentials stored** — the Function App authenticates as a service principal via client secret
 
----
-
-## Monitoring
-
-Application Insights is automatically configured for Azure Functions.
-
----
-
-## Cost Estimate
+### Cost Estimate
 
 | Service | Tier | Estimated Cost |
 |---------|------|----------------|
@@ -288,8 +278,6 @@ Application Insights is automatically configured for Azure Functions.
 | **Total** | | **~$5–10/month** for 1,000 signatures |
 
 For comparison: DocuSign costs $25+/user/month.
-
----
 
 ## Version History
 
