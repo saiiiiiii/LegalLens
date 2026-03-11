@@ -240,6 +240,10 @@ Submits the vendor's signature.
 
 Sends a signing invitation email via Gmail. Called automatically when an internal user creates a signature request in the web part.
 
+#### POST `/api/sendOTP` *(internal — called by the web part)*
+
+Send OTP confirmation before signing
+
 ### Vendor Signing Flow (`sign.html`)
 
 The standalone signing page lives at [sign.html](./legallens-signatures/sign.html) and is hosted as a static file.
